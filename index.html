@@ -30,9 +30,18 @@
     .hr-pfill{height:100%;background:linear-gradient(90deg,#1a7fd4,#27ae60);border-radius:4px;transition:.3s}
     .role-card.locked{opacity:.55;pointer-events:none;cursor:not-allowed}
     .role-card.locked .role-btn{background:#ccc;color:#888}
+    .loading-screen{position:fixed;inset:0;background:#f7fafd;display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:16px}
+    .loading-screen p{color:#1a7fd4;font-size:1rem;font-weight:500}
+    .spinner{width:40px;height:40px;border:4px solid #c7d7f0;border-top-color:#1a7fd4;border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
+
+<div class="loading-screen" id="loadingScreen">
+  <div class="spinner"></div>
+  <p>Загрузка…</p>
+</div>
 
 <!-- ЛИЧНЫЙ КАБИНЕТ -->
 <div class="account-modal-overlay" id="accOverlay">
@@ -40,12 +49,18 @@
     <h3>👤 Личный кабинет</h3>
     <input type="text" id="accFio" placeholder="ФИО">
     <input type="password" id="accPass" placeholder="Новый пароль (оставь пустым, если не менять)">
-    <!-- Смена роли — только для admin/hr -->
     <select id="accRole" style="display:none">
-      <option value="producer">🎬 Продюсер</option>
-      <option value="sales">📞 Менеджер по продажам</option>
-      <option value="marketing">📣 Специалист по маркетингу</option>
-      <option value="hr">👩‍💼 HR-менеджер</option>
+      <optgroup label="— Сотрудники —">
+        <option value="producer">🎬 Продюсер</option>
+        <option value="sales">📞 Менеджер по продажам</option>
+        <option value="marketing">📣 Специалист по маркетингу</option>
+      </optgroup>
+      <optgroup label="— Администраторы —">
+        <option value="hr">👩‍💼 HR-менеджер</option>
+        <option value="ceo">👑 Генеральный директор</option>
+        <option value="exec_dir">🏢 Исполнительный директор</option>
+        <option value="ops_dir">⚙️ Операционный директор</option>
+      </optgroup>
     </select>
     <div class="acc-msg" id="accMsg"></div>
     <button class="acc-btn primary" id="accSaveBtn">💾 Сохранить изменения</button>
@@ -138,6 +153,16 @@
 
 <script src="auth.js"></script>
 <script>
+const ROLE_NAMES = {
+  producer:'Продюсер',
+  sales:'Менеджер по продажам',
+  marketing:'Специалист по маркетингу',
+  hr:'HR-менеджер',
+  ceo:'Генеральный директор',
+  exec_dir:'Исполнительный директор',
+  ops_dir:'Операционный директор'
+};
+
 const TASK_KEYS = {
   producer: ['producer_l1_p1','producer_l1_p2','producer_l1_p3','producer_l1_m1','producer_l1_m2','producer_l1_s1','producer_l1_s2','producer_l1_s3','producer_l1_s4','producer_l2_p1','producer_l2_p2','producer_l2_p3','producer_l2_p4','producer_l2_p5','producer_l2_m1','producer_l2_m2','producer_l2_m3','producer_l2_s1','producer_l2_s2','producer_l2_s3','producer_l3_p1','producer_l3_p2','producer_l3_p3','producer_l3_p4','producer_l3_p5','producer_l3_m1','producer_l3_m2','producer_l3_s1','producer_l3_s2'],
   sales:    ['sales_l1_p1','sales_l1_p2','sales_l1_p3','sales_l1_m1','sales_l1_m2','sales_l1_m3','sales_l1_s1','sales_l1_s2','sales_l1_s3','sales_l2_p1','sales_l2_p2','sales_l2_p3','sales_l2_p4','sales_l2_m1','sales_l2_m2','sales_l2_s1','sales_l2_s2','sales_l3_p1','sales_l3_p2','sales_l3_p3','sales_l3_p4','sales_l3_m1','sales_l3_s1','sales_l3_s2'],
@@ -157,7 +182,6 @@ function openAcc() {
   document.getElementById('accFio').value  = u.fio;
   document.getElementById('accPass').value = '';
   document.getElementById('accMsg').textContent = '';
-  // Дропдаун роли — только для HR/admin
   const roleSelect = document.getElementById('accRole');
   if (Auth.isAdmin()) {
     roleSelect.style.display = 'block';
@@ -172,7 +196,6 @@ function closeAcc() {
   document.getElementById('accOverlay').classList.remove('open');
 }
 
-// Вешаем обработчик на кнопку сохранения через addEventListener
 document.getElementById('accSaveBtn').addEventListener('click', function() {
   const fio  = document.getElementById('accFio').value.trim();
   const pass = document.getElementById('accPass').value;
@@ -180,9 +203,7 @@ document.getElementById('accSaveBtn').addEventListener('click', function() {
   if (!fio) { msg.style.color='#e74c3c'; msg.textContent='ФИО не может быть пустым'; return; }
   if (pass && pass.length < 4) { msg.style.color='#e74c3c'; msg.textContent='Пароль минимум 4 символа'; return; }
   Auth.update(fio, pass||null);
-  if (Auth.isAdmin()) {
-    Auth.updateRole(document.getElementById('accRole').value);
-  }
+  if (Auth.isAdmin()) Auth.updateRole(document.getElementById('accRole').value);
   msg.style.color = '#27ae60';
   msg.textContent = '✅ Сохранено!';
   updateUI();
@@ -191,58 +212,60 @@ document.getElementById('accSaveBtn').addEventListener('click', function() {
 
 function confirmReset() {
   if (confirm('Сбросить весь твой прогресс? Отменить будет нельзя!')) {
-    Auth.resetProgress();
-    closeAcc();
-    updateUI();
-    alert('Прогресс сброшен.');
+    Auth.resetProgress(); closeAcc(); updateUI(); alert('Прогресс сброшен.');
   }
 }
 
 function updateUI() {
   const u = Auth.current(); if (!u) return;
-  const rn = { producer:'Продюсер', sales:'Менеджер по продажам', marketing:'Специалист по маркетингу', hr:'HR-менеджер' };
   const firstName = u.fio.split(' ')[0];
-  document.getElementById('headerUser').textContent = firstName + ' · ' + (rn[u.role]||'');
+  const roleName  = ROLE_NAMES[u.role] || u.role;
+  document.getElementById('headerUser').textContent = firstName + ' · ' + roleName;
   document.getElementById('welcomeTitle').textContent = 'Привет, ' + firstName + '! 👋';
-  const isHR = Auth.isAdmin();
-  if (isHR) {
-    document.getElementById('welcomeSubtitle').textContent = 'Панель HR-менеджера · все маршруты доступны';
+
+  if (Auth.isAdmin()) {
+    document.getElementById('welcomeSubtitle').textContent = 'Роль: ' + roleName + ' · все маршруты доступны';
     document.getElementById('overallLabel').textContent = 'сотрудников';
-    const users = Auth.getUsers();
-    const employees = Object.values(users).filter(u2 => !Auth.isAdmin || u2.role !== 'hr');
-    const nonHR = Object.values(users).filter(u2 => u2.role !== 'hr');
-    document.getElementById('overallPct').textContent = nonHR.length;
+    ['producer','sales','marketing'].forEach(r => document.getElementById('card-'+r).classList.remove('locked'));
+
+    const users    = Auth.getUsers();
+    // Сотрудники = все, кто не админ
+    const staff    = Object.values(users).filter(u2 => !ADMIN_ROLES.includes(u2.role));
+    document.getElementById('overallPct').textContent = staff.length;
+
+    // Средний прогресс по каждой роли
     ['producer','sales','marketing'].forEach(r => {
-      document.getElementById('card-'+r).classList.remove('locked');
-      const usersOfRole = nonHR.filter(u2 => u2.role===r);
-      if (usersOfRole.length) {
-        const avg = Math.round(usersOfRole.reduce((s,u2)=>s+calcProgress(u2.id,r).pct,0)/usersOfRole.length);
+      const group = staff.filter(u2 => u2.role === r);
+      if (group.length) {
+        const avg = Math.round(group.reduce((s,u2) => s + calcProgress(u2.id, r).pct, 0) / group.length);
         document.getElementById('prog-'+r).textContent = avg+'%';
         document.getElementById('fill-'+r).style.width = avg+'%';
       }
     });
+
+    // Таблица прогресса
     document.getElementById('hrDashboard').style.display = 'block';
     const tbody = document.getElementById('hrTableBody');
     tbody.innerHTML = '';
-    if (!nonHR.length) {
+    if (!staff.length) {
       tbody.innerHTML = '<tr><td colspan="4" style="color:#888;text-align:center">Пока нет зарегистрированных сотрудников</td></tr>';
     } else {
-      nonHR.sort((a,b)=>a.fio.localeCompare(b.fio)).forEach(emp => {
+      staff.sort((a,b) => a.fio.localeCompare(b.fio)).forEach(emp => {
         const prog = calcProgress(emp.id, emp.role);
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${emp.fio}${emp.blocked?' <span style="color:#e74c3c;font-size:.75rem">(заблок.)</span>':''}</td><td>${rn[emp.role]||emp.role}</td><td><div class="hr-pbar"><div class="hr-pfill" style="width:${prog.pct}%"></div></div></td><td><strong>${prog.pct}%</strong> (${prog.checked}/${prog.total})</td>`;
+        const tr   = document.createElement('tr');
+        tr.innerHTML = `<td>${emp.fio}${emp.blocked?' <span style="color:#e74c3c;font-size:.75rem">(заблок.)</span>':''}</td><td>${ROLE_NAMES[emp.role]||emp.role}</td><td><div class="hr-pbar"><div class="hr-pfill" style="width:${prog.pct}%"></div></div></td><td><strong>${prog.pct}%</strong> (${prog.checked}/${prog.total})</td>`;
         tbody.appendChild(tr);
       });
     }
   } else {
-    document.getElementById('welcomeSubtitle').textContent = 'Твоя роль: '+(rn[u.role]||'')+' · 90 дней адаптации';
+    document.getElementById('welcomeSubtitle').textContent = 'Твоя роль: '+roleName+' · 90 дней адаптации';
     document.getElementById('overallLabel').textContent = 'общий прогресс';
     document.getElementById('hrDashboard').style.display = 'none';
     ['producer','sales','marketing'].forEach(r => {
       const card = document.getElementById('card-'+r);
-      if (r===u.role) {
+      if (r === u.role) {
         card.classList.remove('locked');
-        const prog = calcProgress(u.id,r);
+        const prog = calcProgress(u.id, r);
         document.getElementById('prog-'+r).textContent = prog.pct+'%';
         document.getElementById('fill-'+r).style.width = prog.pct+'%';
         document.getElementById('overallPct').textContent = prog.pct+'%';
@@ -255,7 +278,10 @@ function updateUI() {
   }
 }
 
-window.onload = function() {
+window.onload = async function() {
+  document.getElementById('loadingScreen').style.display = 'flex';
+  await DB.init();
+  document.getElementById('loadingScreen').style.display = 'none';
   if (!Auth.requireAuth()) return;
   updateUI();
 };

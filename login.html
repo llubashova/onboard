@@ -6,99 +6,122 @@
   <title>Вход | Auditorium Onboard</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#0a4d8c 0%,#1a7fd4 100%)}
-    .auth-box{background:#fff;border-radius:20px;padding:40px 36px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
-    .auth-logo{text-align:center;font-size:2.6rem;margin-bottom:6px}
-    .auth-title{text-align:center;font-size:1.5rem;font-weight:800;color:#0a4d8c;margin-bottom:4px}
-    .auth-sub{text-align:center;color:#888;font-size:.9rem;margin-bottom:24px}
-    .auth-tabs{display:flex;gap:8px;margin-bottom:24px}
-    .auth-tab{flex:1;padding:10px;border:2px solid #e8f0fe;border-radius:10px;background:#f8fbff;cursor:pointer;font-weight:700;color:#888;text-align:center;transition:.2s}
-    .auth-tab.active{border-color:#1a7fd4;background:#1a7fd4;color:#fff}
-    .auth-form{display:flex;flex-direction:column;gap:14px}
-    .auth-form input{padding:13px 16px;border:2px solid #e8f0fe;border-radius:10px;font-size:1rem;font-family:inherit;outline:none;transition:.2s}
-    .auth-form input:focus{border-color:#1a7fd4}
-    .auth-btn{background:linear-gradient(135deg,#0a4d8c,#1a7fd4);color:#fff;border:none;border-radius:10px;padding:14px;font-size:1rem;font-weight:700;cursor:pointer;transition:.2s}
-    .auth-btn:hover{opacity:.9;transform:translateY(-1px)}
-    .auth-err{color:#e74c3c;font-size:.88rem;text-align:center;min-height:20px}
-    .reg-only{display:none}
-    .invite-hint{font-size:.8rem;color:#888;text-align:center;margin-top:-8px}
-    .bootstrap-note{background:#fff8e1;border:1px solid #ffe082;border-radius:10px;padding:12px 16px;font-size:.85rem;color:#795548;text-align:center;margin-bottom:12px}
+    .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a4d8c,#1a7fd4)}
+    .auth-card{background:#fff;border-radius:24px;padding:40px 36px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+    .auth-logo{text-align:center;font-size:2.2rem;margin-bottom:8px}
+    .auth-title{text-align:center;font-size:1.4rem;font-weight:700;color:#0a4d8c;margin-bottom:4px}
+    .auth-sub{text-align:center;color:#888;font-size:.9rem;margin-bottom:28px}
+    .tabs{display:flex;gap:0;margin-bottom:24px;border-radius:10px;overflow:hidden;border:2px solid #e8f0fe}
+    .tab{flex:1;padding:10px;text-align:center;cursor:pointer;font-weight:600;font-size:.92rem;background:#f7fafd;color:#888;transition:.2s}
+    .tab.active{background:#0a4d8c;color:#fff}
+    .auth-input{width:100%;box-sizing:border-box;padding:13px 16px;border:2px solid #e8f0fe;border-radius:10px;font-size:1rem;font-family:inherit;margin-bottom:12px;outline:none;transition:.2s}
+    .auth-input:focus{border-color:#1a7fd4}
+    .auth-btn{width:100%;padding:14px;background:linear-gradient(135deg,#0a4d8c,#1a7fd4);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;margin-top:4px}
+    .auth-btn:hover{opacity:.9}
+    .auth-msg{font-size:.87rem;text-align:center;min-height:20px;margin-bottom:8px;font-weight:500}
+    .loading-screen{position:fixed;inset:0;background:#f7fafd;display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:16px}
+    .loading-screen p{color:#1a7fd4;font-size:1rem;font-weight:500}
+    .spinner{width:40px;height:40px;border:4px solid #c7d7f0;border-top-color:#1a7fd4;border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    #regForm{display:none}
   </style>
 </head>
 <body>
-<div class="auth-box">
-  <div class="auth-logo">🎓</div>
-  <div class="auth-title">Auditorium Onboard</div>
-  <div class="auth-sub">Система адаптации персонала</div>
 
-  <!-- Баннер первого запуска (показывается если 0 пользователей) -->
-  <div class="bootstrap-note" id="bootstrapNote" style="display:none">
-    👋 Первый запуск! Зарегистрируйтесь — вы станете HR-администратором системы.
-  </div>
+<div class="loading-screen" id="loadingScreen">
+  <div class="spinner"></div>
+  <p>Подключение…</p>
+</div>
 
-  <div class="auth-tabs">
-    <div class="auth-tab active" id="tabLogin" onclick="switchTab('login')">Войти</div>
-    <div class="auth-tab" id="tabReg" onclick="switchTab('reg')">Регистрация</div>
-  </div>
-  <div class="auth-form">
-    <input type="text" id="inLogin" placeholder="Логин" autocomplete="username">
-    <input type="password" id="inPass" placeholder="Пароль" autocomplete="current-password">
-    <input type="text" id="inFio" placeholder="ФИО (например, Иванова Лера)" class="reg-only">
-    <input type="text" id="inInvite" placeholder="Код приглашения (например, AO-X7K2PQ)" class="reg-only invite-field">
-    <div class="invite-hint reg-only">Код выдаёт HR-менеджер. Роль определяется автоматически.</div>
-    <div class="auth-err" id="authErr"></div>
-    <button class="auth-btn" id="authBtn" onclick="doAuth()">Войти →</button>
+<div class="auth-wrap" id="authWrap" style="display:none">
+  <div class="auth-card">
+    <div class="auth-logo">🎓</div>
+    <div class="auth-title">Auditorium Onboard</div>
+    <div class="auth-sub">Система адаптации персонала</div>
+    <div class="tabs">
+      <div class="tab active" id="tabLogin" onclick="switchTab('login')">Вход</div>
+      <div class="tab" id="tabReg"   onclick="switchTab('reg')">Регистрация</div>
+    </div>
+
+    <!-- ВХОД -->
+    <div id="loginForm">
+      <input class="auth-input" type="text"     id="loginLogin" placeholder="Логин">
+      <input class="auth-input" type="password" id="loginPass"  placeholder="Пароль">
+      <div class="auth-msg" id="loginMsg"></div>
+      <button class="auth-btn" onclick="doLogin()"> Войти</button>
+    </div>
+
+    <!-- РЕГИСТРАЦИЯ -->
+    <div id="regForm">
+      <input class="auth-input" type="text"     id="regFio"    placeholder="ФИО (полностью)">
+      <input class="auth-input" type="text"     id="regLogin"  placeholder="Логин">
+      <input class="auth-input" type="password" id="regPass"   placeholder="Пароль (мин. 4 символа)">
+      <input class="auth-input" type="text"     id="regInvite" placeholder="Код приглашения (AO-XXXXXX)">
+      <div class="auth-msg" id="regMsg"></div>
+      <button class="auth-btn" onclick="doRegister()">Зарегистрироваться</button>
+    </div>
   </div>
 </div>
+
+<script src="db.js"></script>
 <script src="auth.js"></script>
 <script>
-let mode = 'login';
-let isFirstRun = Object.keys(Auth.getUsers()).length === 0;
-
-if (isFirstRun) {
-  document.getElementById('bootstrapNote').style.display = 'block';
-  switchTab('reg');
+function switchTab(t) {
+  document.getElementById('loginForm').style.display = t==='login' ? 'block' : 'none';
+  document.getElementById('regForm').style.display   = t==='reg'   ? 'block' : 'none';
+  document.getElementById('tabLogin').classList.toggle('active', t==='login');
+  document.getElementById('tabReg').classList.toggle('active',   t==='reg');
 }
 
-function switchTab(m) {
-  mode = m;
-  document.getElementById('tabLogin').classList.toggle('active', m==='login');
-  document.getElementById('tabReg').classList.toggle('active', m==='reg');
-  document.querySelectorAll('.reg-only').forEach(el => el.style.display = m==='reg' ? 'block' : 'none');
-  document.getElementById('authBtn').textContent = m==='login' ? 'Войти →' : 'Зарегистрироваться →';
-  document.getElementById('authErr').textContent = '';
-  // При первом запуске скрываем поле инвайта
-  if (isFirstRun && m==='reg') {
-    document.querySelectorAll('.invite-field').forEach(el => el.style.display='none');
-    document.querySelectorAll('.invite-hint').forEach(el => el.style.display='none');
-  }
-}
-
-function doAuth() {
-  const login = document.getElementById('inLogin').value.trim();
-  const pass  = document.getElementById('inPass').value;
-  document.getElementById('authErr').textContent = '';
-
-  if (mode === 'login') {
-    const res = Auth.login(login, pass);
-    if (!res.ok) { document.getElementById('authErr').textContent = res.msg; return; }
+function doLogin() {
+  const login = document.getElementById('loginLogin').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  const msg   = document.getElementById('loginMsg');
+  const res   = Auth.login(login, pass);
+  if (res.ok) {
     window.location.href = 'index.html';
   } else {
-    const fio    = document.getElementById('inFio').value.trim();
-    const invite = document.getElementById('inInvite').value.trim();
-    let res;
-    if (isFirstRun) {
-      res = Auth.bootstrapAdmin(login, pass, fio);
-    } else {
-      res = Auth.register(login, pass, fio, invite);
-    }
-    if (!res.ok) { document.getElementById('authErr').textContent = res.msg; return; }
-    Auth.login(login, pass);
-    window.location.href = 'index.html';
+    msg.style.color = '#e74c3c'; msg.textContent = res.msg;
   }
 }
-window.onload = function() { if (Auth.current()) window.location.href = 'index.html'; };
-document.addEventListener('keydown', e => { if (e.key==='Enter') doAuth(); });
+
+function doRegister() {
+  const fio    = document.getElementById('regFio').value.trim();
+  const login  = document.getElementById('regLogin').value.trim();
+  const pass   = document.getElementById('regPass').value;
+  const invite = document.getElementById('regInvite').value.trim();
+  const msg    = document.getElementById('regMsg');
+
+  // Первый пользователь — bootstrap без инвайта
+  const users = Auth.getUsers();
+  if (Object.keys(users).length === 0) {
+    const res = Auth.bootstrapAdmin(login, pass, fio);
+    if (res.ok) { DB.sync(); Auth.login(login, pass); window.location.href = 'index.html'; }
+    else { msg.style.color='#e74c3c'; msg.textContent = res.msg; }
+    return;
+  }
+
+  const res = Auth.register(login, pass, fio, invite);
+  if (res.ok) {
+    DB.sync();
+    Auth.login(login, pass);
+    window.location.href = 'index.html';
+  } else {
+    msg.style.color = '#e74c3c'; msg.textContent = res.msg;
+  }
+}
+
+window.onload = async function() {
+  // Синхронизируем с облаком до показа формы
+  await DB.init();
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('authWrap').style.display = 'flex';
+  // Если уже вошёл — на главную
+  if (Auth.current()) { window.location.href = 'index.html'; return; }
+  // Если система пустая — сразу открываем регистрацию
+  const empty = Object.keys(Auth.getUsers()).length === 0;
+  if (empty) switchTab('reg');
+};
 </script>
 </body>
 </html>
