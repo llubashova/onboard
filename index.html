@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Auditorium Onboard</title>
+  <!-- Защита до рендера: если нет сессии — сразу на логин -->
+  <script>if(!localStorage.getItem('ao_session'))location.replace('login.html');</script>
   <link rel="stylesheet" href="style.css">
   <style>
     .account-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center}
@@ -170,7 +172,7 @@ function openAcc() {
   document.getElementById('accMsg').textContent = '';
   const roleSelect = document.getElementById('accRole');
   if (Auth.isAdmin()) { roleSelect.style.display='block'; roleSelect.value=u.role; }
-  else roleSelect.style.display = 'none';
+  else roleSelect.style.display='none';
   document.getElementById('accAdminBtn').style.display = Auth.isAdmin() ? 'block' : 'none';
   document.getElementById('accOverlay').classList.add('open');
 }
