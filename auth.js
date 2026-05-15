@@ -5,15 +5,16 @@
 // Инвайт-коды:  localStorage.ao_invites (JSON)
 // ============================================================
 
+const ADMIN_ROLES = ['hr', 'ceo', 'exec_dir', 'ops_dir'];
+
 const Auth = {
 
-  // ── Миграция: первый HR-пользователь → admin:true ─────────
-  // Запускается один раз автоматически при загрузке
+  // ── Миграция: все админ-роли → admin:true ─────────────────
   migrate() {
     const users = this.getUsers();
     let changed = false;
     Object.values(users).forEach(u => {
-      if (u.role === 'hr' && u.admin !== true) {
+      if (ADMIN_ROLES.includes(u.role) && u.admin !== true) {
         u.admin = true;
         changed = true;
       }
@@ -37,15 +38,15 @@ const Auth = {
     localStorage.setItem('ao_invites', JSON.stringify(inv));
   },
   createInvite(role, label) {
-    const inv = this.getInvites();
+    const inv  = this.getInvites();
     const code = 'AO-' + Math.random().toString(36).substr(2,6).toUpperCase();
-    inv[code] = { role: role || '', label: label || '', used: false, createdAt: Date.now() };
+    inv[code]  = { role: role || '', label: label || '', used: false, createdAt: Date.now() };
     this.saveInvites(inv);
     return code;
   },
   checkInvite(code) {
     const inv = this.getInvites();
-    const c = inv[code.trim().toUpperCase()];
+    const c   = inv[code.trim().toUpperCase()];
     if (!c || c.used) return null;
     return c;
   },
@@ -72,10 +73,10 @@ const Auth = {
   },
   isAdmin() {
     const u = this.current();
-    return u && (u.admin === true || u.role === 'hr');
+    return u && (u.admin === true || ADMIN_ROLES.includes(u.role));
   },
 
-  // ── Регистрация (требует инвайт-код) ──────────────────────
+  // ── Регистрация ──────────────────────────────────────────────
   register(login, pass, fio, inviteCode) {
     if (!login || login.length < 3) return { ok: false, msg: 'Логин минимум 3 символа' };
     if (!pass  || pass.length  < 4) return { ok: false, msg: 'Пароль минимум 4 символа' };
@@ -84,12 +85,12 @@ const Auth = {
     if (users[login]) return { ok: false, msg: 'Логин уже занят' };
     const invite = this.checkInvite(inviteCode || '');
     if (!invite) return { ok: false, msg: 'Неверный или уже использованный код приглашения' };
-    const role = invite.role || 'producer';
+    const role  = invite.role || 'producer';
     users[login] = {
       pass, fio, role,
-      id: Date.now().toString(),
-      admin: role === 'hr',
-      blocked: false,
+      id:        Date.now().toString(),
+      admin:     ADMIN_ROLES.includes(role),
+      blocked:   false,
       createdAt: Date.now()
     };
     this.saveUsers(users);
@@ -97,7 +98,7 @@ const Auth = {
     return { ok: true, role };
   },
 
-  // ── Первый запуск: создаём HR-аккаунт без инвайта ─────────
+  // ── Первый запуск ──────────────────────────────────────────
   bootstrapAdmin(login, pass, fio) {
     const users = this.getUsers();
     if (Object.keys(users).length > 0) return { ok: false, msg: 'Система уже инициализирована' };
@@ -106,9 +107,9 @@ const Auth = {
     if (!fio)                        return { ok: false, msg: 'Введите ФИО' };
     users[login] = {
       pass, fio, role: 'hr',
-      id: Date.now().toString(),
-      admin: true,
-      blocked: false,
+      id:        Date.now().toString(),
+      admin:     true,
+      blocked:   false,
       createdAt: Date.now()
     };
     this.saveUsers(users);
@@ -146,11 +147,14 @@ const Auth = {
     this.saveUsers(users);
   },
 
-  // ── Управление пользователями (только admin/hr) ───────────
+  // ── Управление пользователями (admin) ────────────────────
   setUserRole(targetLogin, newRole) {
     if (!this.isAdmin()) return;
     const users = this.getUsers();
-    if (users[targetLogin]) users[targetLogin].role = newRole;
+    if (users[targetLogin]) {
+      users[targetLogin].role  = newRole;
+      users[targetLogin].admin = ADMIN_ROLES.includes(newRole);
+    }
     this.saveUsers(users);
   },
   blockUser(targetLogin) {
@@ -200,5 +204,5 @@ const Auth = {
   }
 };
 
-// Запускаем миграцию сразу при загрузке скрипта
+// Запуск миграции сразу при загрузке скрипта
 Auth.migrate();
