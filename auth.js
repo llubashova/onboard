@@ -1,5 +1,6 @@
 // ============================================================
-// auth.js — модуль авторизации Auditorium Onboard v5
+// auth.js — модуль авторизации Auditorium Onboard v6
+// Прогресс хранится по ключу ao_p_<login>_<taskKey>
 // ============================================================
 
 const ADMIN_ROLES = ['hr', 'ceo', 'exec_dir', 'ops_dir'];
@@ -9,28 +10,27 @@ const Auth = {
   migrate() {
     const users = this.getUsers();
     let changed = false;
-    Object.values(users).forEach(u => {
+    Object.entries(users).forEach(([login, u]) => {
       // Миграция ролей
       if (ADMIN_ROLES.includes(u.role) && u.admin !== true) {
         u.admin = true; changed = true;
       }
-      // Миграция id: если id без префикса id_ — исправляем
-      // JSONBin превращает числовые строки в float с потерей точности
-      if (u.id && !String(u.id).startsWith('id_')) {
-        // Переносим ключи прогресса под новый id
-        const oldId = String(u.id);
-        const newId = 'id_' + oldId.replace(/[^0-9]/g, '').slice(0, 13);
-        const oldPrefix = 'ao_p_' + oldId + '_';
-        const newPrefix = 'ao_p_' + newId + '_';
-        Object.keys(localStorage)
-          .filter(k => k.startsWith(oldPrefix))
-          .forEach(k => {
-            const val = localStorage.getItem(k);
-            localStorage.setItem(newPrefix + k.slice(oldPrefix.length), val);
-            localStorage.removeItem(k);
-          });
-        u.id = newId;
-        changed = true;
+      // Миграция прогресса: если ещё есть ключи со старым id-префиксом — переносим на login
+      if (u.id) {
+        const oldPrefixes = [
+          'ao_p_' + String(u.id) + '_',
+          'ao_p_id_' + String(u.id).replace(/[^0-9]/g,'').slice(0,13) + '_'
+        ];
+        const newPrefix = 'ao_p_' + login + '_';
+        oldPrefixes.forEach(oldPrefix => {
+          if (oldPrefix === newPrefix) return;
+          Object.keys(localStorage)
+            .filter(k => k.startsWith(oldPrefix))
+            .forEach(k => {
+              localStorage.setItem(newPrefix + k.slice(oldPrefix.length), localStorage.getItem(k));
+              localStorage.removeItem(k);
+            });
+        });
       }
     });
     if (changed) this.saveUsers(users);
@@ -45,7 +45,7 @@ const Auth = {
   createInvite(role, label) {
     const inv  = this.getInvites();
     const code = 'AO-' + Math.random().toString(36).substr(2,6).toUpperCase();
-    inv[code]  = { role: role||'', label: label||'', used: false, createdAt: 'id_' + Date.now() };
+    inv[code]  = { role: role||'', label: label||'', used: false, createdAt: Date.now() };
     this.saveInvites(inv);
     return code;
   },
@@ -58,7 +58,7 @@ const Auth = {
   useInvite(code) {
     const inv = this.getInvites();
     const key = code.trim().toUpperCase();
-    if (inv[key]) { inv[key].used = true; inv[key].usedAt = 'id_' + Date.now(); }
+    if (inv[key]) { inv[key].used = true; inv[key].usedAt = Date.now(); }
     this.saveInvites(inv);
   },
   deleteInvite(code) {
@@ -80,7 +80,7 @@ const Auth = {
     if (!login) return null;
     return this.getUsers()[login] || null;
   },
-  currentLogin() { return localStorage.getItem('ao_session'); },
+  currentLogin() { return localStorage.getItem('ao_session') || ''; },
   isAdmin() {
     const u = this.current();
     return u && (u.admin === true || ADMIN_ROLES.includes(u.role));
@@ -97,10 +97,9 @@ const Auth = {
     const role = invite.role || 'producer';
     users[login] = {
       pass, fio, role,
-      id:        'id_' + Date.now(),
       admin:     ADMIN_ROLES.includes(role),
       blocked:   false,
-      createdAt: 'id_' + Date.now()
+      createdAt: Date.now()
     };
     this.saveUsers(users);
     this.useInvite(inviteCode);
@@ -115,10 +114,9 @@ const Auth = {
     if (!fio)                        return { ok:false, msg:'Введите ФИО' };
     users[login] = {
       pass, fio, role: 'hr',
-      id:        'id_' + Date.now(),
       admin:     true,
       blocked:   false,
-      createdAt: 'id_' + Date.now()
+      createdAt: Date.now()
     };
     this.saveUsers(users);
     return { ok:true };
@@ -170,13 +168,10 @@ const Auth = {
   deleteSelf() {
     const login = this.currentLogin();
     if (!login) return;
+    // Удаляем прогресс из localStorage
+    const prefix = 'ao_p_' + login + '_';
+    Object.keys(localStorage).filter(k => k.startsWith(prefix)).forEach(k => localStorage.removeItem(k));
     const users = this.getUsers();
-    const user = users[login];
-    if (user && user.id) {
-      Object.keys(localStorage)
-        .filter(k => k.startsWith('ao_p_' + user.id + '_'))
-        .forEach(k => localStorage.removeItem(k));
-    }
     delete users[login];
     this.saveUsers(users);
     localStorage.removeItem('ao_session');
@@ -184,26 +179,27 @@ const Auth = {
   },
 
   resetProgress() {
-    const user = this.current(); if (!user) return;
-    Object.keys(localStorage)
-      .filter(k => k.startsWith('ao_p_' + user.id + '_'))
-      .forEach(k => localStorage.removeItem(k));
-  },
-
-  // Читает прогресс текущего пользователя
-  getCheck(key) {
-    const user = this.current(); if (!user) return false;
-    return localStorage.getItem('ao_p_' + user.id + '_' + key) === '1';
-  },
-  setCheck(key, val) {
-    const user = this.current(); if (!user) return;
-    localStorage.setItem('ao_p_' + user.id + '_' + key, val ? '1' : '0');
+    const login = this.currentLogin(); if (!login) return;
+    const prefix = 'ao_p_' + login + '_';
+    Object.keys(localStorage).filter(k => k.startsWith(prefix)).forEach(k => localStorage.removeItem(k));
     _dbSync();
   },
 
-  // Читает прогресс по любому userId (для HR-дашборда)
-  getCheckForUser(userId, key) {
-    return localStorage.getItem('ao_p_' + userId + '_' + key) === '1';
+  // Прогресс текущего пользователя: ao_p_<login>_<key>
+  getCheck(key) {
+    const login = this.currentLogin(); if (!login) return false;
+    return localStorage.getItem('ao_p_' + login + '_' + key) === '1';
+  },
+  setCheck(key, val) {
+    const login = this.currentLogin(); if (!login) return;
+    localStorage.setItem('ao_p_' + login + '_' + key, val ? '1' : '0');
+    _dbSync();
+  },
+
+  // Прогресс по любому логину (для HR-дашборда)
+  // userLogin — это логин сотрудника, не id
+  getCheckForUser(userLogin, key) {
+    return localStorage.getItem('ao_p_' + userLogin + '_' + key) === '1';
   },
 
   requireAuth() {

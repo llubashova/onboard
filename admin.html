@@ -124,7 +124,6 @@ const ROLE_BADGES = {
   hr:'badge-hr', ceo:'badge-ceo', exec_dir:'badge-exec', ops_dir:'badge-ops'
 };
 
-// Ключи чекбоксов и максимальный XP для каждой роли
 const ROLE_KEYS = {
   producer: {
     maxXp: 331,
@@ -145,30 +144,23 @@ const ROLE_KEYS = {
       return           { label:'🌱 Новичок',   cls:'lvl-novice' };
     }
   },
-  sales: {
-    maxXp: 0,
-    keys: [],
-    getLevel(xp) { return { label:'—', cls:'lvl-novice' }; }
-  },
-  marketing: {
-    maxXp: 0,
-    keys: [],
-    getLevel(xp) { return { label:'—', cls:'lvl-novice' }; }
-  }
+  sales: { maxXp: 0, keys: [], getLevel() { return { label:'—', cls:'lvl-novice' }; } },
+  marketing: { maxXp: 0, keys: [], getLevel() { return { label:'—', cls:'lvl-novice' }; } }
 };
 
-function getUserXp(userId, role) {
+// Теперь пользуемся login (не id)
+function getUserXp(login, role) {
   const cfg = ROLE_KEYS[role];
   if (!cfg || !cfg.keys.length) return null;
   let xp = 0;
   cfg.keys.forEach(([key, pts]) => {
-    if (Auth.getCheckForUser(userId, key)) xp += pts;
+    if (Auth.getCheckForUser(login, key)) xp += pts;
   });
   return { xp, maxXp: cfg.maxXp, level: cfg.getLevel(xp) };
 }
 
-function renderProgressCell(userId, role) {
-  const data = getUserXp(userId, role);
+function renderProgressCell(login, role) {
+  const data = getUserXp(login, role);
   if (!data) return '<span style="color:#ccc;font-size:.8rem">—</span>';
   const pct = data.maxXp ? Math.round(data.xp / data.maxXp * 100) : 0;
   return `
@@ -238,7 +230,8 @@ function renderUsers() {
   logins.sort((a,b) => users[a].fio.localeCompare(users[b].fio)).forEach(login => {
     const u = users[login]; const me = login === meLogin;
     const tr = document.createElement('tr');
-    const progressHTML = renderProgressCell(u.id, u.role);
+    // Прогресс читается по login
+    const progressHTML = renderProgressCell(login, u.role);
     tr.innerHTML = `
       <td>${u.fio}${u.admin?' <span style="color:#0a4d8c;font-size:.75rem">★ admin</span>':''}${me?' <span style="color:#888;font-size:.75rem">(вы)</span>':''}</td>
       <td style="font-family:monospace;font-size:.85rem">${login}</td>
