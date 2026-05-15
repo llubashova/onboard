@@ -89,7 +89,7 @@
   <div class="hr-dashboard" id="hrDashboard" style="display:none">
     <h3>📊 Прогресс сотрудников</h3>
     <table class="hr-table">
-      <thead><tr><th>ФИО</th><th>Роль</th><th>Прогресс</th><th>XP / %</th></tr></thead>
+      <thead><tr><th>ФИО</th><th>Роль</th><th>Уровень</th><th>Прогресс</th><th>XP / %</th></tr></thead>
       <tbody id="hrTableBody"></tbody>
     </table>
   </div>
@@ -146,10 +146,33 @@
 <script src="db.js"></script>
 <script src="auth.js"></script>
 <script>
+// ⚠️ Объявляем здесь, чтобы не зависеть от auth.js-константы
+const PAGE_ADMIN_ROLES = ['hr','ceo','exec_dir','ops_dir'];
+
 const ROLE_NAMES = {
   producer:'Продюсер', sales:'Менеджер по продажам', marketing:'Специалист по маркетингу',
   hr:'HR-менеджер', ceo:'Генеральный директор', exec_dir:'Исполнительный директор', ops_dir:'Операционный директор'
 };
+
+// Пороги уровней для продюсера (XP включительно)
+// xp >= 180 → Профи, xp >= 66 → Продвинутый, иначе → Новичок
+function getXpLevelProducer(xp) {
+  if (xp >= 180) return '🏆 Профи';
+  if (xp >= 66)  return '🚀 Продвинутый';
+  return '🌱 Новичок';
+}
+// Универсальная для других ролей (аналогичная логика ~20% / ~55%)
+function getXpLevelGeneric(xp, maxXp) {
+  const pct = maxXp ? xp / maxXp * 100 : 0;
+  if (pct >= 55) return '🏆 Профи';
+  if (pct >= 20) return '🚀 Продвинутый';
+  return '🌱 Новичок';
+}
+function getXpLevel(xp, role) {
+  if (role === 'producer') return getXpLevelProducer(xp);
+  const maxXp = MAX_XP[role] || 300;
+  return getXpLevelGeneric(xp, maxXp);
+}
 
 const TASK_XP = {
   producer_l1_p1:10, producer_l1_p2:10, producer_l1_p3:10,
@@ -183,7 +206,6 @@ const TASK_XP = {
 
 const MAX_XP = { producer:331, sales:294, marketing:316 };
 
-// calcProgress читает прогресс по явному userId — работает и для HR-дашборда
 function calcProgress(userId, role) {
   const prefix = role + '_';
   const keys = Object.keys(TASK_XP).filter(k => k.startsWith(prefix));
@@ -240,29 +262,35 @@ function updateUI() {
     document.getElementById('welcomeSubtitle').textContent = 'Роль: ' + roleName + ' · все маршруты доступны';
     document.getElementById('overallLabel').textContent = 'сотрудников';
     ['producer','sales','marketing'].forEach(r => document.getElementById('card-'+r).classList.remove('locked'));
+
     const users = Auth.getUsers();
-    const staff = Object.values(users).filter(u2 => !ADMIN_ROLES.includes(u2.role));
+    // Используем PAGE_ADMIN_ROLES — объявлена выше в этом файле
+    const staff = Object.values(users).filter(u2 => !PAGE_ADMIN_ROLES.includes(u2.role));
     document.getElementById('overallPct').textContent = staff.length;
+
     ['producer','sales','marketing'].forEach(r => {
-      const group = staff.filter(u2 => u2.role===r);
+      const group = staff.filter(u2 => u2.role === r);
       if (group.length) {
-        const avg = Math.round(group.reduce((s,u2)=>s+calcProgress(u2.id,r).pct,0)/group.length);
+        const avg = Math.round(group.reduce((s,u2) => s + calcProgress(u2.id, r).pct, 0) / group.length);
         document.getElementById('prog-'+r).textContent = avg+'%';
         document.getElementById('fill-'+r).style.width = avg+'%';
       } else {
         document.getElementById('prog-'+r).textContent = '—';
+        document.getElementById('fill-'+r).style.width = '0%';
       }
     });
+
     document.getElementById('hrDashboard').style.display = 'block';
     const tbody = document.getElementById('hrTableBody');
     tbody.innerHTML = '';
     if (!staff.length) {
-      tbody.innerHTML = '<tr><td colspan="4" style="color:#888;text-align:center">Пока нет сотрудников</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="color:#888;text-align:center">Пока нет сотрудников</td></tr>';
     } else {
-      staff.sort((a,b)=>a.fio.localeCompare(b.fio)).forEach(emp => {
+      staff.sort((a,b) => a.fio.localeCompare(b.fio)).forEach(emp => {
         const prog = calcProgress(emp.id, emp.role);
+        const lvl  = getXpLevel(prog.xp, emp.role);
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${emp.fio}${emp.blocked?' <span style="color:#e74c3c;font-size:.75rem">(заблок.)</span>':''}</td><td>${ROLE_NAMES[emp.role]||emp.role}</td><td><div class="hr-pbar"><div class="hr-pfill" style="width:${prog.pct}%"></div></div></td><td><strong>${prog.pct}%</strong> · ${prog.xp}/${prog.maxXp} XP</td>`;
+        tr.innerHTML = `<td>${emp.fio}${emp.blocked?' <span style="color:#e74c3c;font-size:.75rem">(заблок.)</span>':''}</td><td>${ROLE_NAMES[emp.role]||emp.role}</td><td>${lvl}</td><td><div class="hr-pbar"><div class="hr-pfill" style="width:${prog.pct}%"></div></div></td><td><strong>${prog.pct}%</strong> · ${prog.xp}/${prog.maxXp} XP</td>`;
         tbody.appendChild(tr);
       });
     }
@@ -272,7 +300,7 @@ function updateUI() {
     document.getElementById('hrDashboard').style.display = 'none';
     ['producer','sales','marketing'].forEach(r => {
       const card = document.getElementById('card-'+r);
-      if (r===u.role) {
+      if (r === u.role) {
         card.classList.remove('locked');
         const prog = calcProgress(u.id, r);
         document.getElementById('prog-'+r).textContent = prog.pct+'%';
