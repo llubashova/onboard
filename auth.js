@@ -170,6 +170,8 @@ const Auth = {
       .filter(k => k.startsWith('ao_p_' + user.id + '_'))
       .forEach(k => localStorage.removeItem(k));
   },
+
+  // Читает прогресс текущего пользователя
   getCheck(key) {
     const user = this.current(); if (!user) return false;
     return localStorage.getItem('ao_p_' + user.id + '_' + key) === '1';
@@ -177,6 +179,11 @@ const Auth = {
   setCheck(key, val) {
     const user = this.current(); if (!user) return;
     localStorage.setItem('ao_p_' + user.id + '_' + key, val ? '1' : '0');
+  },
+
+  // Читает прогресс по любому userId (для HR-дашборда)
+  getCheckForUser(userId, key) {
+    return localStorage.getItem('ao_p_' + userId + '_' + key) === '1';
   },
 
   requireAuth() {
