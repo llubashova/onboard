@@ -7,6 +7,20 @@
 
 const Auth = {
 
+  // ── Миграция: первый HR-пользователь → admin:true ─────────
+  // Запускается один раз автоматически при загрузке
+  migrate() {
+    const users = this.getUsers();
+    let changed = false;
+    Object.values(users).forEach(u => {
+      if (u.role === 'hr' && u.admin !== true) {
+        u.admin = true;
+        changed = true;
+      }
+    });
+    if (changed) this.saveUsers(users);
+  },
+
   // ── Пользователи ──────────────────────────────────────────
   getUsers() {
     return JSON.parse(localStorage.getItem('ao_users') || '{}');
@@ -22,7 +36,6 @@ const Auth = {
   saveInvites(inv) {
     localStorage.setItem('ao_invites', JSON.stringify(inv));
   },
-  // Создать новый инвайт-код (только admin/hr)
   createInvite(role, label) {
     const inv = this.getInvites();
     const code = 'AO-' + Math.random().toString(36).substr(2,6).toUpperCase();
@@ -30,21 +43,18 @@ const Auth = {
     this.saveInvites(inv);
     return code;
   },
-  // Проверить инвайт-код; возвращает объект кода или null
   checkInvite(code) {
     const inv = this.getInvites();
     const c = inv[code.trim().toUpperCase()];
     if (!c || c.used) return null;
     return c;
   },
-  // Погасить инвайт-код после регистрации
   useInvite(code) {
     const inv = this.getInvites();
     const key = code.trim().toUpperCase();
     if (inv[key]) { inv[key].used = true; inv[key].usedAt = Date.now(); }
     this.saveInvites(inv);
   },
-  // Удалить инвайт-код
   deleteInvite(code) {
     const inv = this.getInvites();
     delete inv[code.trim().toUpperCase()];
@@ -70,19 +80,15 @@ const Auth = {
     if (!login || login.length < 3) return { ok: false, msg: 'Логин минимум 3 символа' };
     if (!pass  || pass.length  < 4) return { ok: false, msg: 'Пароль минимум 4 символа' };
     if (!fio)                        return { ok: false, msg: 'Введите ФИО' };
-
     const users = this.getUsers();
     if (users[login]) return { ok: false, msg: 'Логин уже занят' };
-
-    // Проверяем инвайт-код
     const invite = this.checkInvite(inviteCode || '');
     if (!invite) return { ok: false, msg: 'Неверный или уже использованный код приглашения' };
-
     const role = invite.role || 'producer';
     users[login] = {
       pass, fio, role,
       id: Date.now().toString(),
-      admin: false,
+      admin: role === 'hr',
       blocked: false,
       createdAt: Date.now()
     };
@@ -92,7 +98,6 @@ const Auth = {
   },
 
   // ── Первый запуск: создаём HR-аккаунт без инвайта ─────────
-  // Вызывается только если в системе 0 пользователей
   bootstrapAdmin(login, pass, fio) {
     const users = this.getUsers();
     if (Object.keys(users).length > 0) return { ok: false, msg: 'Система уже инициализирована' };
@@ -114,9 +119,9 @@ const Auth = {
   login(login, pass) {
     const users = this.getUsers();
     const user  = users[login];
-    if (!user)           return { ok: false, msg: 'Пользователь не найден' };
+    if (!user)              return { ok: false, msg: 'Пользователь не найден' };
     if (user.pass !== pass) return { ok: false, msg: 'Неверный пароль' };
-    if (user.blocked)    return { ok: false, msg: 'Аккаунт заблокирован. Обратитесь к HR' };
+    if (user.blocked)       return { ok: false, msg: 'Аккаунт заблокирован. Обратитесь к HR' };
     localStorage.setItem('ao_session', login);
     return { ok: true };
   },
@@ -194,3 +199,6 @@ const Auth = {
     return true;
   }
 };
+
+// Запускаем миграцию сразу при загрузке скрипта
+Auth.migrate();
