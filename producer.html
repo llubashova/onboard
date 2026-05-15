@@ -161,15 +161,16 @@
 <script>
 const ROLE = 'producer';
 const MAX_XP = 331;
+// Уровни: граница — первый XP следующего уровня
 const LEVELS = [
-  { min: 0,   max: 66,  label: '🌱 Новичок' },
-  { min: 67,  max: 180, label: '🚀 Продвинутый' },
-  { min: 181, max: 331, label: '🏆 Профи' }
+  { threshold: 67,  label: '🌱 Новичок' },
+  { threshold: 181, label: '🚀 Продвинутый' },
+  { threshold: Infinity, label: '🏆 Профи' }
 ];
 
 function getXpLevel(xp) {
-  for (const l of LEVELS) if (xp <= l.max) return l.label;
-  return LEVELS[LEVELS.length-1].label;
+  for (const l of LEVELS) if (xp < l.threshold) return l.label;
+  return '🏆 Профи';
 }
 
 function toggle(li) {
