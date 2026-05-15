@@ -161,9 +161,9 @@
 <script>
 const ROLE = 'producer';
 const MAX_XP = 331;
-// xp >= 66 → Продвинутый, xp >= 181 → Профи
+// xp >= 66 → Продвинутый, xp >= 180 → Профи
 function getXpLevel(xp) {
-  if (xp >= 181) return '🏆 Профи';
+  if (xp >= 180) return '🏆 Профи';
   if (xp >= 66)  return '🚀 Продвинутый';
   return '🌱 Новичок';
 }
