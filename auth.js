@@ -1,6 +1,7 @@
 // ============================================================
-// auth.js — модуль авторизации Auditorium Onboard v6
+// auth.js — модуль авторизации Auditorium Onboard v7
 // Прогресс хранится по ключу ao_p_<login>_<taskKey>
+// Логин всегда хранится в нижнем регистре
 // ============================================================
 
 const ADMIN_ROLES = ['hr', 'ceo', 'exec_dir', 'ops_dir'];
@@ -11,26 +12,8 @@ const Auth = {
     const users = this.getUsers();
     let changed = false;
     Object.entries(users).forEach(([login, u]) => {
-      // Миграция ролей
       if (ADMIN_ROLES.includes(u.role) && u.admin !== true) {
         u.admin = true; changed = true;
-      }
-      // Миграция прогресса: если ещё есть ключи со старым id-префиксом — переносим на login
-      if (u.id) {
-        const oldPrefixes = [
-          'ao_p_' + String(u.id) + '_',
-          'ao_p_id_' + String(u.id).replace(/[^0-9]/g,'').slice(0,13) + '_'
-        ];
-        const newPrefix = 'ao_p_' + login + '_';
-        oldPrefixes.forEach(oldPrefix => {
-          if (oldPrefix === newPrefix) return;
-          Object.keys(localStorage)
-            .filter(k => k.startsWith(oldPrefix))
-            .forEach(k => {
-              localStorage.setItem(newPrefix + k.slice(oldPrefix.length), localStorage.getItem(k));
-              localStorage.removeItem(k);
-            });
-        });
       }
     });
     if (changed) this.saveUsers(users);
@@ -69,9 +52,7 @@ const Auth = {
   clearUsedInvites() {
     if (!this.isAdmin()) return;
     const inv = this.getInvites();
-    Object.keys(inv).forEach(code => {
-      if (inv[code] && inv[code].used) delete inv[code];
-    });
+    Object.keys(inv).forEach(code => { if (inv[code] && inv[code].used) delete inv[code]; });
     this.saveInvites(inv);
   },
 
@@ -87,42 +68,37 @@ const Auth = {
   },
 
   register(login, pass, fio, inviteCode) {
-    if (!login || login.length < 3) return { ok:false, msg:'Логин минимум 3 символа' };
-    if (!pass  || pass.length  < 4) return { ok:false, msg:'Пароль минимум 4 символа' };
+    // Логин всегда в нижнем регистре
+    login = (login || '').trim().toLowerCase();
+    if (login.length < 3)           return { ok:false, msg:'Логин минимум 3 символа' };
+    if (!pass || pass.length  < 4)  return { ok:false, msg:'Пароль минимум 4 символа' };
     if (!fio)                        return { ok:false, msg:'Введите ФИО' };
     const users = this.getUsers();
     if (users[login]) return { ok:false, msg:'Логин уже занят' };
     const invite = this.checkInvite(inviteCode || '');
     if (!invite) return { ok:false, msg:'Неверный или уже использованный код приглашения' };
     const role = invite.role || 'producer';
-    users[login] = {
-      pass, fio, role,
-      admin:     ADMIN_ROLES.includes(role),
-      blocked:   false,
-      createdAt: Date.now()
-    };
+    users[login] = { pass, fio, role, admin: ADMIN_ROLES.includes(role), blocked: false, createdAt: Date.now() };
     this.saveUsers(users);
     this.useInvite(inviteCode);
-    return { ok:true, role };
+    return { ok:true, role, login };
   },
 
   bootstrapAdmin(login, pass, fio) {
+    login = (login || '').trim().toLowerCase();
     const users = this.getUsers();
     if (Object.keys(users).length > 0) return { ok:false, msg:'Система уже инициализирована' };
-    if (!login || login.length < 3) return { ok:false, msg:'Логин минимум 3 символа' };
-    if (!pass  || pass.length  < 4) return { ok:false, msg:'Пароль минимум 4 символа' };
-    if (!fio)                        return { ok:false, msg:'Введите ФИО' };
-    users[login] = {
-      pass, fio, role: 'hr',
-      admin:     true,
-      blocked:   false,
-      createdAt: Date.now()
-    };
+    if (login.length < 3)          return { ok:false, msg:'Логин минимум 3 символа' };
+    if (!pass || pass.length < 4)  return { ok:false, msg:'Пароль минимум 4 символа' };
+    if (!fio)                       return { ok:false, msg:'Введите ФИО' };
+    users[login] = { pass, fio, role: 'hr', admin: true, blocked: false, createdAt: Date.now() };
     this.saveUsers(users);
-    return { ok:true };
+    return { ok:true, login };
   },
 
   login(login, pass) {
+    // Вход тоже с нижним регистром
+    login = (login || '').trim().toLowerCase();
     const users = this.getUsers();
     const user  = users[login];
     if (!user)              return { ok:false, msg:'Пользователь не найден' };
@@ -150,7 +126,6 @@ const Auth = {
     users[login].admin = ADMIN_ROLES.includes(newRole);
     this.saveUsers(users);
   },
-
   setUserRole(targetLogin, newRole) {
     if (!this.isAdmin()) return;
     const users = this.getUsers();
@@ -160,15 +135,13 @@ const Auth = {
     }
     this.saveUsers(users);
   },
-  blockUser(t)   { if(!this.isAdmin()) return; const u=this.getUsers(); if(u[t]) u[t].blocked=true;  this.saveUsers(u); },
-  unblockUser(t) { if(!this.isAdmin()) return; const u=this.getUsers(); if(u[t]) u[t].blocked=false; this.saveUsers(u); },
-  deleteUser(t)  { if(!this.isAdmin()) return; const u=this.getUsers(); delete u[t]; this.saveUsers(u); },
+  blockUser(t)      { if(!this.isAdmin()) return; const u=this.getUsers(); if(u[t]) u[t].blocked=true;  this.saveUsers(u); },
+  unblockUser(t)    { if(!this.isAdmin()) return; const u=this.getUsers(); if(u[t]) u[t].blocked=false; this.saveUsers(u); },
+  deleteUser(t)     { if(!this.isAdmin()) return; const u=this.getUsers(); delete u[t]; this.saveUsers(u); },
   promoteToAdmin(t) { if(!this.isAdmin()) return; const u=this.getUsers(); if(u[t]) u[t].admin=true; this.saveUsers(u); },
 
   deleteSelf() {
-    const login = this.currentLogin();
-    if (!login) return;
-    // Удаляем прогресс из localStorage
+    const login = this.currentLogin(); if (!login) return;
     const prefix = 'ao_p_' + login + '_';
     Object.keys(localStorage).filter(k => k.startsWith(prefix)).forEach(k => localStorage.removeItem(k));
     const users = this.getUsers();
@@ -185,7 +158,6 @@ const Auth = {
     _dbSync();
   },
 
-  // Прогресс текущего пользователя: ao_p_<login>_<key>
   getCheck(key) {
     const login = this.currentLogin(); if (!login) return false;
     return localStorage.getItem('ao_p_' + login + '_' + key) === '1';
@@ -195,9 +167,6 @@ const Auth = {
     localStorage.setItem('ao_p_' + login + '_' + key, val ? '1' : '0');
     _dbSync();
   },
-
-  // Прогресс по любому логину (для HR-дашборда)
-  // userLogin — это логин сотрудника, не id
   getCheckForUser(userLogin, key) {
     return localStorage.getItem('ao_p_' + userLogin + '_' + key) === '1';
   },
