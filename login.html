@@ -6,21 +6,21 @@
   <title>Вход | Auditorium Onboard</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    body { display:flex; align-items:center; justify-content:center; min-height:100vh; background:linear-gradient(135deg,#0a4d8c 0%,#1a7fd4 100%); }
-    .auth-box { background:#fff; border-radius:20px; padding:40px 36px; width:100%; max-width:420px; box-shadow:0 20px 60px rgba(0,0,0,0.2); }
-    .auth-logo { text-align:center; font-size:2.6rem; margin-bottom:6px; }
-    .auth-title { text-align:center; font-size:1.5rem; font-weight:800; color:#0a4d8c; margin-bottom:4px; }
-    .auth-sub { text-align:center; color:#888; font-size:0.9rem; margin-bottom:24px; }
-    .auth-tabs { display:flex; gap:8px; margin-bottom:24px; }
-    .auth-tab { flex:1; padding:10px; border:2px solid #e8f0fe; border-radius:10px; background:#f8fbff; cursor:pointer; font-weight:700; color:#888; text-align:center; transition:.2s; }
-    .auth-tab.active { border-color:#1a7fd4; background:#1a7fd4; color:#fff; }
-    .auth-form { display:flex; flex-direction:column; gap:14px; }
-    .auth-form input, .auth-form select { padding:13px 16px; border:2px solid #e8f0fe; border-radius:10px; font-size:1rem; font-family:inherit; outline:none; transition:.2s; }
-    .auth-form input:focus, .auth-form select:focus { border-color:#1a7fd4; }
-    .auth-btn { background:linear-gradient(135deg,#0a4d8c,#1a7fd4); color:#fff; border:none; border-radius:10px; padding:14px; font-size:1rem; font-weight:700; cursor:pointer; transition:.2s; }
-    .auth-btn:hover { opacity:.9; transform:translateY(-1px); }
-    .auth-err { color:#e74c3c; font-size:0.88rem; text-align:center; min-height:20px; }
-    .reg-only { display:none; }
+    body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#0a4d8c 0%,#1a7fd4 100%)}
+    .auth-box{background:#fff;border-radius:20px;padding:40px 36px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+    .auth-logo{text-align:center;font-size:2.6rem;margin-bottom:6px}
+    .auth-title{text-align:center;font-size:1.5rem;font-weight:800;color:#0a4d8c;margin-bottom:4px}
+    .auth-sub{text-align:center;color:#888;font-size:.9rem;margin-bottom:24px}
+    .auth-tabs{display:flex;gap:8px;margin-bottom:24px}
+    .auth-tab{flex:1;padding:10px;border:2px solid #e8f0fe;border-radius:10px;background:#f8fbff;cursor:pointer;font-weight:700;color:#888;text-align:center;transition:.2s}
+    .auth-tab.active{border-color:#1a7fd4;background:#1a7fd4;color:#fff}
+    .auth-form{display:flex;flex-direction:column;gap:14px}
+    .auth-form input,.auth-form select{padding:13px 16px;border:2px solid #e8f0fe;border-radius:10px;font-size:1rem;font-family:inherit;outline:none;transition:.2s}
+    .auth-form input:focus,.auth-form select:focus{border-color:#1a7fd4}
+    .auth-btn{background:linear-gradient(135deg,#0a4d8c,#1a7fd4);color:#fff;border:none;border-radius:10px;padding:14px;font-size:1rem;font-weight:700;cursor:pointer;transition:.2s}
+    .auth-btn:hover{opacity:.9;transform:translateY(-1px)}
+    .auth-err{color:#e74c3c;font-size:.88rem;text-align:center;min-height:20px}
+    .reg-only{display:none}
   </style>
 </head>
 <body>
@@ -28,50 +28,40 @@
   <div class="auth-logo">🎓</div>
   <div class="auth-title">Auditorium Onboard</div>
   <div class="auth-sub">Система адаптации персонала</div>
-
   <div class="auth-tabs">
     <div class="auth-tab active" id="tabLogin" onclick="switchTab('login')">Войти</div>
     <div class="auth-tab" id="tabReg" onclick="switchTab('reg')">Регистрация</div>
   </div>
-
   <div class="auth-form">
     <input type="text" id="inLogin" placeholder="Логин" autocomplete="username">
     <input type="password" id="inPass" placeholder="Пароль" autocomplete="current-password">
-
-    <!-- Поля только для регистрации -->
     <input type="text" id="inFio" placeholder="ФИО (например, Иванова Лера)" class="reg-only">
     <select id="inRole" class="reg-only">
       <option value="">— Выберите роль —</option>
       <option value="producer">🎬 Продюсер</option>
       <option value="sales">📞 Менеджер по продажам</option>
       <option value="marketing">📣 Специалист по маркетингу</option>
+      <option value="hr">👩‍💼 HR-менеджер</option>
     </select>
-
     <div class="auth-err" id="authErr"></div>
     <button class="auth-btn" id="authBtn" onclick="doAuth()">Войти →</button>
   </div>
 </div>
-
 <script src="auth.js"></script>
 <script>
 let mode = 'login';
-
 function switchTab(m) {
   mode = m;
-  document.getElementById('tabLogin').classList.toggle('active', m === 'login');
-  document.getElementById('tabReg').classList.toggle('active', m === 'reg');
-  document.querySelectorAll('.reg-only').forEach(el => {
-    el.style.display = m === 'reg' ? 'block' : 'none';
-  });
-  document.getElementById('authBtn').textContent = m === 'login' ? 'Войти →' : 'Зарегистрироваться →';
+  document.getElementById('tabLogin').classList.toggle('active', m==='login');
+  document.getElementById('tabReg').classList.toggle('active', m==='reg');
+  document.querySelectorAll('.reg-only').forEach(el => el.style.display = m==='reg' ? 'block' : 'none');
+  document.getElementById('authBtn').textContent = m==='login' ? 'Войти →' : 'Зарегистрироваться →';
   document.getElementById('authErr').textContent = '';
 }
-
 function doAuth() {
   const login = document.getElementById('inLogin').value.trim();
   const pass  = document.getElementById('inPass').value;
   document.getElementById('authErr').textContent = '';
-
   if (mode === 'login') {
     const res = Auth.login(login, pass);
     if (!res.ok) { document.getElementById('authErr').textContent = res.msg; return; }
@@ -81,19 +71,12 @@ function doAuth() {
     const role = document.getElementById('inRole').value;
     const res  = Auth.register(login, pass, fio, role);
     if (!res.ok) { document.getElementById('authErr').textContent = res.msg; return; }
-    // Автоматически входим после регистрации
     Auth.login(login, pass);
     window.location.href = 'index.html';
   }
 }
-
-// Если уже авторизован — сразу на главную
-window.onload = function() {
-  if (Auth.current()) window.location.href = 'index.html';
-};
-
-// Enter → кнопка
-document.addEventListener('keydown', e => { if (e.key === 'Enter') doAuth(); });
+window.onload = function() { if (Auth.current()) window.location.href = 'index.html'; };
+document.addEventListener('keydown', e => { if (e.key==='Enter') doAuth(); });
 </script>
 </body>
 </html>

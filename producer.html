@@ -18,7 +18,7 @@
   <h1>🎬 Маршрут продюсера</h1>
   <p>90 дней · 3 уровня · Исследования, программа форума, работа со спикерами</p>
   <div class="route-progress-bar"><div class="route-progress-fill" id="routeProgressFill" style="width:0%"></div></div>
-  <div class="route-progress-label" id="routeProgressLabel">Выполнено задач: 0 из 17</div>
+  <div class="route-progress-label" id="routeProgressLabel">Выполнено задач: 0 из …</div>
 </div>
 <div class="levels-wrap">
   <div class="level-card">
@@ -148,28 +148,24 @@
 <script src="auth.js"></script>
 <script>
 const ROLE = 'producer';
-const TOTAL = 17;
-
 function toggle(li) {
   const key = li.dataset.key;
   const cb = li.querySelector('input[type="checkbox"]');
   const checked = !cb.checked;
   cb.checked = checked;
   li.classList.toggle('checked', checked);
-  Auth.setCheck(key, checked); // пишем через Auth — привязано к userId
+  Auth.setCheck(key, checked);
   updateProgress();
 }
-
 function toggleLevel(id) {
   document.getElementById('body-' + id).classList.toggle('open');
   document.getElementById('chev-' + id).classList.toggle('open');
 }
-
 function updateProgress() {
+  const allItems = document.querySelectorAll('.checklist li[data-key]');
+  const TOTAL = allItems.length;
   let totalChecked = 0;
-  document.querySelectorAll('.checklist li[data-key]').forEach(li => {
-    if (Auth.getCheck(li.dataset.key)) totalChecked++;
-  });
+  allItems.forEach(li => { if (Auth.getCheck(li.dataset.key)) totalChecked++; });
   document.getElementById('routeProgressFill').style.width = Math.round(totalChecked / TOTAL * 100) + '%';
   document.getElementById('routeProgressLabel').textContent = 'Выполнено задач: ' + totalChecked + ' из ' + TOTAL;
   ['l1','l2','l3'].forEach(lvl => {
@@ -183,7 +179,6 @@ function updateProgress() {
     if (tr) tr.classList.toggle('visible', pct === 100);
   });
 }
-
 function loadChecks() {
   document.querySelectorAll('.checklist li[data-key]').forEach(li => {
     const checked = Auth.getCheck(li.dataset.key);
@@ -193,11 +188,10 @@ function loadChecks() {
   });
   updateProgress();
 }
-
 window.onload = function() {
   if (!Auth.requireAuth()) return;
   const u = Auth.current();
-  const rn = { producer: 'Продюсер', sales: 'Менеджер по продажам', marketing: 'Специалист по маркетингу' };
+  const rn = { producer: 'Продюсер', sales: 'Менеджер по продажам', marketing: 'Специалист по маркетингу', hr: 'HR-менеджер' };
   document.getElementById('headerUser').textContent = u.fio.split(' ')[0] + ' · ' + (rn[u.role] || '');
   loadChecks();
 };

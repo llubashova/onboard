@@ -18,7 +18,7 @@
   <h1>📣 Маршрут специалиста по маркетингу</h1>
   <p>90 дней · 3 уровня · Яндекс.Директ, контент-план, email, TG-канал</p>
   <div class="route-progress-bar"><div class="route-progress-fill" id="routeProgressFill" style="width:0%"></div></div>
-  <div class="route-progress-label" id="routeProgressLabel">Выполнено задач: 0 из 16</div>
+  <div class="route-progress-label" id="routeProgressLabel">Выполнено задач: 0 из …</div>
 </div>
 <div class="levels-wrap">
   <div class="level-card">
@@ -144,7 +144,6 @@
 <script src="auth.js"></script>
 <script>
 const ROLE = 'marketing';
-const TOTAL = 16;
 function toggle(li) {
   const key = li.dataset.key;
   const cb = li.querySelector('input[type="checkbox"]');
@@ -159,10 +158,10 @@ function toggleLevel(id) {
   document.getElementById('chev-' + id).classList.toggle('open');
 }
 function updateProgress() {
+  const allItems = document.querySelectorAll('.checklist li[data-key]');
+  const TOTAL = allItems.length;
   let totalChecked = 0;
-  document.querySelectorAll('.checklist li[data-key]').forEach(li => {
-    if (Auth.getCheck(li.dataset.key)) totalChecked++;
-  });
+  allItems.forEach(li => { if (Auth.getCheck(li.dataset.key)) totalChecked++; });
   document.getElementById('routeProgressFill').style.width = Math.round(totalChecked / TOTAL * 100) + '%';
   document.getElementById('routeProgressLabel').textContent = 'Выполнено задач: ' + totalChecked + ' из ' + TOTAL;
   ['l1','l2','l3'].forEach(lvl => {
@@ -188,7 +187,7 @@ function loadChecks() {
 window.onload = function() {
   if (!Auth.requireAuth()) return;
   const u = Auth.current();
-  const rn = { producer: 'Продюсер', sales: 'Менеджер по продажам', marketing: 'Специалист по маркетингу' };
+  const rn = { producer: 'Продюсер', sales: 'Менеджер по продажам', marketing: 'Специалист по маркетингу', hr: 'HR-менеджер' };
   document.getElementById('headerUser').textContent = u.fio.split(' ')[0] + ' · ' + (rn[u.role] || '');
   loadChecks();
 };
