@@ -19,21 +19,11 @@
     .auth-btn{width:100%;padding:14px;background:linear-gradient(135deg,#0a4d8c,#1a7fd4);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;margin-top:4px}
     .auth-btn:hover{opacity:.9}
     .auth-msg{font-size:.87rem;text-align:center;min-height:20px;margin-bottom:8px;font-weight:500}
-    .loading-screen{position:fixed;inset:0;background:#f7fafd;display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:16px}
-    .loading-screen p{color:#1a7fd4;font-size:1rem;font-weight:500}
-    .spinner{width:40px;height:40px;border:4px solid #c7d7f0;border-top-color:#1a7fd4;border-radius:50%;animation:spin .8s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
     #regForm{display:none}
   </style>
 </head>
 <body>
-
-<div class="loading-screen" id="loadingScreen">
-  <div class="spinner"></div>
-  <p>Подключение…</p>
-</div>
-
-<div class="auth-wrap" id="authWrap" style="display:none">
+<div class="auth-wrap">
   <div class="auth-card">
     <div class="auth-logo">🎓</div>
     <div class="auth-title">Auditorium Onboard</div>
@@ -42,16 +32,12 @@
       <div class="tab active" id="tabLogin" onclick="switchTab('login')">Вход</div>
       <div class="tab" id="tabReg"   onclick="switchTab('reg')">Регистрация</div>
     </div>
-
-    <!-- ВХОД -->
     <div id="loginForm">
       <input class="auth-input" type="text"     id="loginLogin" placeholder="Логин">
       <input class="auth-input" type="password" id="loginPass"  placeholder="Пароль">
       <div class="auth-msg" id="loginMsg"></div>
-      <button class="auth-btn" onclick="doLogin()"> Войти</button>
+      <button class="auth-btn" onclick="doLogin()">Войти</button>
     </div>
-
-    <!-- РЕГИСТРАЦИЯ -->
     <div id="regForm">
       <input class="auth-input" type="text"     id="regFio"    placeholder="ФИО (полностью)">
       <input class="auth-input" type="text"     id="regLogin"  placeholder="Логин">
@@ -78,11 +64,8 @@ function doLogin() {
   const pass  = document.getElementById('loginPass').value;
   const msg   = document.getElementById('loginMsg');
   const res   = Auth.login(login, pass);
-  if (res.ok) {
-    window.location.href = 'index.html';
-  } else {
-    msg.style.color = '#e74c3c'; msg.textContent = res.msg;
-  }
+  if (res.ok) { window.location.href = 'index.html'; }
+  else { msg.style.color='#e74c3c'; msg.textContent=res.msg; }
 }
 
 function doRegister() {
@@ -91,37 +74,23 @@ function doRegister() {
   const pass   = document.getElementById('regPass').value;
   const invite = document.getElementById('regInvite').value.trim();
   const msg    = document.getElementById('regMsg');
+  const users  = Auth.getUsers();
 
-  // Первый пользователь — bootstrap без инвайта
-  const users = Auth.getUsers();
   if (Object.keys(users).length === 0) {
     const res = Auth.bootstrapAdmin(login, pass, fio);
-    if (res.ok) { DB.sync(); Auth.login(login, pass); window.location.href = 'index.html'; }
-    else { msg.style.color='#e74c3c'; msg.textContent = res.msg; }
+    if (res.ok) { DB.sync(); Auth.login(login, pass); window.location.href='index.html'; }
+    else { msg.style.color='#e74c3c'; msg.textContent=res.msg; }
     return;
   }
-
   const res = Auth.register(login, pass, fio, invite);
-  if (res.ok) {
-    DB.sync();
-    Auth.login(login, pass);
-    window.location.href = 'index.html';
-  } else {
-    msg.style.color = '#e74c3c'; msg.textContent = res.msg;
-  }
+  if (res.ok) { DB.sync(); Auth.login(login, pass); window.location.href='index.html'; }
+  else { msg.style.color='#e74c3c'; msg.textContent=res.msg; }
 }
 
-window.onload = async function() {
-  // Синхронизируем с облаком до показа формы
-  await DB.init();
-  document.getElementById('loadingScreen').style.display = 'none';
-  document.getElementById('authWrap').style.display = 'flex';
-  // Если уже вошёл — на главную
-  if (Auth.current()) { window.location.href = 'index.html'; return; }
-  // Если система пустая — сразу открываем регистрацию
-  const empty = Object.keys(Auth.getUsers()).length === 0;
-  if (empty) switchTab('reg');
-};
+// Если уже вошёл — на главную
+if (Auth.current()) { window.location.href = 'index.html'; }
+// Если база пустая — сразу открываем регистрацию
+if (Object.keys(Auth.getUsers()).length === 0) switchTab('reg');
 </script>
 </body>
 </html>

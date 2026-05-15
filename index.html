@@ -30,20 +30,10 @@
     .hr-pfill{height:100%;background:linear-gradient(90deg,#1a7fd4,#27ae60);border-radius:4px;transition:.3s}
     .role-card.locked{opacity:.55;pointer-events:none;cursor:not-allowed}
     .role-card.locked .role-btn{background:#ccc;color:#888}
-    .loading-screen{position:fixed;inset:0;background:#f7fafd;display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:16px}
-    .loading-screen p{color:#1a7fd4;font-size:1rem;font-weight:500}
-    .spinner{width:40px;height:40px;border:4px solid #c7d7f0;border-top-color:#1a7fd4;border-radius:50%;animation:spin .8s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
 
-<div class="loading-screen" id="loadingScreen">
-  <div class="spinner"></div>
-  <p>Загрузка…</p>
-</div>
-
-<!-- ЛИЧНЫЙ КАБИНЕТ -->
 <div class="account-modal-overlay" id="accOverlay">
   <div class="account-modal">
     <h3>👤 Личный кабинет</h3>
@@ -151,16 +141,12 @@
 
 <footer><p>ООО «Аудиториум СиДжи» · Система геймификации адаптации · 2026</p></footer>
 
+<script src="db.js"></script>
 <script src="auth.js"></script>
 <script>
 const ROLE_NAMES = {
-  producer:'Продюсер',
-  sales:'Менеджер по продажам',
-  marketing:'Специалист по маркетингу',
-  hr:'HR-менеджер',
-  ceo:'Генеральный директор',
-  exec_dir:'Исполнительный директор',
-  ops_dir:'Операционный директор'
+  producer:'Продюсер', sales:'Менеджер по продажам', marketing:'Специалист по маркетингу',
+  hr:'HR-менеджер', ceo:'Генеральный директор', exec_dir:'Исполнительный директор', ops_dir:'Операционный директор'
 };
 
 const TASK_KEYS = {
@@ -183,18 +169,12 @@ function openAcc() {
   document.getElementById('accPass').value = '';
   document.getElementById('accMsg').textContent = '';
   const roleSelect = document.getElementById('accRole');
-  if (Auth.isAdmin()) {
-    roleSelect.style.display = 'block';
-    roleSelect.value = u.role;
-  } else {
-    roleSelect.style.display = 'none';
-  }
+  if (Auth.isAdmin()) { roleSelect.style.display='block'; roleSelect.value=u.role; }
+  else roleSelect.style.display = 'none';
   document.getElementById('accAdminBtn').style.display = Auth.isAdmin() ? 'block' : 'none';
   document.getElementById('accOverlay').classList.add('open');
 }
-function closeAcc() {
-  document.getElementById('accOverlay').classList.remove('open');
-}
+function closeAcc() { document.getElementById('accOverlay').classList.remove('open'); }
 
 document.getElementById('accSaveBtn').addEventListener('click', function() {
   const fio  = document.getElementById('accFio').value.trim();
@@ -204,16 +184,13 @@ document.getElementById('accSaveBtn').addEventListener('click', function() {
   if (pass && pass.length < 4) { msg.style.color='#e74c3c'; msg.textContent='Пароль минимум 4 символа'; return; }
   Auth.update(fio, pass||null);
   if (Auth.isAdmin()) Auth.updateRole(document.getElementById('accRole').value);
-  msg.style.color = '#27ae60';
-  msg.textContent = '✅ Сохранено!';
+  msg.style.color='#27ae60'; msg.textContent='✅ Сохранено!';
   updateUI();
   setTimeout(() => { msg.textContent=''; closeAcc(); }, 1200);
 });
 
 function confirmReset() {
-  if (confirm('Сбросить весь твой прогресс? Отменить будет нельзя!')) {
-    Auth.resetProgress(); closeAcc(); updateUI(); alert('Прогресс сброшен.');
-  }
+  if (confirm('Сбросить весь твой прогресс?')) { Auth.resetProgress(); closeAcc(); updateUI(); }
 }
 
 function updateUI() {
@@ -227,32 +204,26 @@ function updateUI() {
     document.getElementById('welcomeSubtitle').textContent = 'Роль: ' + roleName + ' · все маршруты доступны';
     document.getElementById('overallLabel').textContent = 'сотрудников';
     ['producer','sales','marketing'].forEach(r => document.getElementById('card-'+r).classList.remove('locked'));
-
-    const users    = Auth.getUsers();
-    // Сотрудники = все, кто не админ
-    const staff    = Object.values(users).filter(u2 => !ADMIN_ROLES.includes(u2.role));
+    const users = Auth.getUsers();
+    const staff = Object.values(users).filter(u2 => !ADMIN_ROLES.includes(u2.role));
     document.getElementById('overallPct').textContent = staff.length;
-
-    // Средний прогресс по каждой роли
     ['producer','sales','marketing'].forEach(r => {
-      const group = staff.filter(u2 => u2.role === r);
+      const group = staff.filter(u2 => u2.role===r);
       if (group.length) {
-        const avg = Math.round(group.reduce((s,u2) => s + calcProgress(u2.id, r).pct, 0) / group.length);
+        const avg = Math.round(group.reduce((s,u2)=>s+calcProgress(u2.id,r).pct,0)/group.length);
         document.getElementById('prog-'+r).textContent = avg+'%';
         document.getElementById('fill-'+r).style.width = avg+'%';
       }
     });
-
-    // Таблица прогресса
     document.getElementById('hrDashboard').style.display = 'block';
     const tbody = document.getElementById('hrTableBody');
     tbody.innerHTML = '';
     if (!staff.length) {
-      tbody.innerHTML = '<tr><td colspan="4" style="color:#888;text-align:center">Пока нет зарегистрированных сотрудников</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" style="color:#888;text-align:center">Пока нет сотрудников</td></tr>';
     } else {
-      staff.sort((a,b) => a.fio.localeCompare(b.fio)).forEach(emp => {
+      staff.sort((a,b)=>a.fio.localeCompare(b.fio)).forEach(emp => {
         const prog = calcProgress(emp.id, emp.role);
-        const tr   = document.createElement('tr');
+        const tr = document.createElement('tr');
         tr.innerHTML = `<td>${emp.fio}${emp.blocked?' <span style="color:#e74c3c;font-size:.75rem">(заблок.)</span>':''}</td><td>${ROLE_NAMES[emp.role]||emp.role}</td><td><div class="hr-pbar"><div class="hr-pfill" style="width:${prog.pct}%"></div></div></td><td><strong>${prog.pct}%</strong> (${prog.checked}/${prog.total})</td>`;
         tbody.appendChild(tr);
       });
@@ -263,9 +234,9 @@ function updateUI() {
     document.getElementById('hrDashboard').style.display = 'none';
     ['producer','sales','marketing'].forEach(r => {
       const card = document.getElementById('card-'+r);
-      if (r === u.role) {
+      if (r===u.role) {
         card.classList.remove('locked');
-        const prog = calcProgress(u.id, r);
+        const prog = calcProgress(u.id,r);
         document.getElementById('prog-'+r).textContent = prog.pct+'%';
         document.getElementById('fill-'+r).style.width = prog.pct+'%';
         document.getElementById('overallPct').textContent = prog.pct+'%';
@@ -278,10 +249,7 @@ function updateUI() {
   }
 }
 
-window.onload = async function() {
-  document.getElementById('loadingScreen').style.display = 'flex';
-  await DB.init();
-  document.getElementById('loadingScreen').style.display = 'none';
+window.onload = function() {
   if (!Auth.requireAuth()) return;
   updateUI();
 };
