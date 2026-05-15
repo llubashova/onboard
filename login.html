@@ -18,12 +18,13 @@
     .auth-input:focus{border-color:#1a7fd4}
     .auth-btn{width:100%;padding:14px;background:linear-gradient(135deg,#0a4d8c,#1a7fd4);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;margin-top:4px}
     .auth-btn:hover{opacity:.9}
-    .auth-btn:disabled{opacity:.6;cursor:not-allowed}
+    .auth-btn:disabled{opacity:.5;cursor:not-allowed}
     .auth-msg{font-size:.87rem;text-align:center;min-height:20px;margin-bottom:8px;font-weight:500}
     #regForm{display:none}
     .card-loader{position:absolute;inset:0;background:rgba(255,255,255,.95);border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-size:.95rem;color:#1a7fd4;font-weight:500;z-index:10}
     .spinner{width:34px;height:34px;border:4px solid #c7d7f0;border-top-color:#1a7fd4;border-radius:50%;animation:spin .8s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
+    .cloud-notice{font-size:.78rem;color:#aaa;text-align:center;margin-top:6px}
   </style>
 </head>
 <body>
@@ -31,7 +32,7 @@
   <div class="auth-card">
     <div class="card-loader" id="cardLoader">
       <div class="spinner"></div>
-      <span>Подключение…</span>
+      <span>Подключение к облаку…</span>
     </div>
     <div class="auth-logo">🎓</div>
     <div class="auth-title">Auditorium Onboard</div>
@@ -52,7 +53,8 @@
       <input class="auth-input" type="password" id="regPass"   placeholder="Пароль (мин. 4 символа)">
       <input class="auth-input" type="text"     id="regInvite" placeholder="Код приглашения (AO-XXXXXX)">
       <div class="auth-msg" id="regMsg"></div>
-      <button class="auth-btn" id="regBtn" onclick="doRegister()">Зарегистрироваться</button>
+      <button class="auth-btn" id="regBtn" onclick="doRegister()" disabled>Зарегистрироваться</button>
+      <div class="cloud-notice" id="cloudNotice">⏳ Загрузка данных…</div>
     </div>
   </div>
 </div>
@@ -60,11 +62,18 @@
 <script src="db.js"></script>
 <script src="auth.js"></script>
 <script>
-function hideLoader() {
+// Блокируем всё пока облако не загрузилось — гарантируем свежие инвайты
+DB.ready.then(() => {
   document.getElementById('cardLoader').style.display = 'none';
-  if (Auth.current()) { window.location.href='index.html'; return; }
+
+  if (Auth.current()) { window.location.href = 'index.html'; return; }
+
   if (Object.keys(Auth.getUsers()).length === 0) switchTab('reg');
-}
+
+  // Только сейчас разблокируем кнопку регистрации — данные из облака уже в localStorage
+  document.getElementById('regBtn').disabled = false;
+  document.getElementById('cloudNotice').style.display = 'none';
+});
 
 function switchTab(t) {
   document.getElementById('loginForm').style.display = t==='login' ? 'block' : 'none';
@@ -114,8 +123,6 @@ async function doRegister() {
   Auth.login(login, pass);
   window.location.href = 'index.html';
 }
-
-DB.ready.then(hideLoader);
 </script>
 </body>
 </html>
