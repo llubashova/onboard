@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Auditorium Onboard</title>
-  <!-- Защита до рендера: если нет сессии — сразу на логин -->
   <script>if(!localStorage.getItem('ao_session'))location.replace('login.html');</script>
   <link rel="stylesheet" href="style.css">
   <style>
@@ -59,6 +58,7 @@
     <button class="acc-btn admin-link" id="accAdminBtn" style="display:none" onclick="window.location.href='admin.html'">🛠️ Панель администратора</button>
     <hr class="acc-divider">
     <button class="acc-btn danger" onclick="confirmReset()">🗑️ Сбросить мой прогресс</button>
+    <button class="acc-btn danger" onclick="confirmDeleteSelf()">❌ Удалить мой аккаунт</button>
     <button class="acc-btn logout" onclick="Auth.logout()">🚪 Выйти из аккаунта</button>
     <button class="acc-btn logout" onclick="closeAcc()" style="margin-top:4px">✕ Закрыть</button>
   </div>
@@ -172,7 +172,7 @@ function openAcc() {
   document.getElementById('accMsg').textContent = '';
   const roleSelect = document.getElementById('accRole');
   if (Auth.isAdmin()) { roleSelect.style.display='block'; roleSelect.value=u.role; }
-  else roleSelect.style.display='none';
+  else roleSelect.style.display = 'none';
   document.getElementById('accAdminBtn').style.display = Auth.isAdmin() ? 'block' : 'none';
   document.getElementById('accOverlay').classList.add('open');
 }
@@ -193,6 +193,9 @@ document.getElementById('accSaveBtn').addEventListener('click', function() {
 
 function confirmReset() {
   if (confirm('Сбросить весь твой прогресс?')) { Auth.resetProgress(); closeAcc(); updateUI(); }
+}
+function confirmDeleteSelf() {
+  if (confirm('Удалить твой аккаунт? Это действие нельзя отменить.')) Auth.deleteSelf();
 }
 
 function updateUI() {

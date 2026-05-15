@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Панель администратора | Auditorium Onboard</title>
+  <script>if(!localStorage.getItem('ao_session'))location.replace('login.html');</script>
   <link rel="stylesheet" href="style.css">
   <style>
     .admin-wrap{max-width:960px;margin:0 auto;padding:24px 16px}
@@ -52,7 +53,7 @@
 
 <div class="loading-screen" id="loadingScreen">
   <div class="spinner"></div>
-  <p>Загрузка…</p>
+  <p>Подключение…</p>
 </div>
 
 <header>
@@ -88,6 +89,7 @@
       </select>
       <input type="text" id="newInviteLabel" placeholder="Пометка (имя кандидата)" style="flex:1;min-width:160px">
       <button class="btn btn-primary" onclick="createInvite()">+ Создать код</button>
+      <button class="btn btn-danger" onclick="clearUsedInvites()">Очистить историю ключей</button>
     </div>
     <table class="invite-table">
       <thead><tr><th>Код</th><th>Роль</th><th>Пометка</th><th>Статус</th><th></th></tr></thead>
@@ -129,6 +131,13 @@ function createInvite() {
   document.getElementById('newInviteLabel').value = '';
   renderInvites();
   showAlert('✅ Код создан: ' + code);
+}
+
+function clearUsedInvites() {
+  if (!confirm('Удалить все использованные ключи из истории?')) return;
+  Auth.clearUsedInvites();
+  renderInvites();
+  showAlert('🧹 История использованных ключей очищена');
 }
 
 function renderInvites() {
@@ -191,8 +200,7 @@ function unblockUser(l)  { Auth.unblockUser(l);  renderUsers(); showAlert('🔓 
 function promoteUser(l)  { if(!confirm('Дать '+l+' права администратора?')) return; Auth.promoteToAdmin(l); renderUsers(); showAlert('⭐ Повышен до admin'); }
 function deleteUser(l)   { if(!confirm('Удалить пользователя '+l+'? Нельзя отменить!')) return; Auth.deleteUser(l); renderUsers(); showAlert('🗑️ Удалён'); }
 
-window.onload = async function() {
-  await DB.init();
+DB.ready.then(() => {
   document.getElementById('loadingScreen').style.display = 'none';
   if (!Auth.requireAuth()) return;
   if (!Auth.isAdmin()) { window.location.href = 'index.html'; return; }
@@ -200,7 +208,7 @@ window.onload = async function() {
   document.getElementById('headerUser').textContent = u.fio + ' · ' + (ROLE_NAMES[u.role]||u.role);
   renderInvites();
   renderUsers();
-};
+});
 </script>
 </body>
 </html>

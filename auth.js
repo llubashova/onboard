@@ -1,5 +1,5 @@
 // ============================================================
-// auth.js — модуль авторизации Auditorium Onboard v3
+// auth.js — модуль авторизации Auditorium Onboard v4
 // ============================================================
 
 const ADMIN_ROLES = ['hr', 'ceo', 'exec_dir', 'ops_dir'];
@@ -17,11 +17,9 @@ const Auth = {
     if (changed) this.saveUsers(users);
   },
 
-  // ── Пользователи
   getUsers()  { return JSON.parse(localStorage.getItem('ao_users')   || '{}'); },
   saveUsers(u){ localStorage.setItem('ao_users', JSON.stringify(u)); _dbSync(); },
 
-  // ── Инвайты
   getInvites()   { return JSON.parse(localStorage.getItem('ao_invites') || '{}'); },
   saveInvites(i) { localStorage.setItem('ao_invites', JSON.stringify(i)); _dbSync(); },
 
@@ -49,8 +47,15 @@ const Auth = {
     delete inv[code.trim().toUpperCase()];
     this.saveInvites(inv);
   },
+  clearUsedInvites() {
+    if (!this.isAdmin()) return;
+    const inv = this.getInvites();
+    Object.keys(inv).forEach(code => {
+      if (inv[code] && inv[code].used) delete inv[code];
+    });
+    this.saveInvites(inv);
+  },
 
-  // ── Сессия
   current() {
     const login = localStorage.getItem('ao_session');
     if (!login) return null;
@@ -62,7 +67,6 @@ const Auth = {
     return u && (u.admin === true || ADMIN_ROLES.includes(u.role));
   },
 
-  // ── Регистрация
   register(login, pass, fio, inviteCode) {
     if (!login || login.length < 3) return { ok:false, msg:'Логин минимум 3 символа' };
     if (!pass  || pass.length  < 4) return { ok:false, msg:'Пароль минимум 4 символа' };
@@ -101,7 +105,6 @@ const Auth = {
     return { ok:true };
   },
 
-  // ── Вход / выход
   login(login, pass) {
     const users = this.getUsers();
     const user  = users[login];
@@ -116,7 +119,6 @@ const Auth = {
     window.location.href = 'login.html';
   },
 
-  // ── Профиль
   update(newFio, newPass) {
     const login = this.currentLogin(); if (!login) return;
     const users = this.getUsers();
@@ -132,7 +134,6 @@ const Auth = {
     this.saveUsers(users);
   },
 
-  // ── Управление (admin)
   setUserRole(targetLogin, newRole) {
     if (!this.isAdmin()) return;
     const users = this.getUsers();
@@ -147,7 +148,22 @@ const Auth = {
   deleteUser(t)  { if(!this.isAdmin()) return; const u=this.getUsers(); delete u[t]; this.saveUsers(u); },
   promoteToAdmin(t) { if(!this.isAdmin()) return; const u=this.getUsers(); if(u[t]) u[t].admin=true; this.saveUsers(u); },
 
-  // ── Прогресс (хранится только локально — личные данные)
+  deleteSelf() {
+    const login = this.currentLogin();
+    if (!login) return;
+    const users = this.getUsers();
+    const user = users[login];
+    if (user && user.id) {
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('ao_p_' + user.id + '_'))
+        .forEach(k => localStorage.removeItem(k));
+    }
+    delete users[login];
+    this.saveUsers(users);
+    localStorage.removeItem('ao_session');
+    window.location.href = 'login.html';
+  },
+
   resetProgress() {
     const user = this.current(); if (!user) return;
     Object.keys(localStorage)
@@ -169,8 +185,6 @@ const Auth = {
   }
 };
 
-// Тихая синхронизация — вызывается из saveUsers/saveInvites
-// Работает только если DB уже загружен
 function _dbSync() {
   if (typeof DB !== 'undefined' && DB.sync) DB.sync();
 }
