@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css">
   <style>
     .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a4d8c,#1a7fd4)}
-    .auth-card{background:#fff;border-radius:24px;padding:40px 36px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+    .auth-card{background:#fff;border-radius:24px;padding:40px 36px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.2);position:relative}
     .auth-logo{text-align:center;font-size:2.2rem;margin-bottom:8px}
     .auth-title{text-align:center;font-size:1.4rem;font-weight:700;color:#0a4d8c;margin-bottom:4px}
     .auth-sub{text-align:center;color:#888;font-size:.9rem;margin-bottom:28px}
@@ -20,11 +20,18 @@
     .auth-btn:hover{opacity:.9}
     .auth-msg{font-size:.87rem;text-align:center;min-height:20px;margin-bottom:8px;font-weight:500}
     #regForm{display:none}
+    .card-loader{position:absolute;inset:0;background:rgba(255,255,255,.92);border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-size:.95rem;color:#1a7fd4;font-weight:500;z-index:10}
+    .spinner{width:34px;height:34px;border:4px solid #c7d7f0;border-top-color:#1a7fd4;border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
 <div class="auth-wrap">
   <div class="auth-card">
+    <div class="card-loader" id="cardLoader">
+      <div class="spinner"></div>
+      <span>Подключение…</span>
+    </div>
     <div class="auth-logo">🎓</div>
     <div class="auth-title">Auditorium Onboard</div>
     <div class="auth-sub">Система адаптации персонала</div>
@@ -75,7 +82,6 @@ function doRegister() {
   const invite = document.getElementById('regInvite').value.trim();
   const msg    = document.getElementById('regMsg');
   const users  = Auth.getUsers();
-
   if (Object.keys(users).length === 0) {
     const res = Auth.bootstrapAdmin(login, pass, fio);
     if (res.ok) { DB.sync(); Auth.login(login, pass); window.location.href='index.html'; }
@@ -87,10 +93,12 @@ function doRegister() {
   else { msg.style.color='#e74c3c'; msg.textContent=res.msg; }
 }
 
-// Если уже вошёл — на главную
-if (Auth.current()) { window.location.href = 'index.html'; }
-// Если база пустая — сразу открываем регистрацию
-if (Object.keys(Auth.getUsers()).length === 0) switchTab('reg');
+// Ждём данные из облака, потом показываем форму
+DB.ready.then(() => {
+  document.getElementById('cardLoader').style.display = 'none';
+  if (Auth.current()) { window.location.href='index.html'; return; }
+  if (Object.keys(Auth.getUsers()).length === 0) switchTab('reg');
+});
 </script>
 </body>
 </html>

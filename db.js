@@ -1,4 +1,5 @@
-// db.js — JSONBin bridge, background sync (no blocking)
+// db.js — JSONBin bridge
+// DB.ready — Promise, который резолвится после синхронизации с облаком
 const DB = (() => {
   const BIN_ID  = '6a07317badc21f119aa526dd';
   const API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
@@ -7,26 +8,23 @@ const DB = (() => {
   let _syncing = false;
 
   function fetchWithTimeout(url, options, ms) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), ms);
-    return fetch(url, { ...options, signal: controller.signal })
-      .finally(() => clearTimeout(timer));
+    const ctrl  = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    return fetch(url, { ...options, signal: ctrl.signal }).finally(() => clearTimeout(timer));
   }
 
-  // Тахая фоновая синхронизация — не блокирует страницу
-  function init() {
-    fetchWithTimeout(URL, {
-      headers: { 'X-Master-Key': API_KEY, 'X-Bin-Meta': 'false' }
-    }, 4000)
-    .then(r => r.ok ? r.json() : null)
-    .then(cloud => {
-      if (cloud && cloud.users && Object.keys(cloud.users).length > 0) {
-        localStorage.setItem('ao_users',   JSON.stringify(cloud.users));
-        localStorage.setItem('ao_invites', JSON.stringify(cloud.invites || '{}'));
-      }
-    })
-    .catch(() => {}); // если оффлайн — идём из localStorage
-  }
+  // ready — Promise который ждёт завершения синхронизации
+  const ready = fetchWithTimeout(URL, {
+    headers: { 'X-Master-Key': API_KEY, 'X-Bin-Meta': 'false' }
+  }, 4000)
+  .then(r => r.ok ? r.json() : null)
+  .then(cloud => {
+    if (cloud && cloud.users && Object.keys(cloud.users).length > 0) {
+      localStorage.setItem('ao_users',   JSON.stringify(cloud.users));
+      localStorage.setItem('ao_invites', JSON.stringify(cloud.invites || '{}'));
+    }
+  })
+  .catch(() => {}); // если оффлайн — остаёмся с localStorage
 
   function sync() {
     if (_syncing) return;
@@ -43,8 +41,5 @@ const DB = (() => {
     .finally(() => { _syncing = false; });
   }
 
-  return { init, sync };
+  return { ready, sync };
 })();
-
-// Запускаем фоновую синхронизацию сразу при загрузке скрипта
-DB.init();
