@@ -39,13 +39,22 @@
     .empty-row td{color:#aaa;text-align:center;padding:20px}
     .role-select{padding:4px 8px;border:1px solid #dde8f5;border-radius:6px;font-size:.82rem;font-family:inherit}
     .alert{background:#d1fae5;color:#065f46;border-radius:8px;padding:10px 16px;font-size:.88rem;margin-bottom:12px;display:none}
-    /* Хедер: навигация */
     .header-nav{display:flex;align-items:center;gap:16px}
     .header-back{color:rgba(255,255,255,.85);font-size:.88rem;font-weight:500;text-decoration:none;padding:6px 14px;border:1px solid rgba(255,255,255,.3);border-radius:20px;transition:.2s;white-space:nowrap}
     .header-back:hover{background:rgba(255,255,255,.2);color:#fff}
+    .loading-screen{position:fixed;inset:0;background:#f7fafd;display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:16px}
+    .loading-screen p{color:#1a7fd4;font-size:1rem;font-weight:500}
+    .spinner{width:40px;height:40px;border:4px solid #c7d7f0;border-top-color:#1a7fd4;border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
+
+<div class="loading-screen" id="loadingScreen">
+  <div class="spinner"></div>
+  <p>Загрузка…</p>
+</div>
+
 <header>
   <div class="header-inner">
     <div class="logo">🎓 Auditorium Onboard</div>
@@ -61,7 +70,6 @@
   <p style="color:#888;margin:0 0 24px">Управление приглашениями и пользователями</p>
   <div class="alert" id="alertMsg"></div>
 
-  <!-- ИНВАЙТЫ -->
   <div class="section-card">
     <h3>🔑 Коды приглашений</h3>
     <div class="invite-controls">
@@ -87,7 +95,6 @@
     </table>
   </div>
 
-  <!-- ПОЛЬЗОВАТЕЛИ -->
   <div class="section-card">
     <h3>👥 Пользователи системы</h3>
     <table class="user-table">
@@ -97,37 +104,24 @@
   </div>
 </div>
 
+<script src="db.js"></script>
 <script src="auth.js"></script>
 <script>
 const ROLE_NAMES = {
-  producer:'Продюсер',
-  sales:'Менеджер по продажам',
-  marketing:'Специалист по маркетингу',
-  hr:'HR-менеджер',
-  ceo:'Генеральный директор',
-  exec_dir:'Исполнительный директор',
-  ops_dir:'Операционный директор'
+  producer:'Продюсер', sales:'Менеджер по продажам', marketing:'Специалист по маркетингу',
+  hr:'HR-менеджер', ceo:'Генеральный директор', exec_dir:'Исполнительный директор', ops_dir:'Операционный директор'
 };
 const ROLE_BADGES = {
-  producer:'badge-prod',
-  sales:'badge-sales',
-  marketing:'badge-mkt',
-  hr:'badge-hr',
-  ceo:'badge-ceo',
-  exec_dir:'badge-exec',
-  ops_dir:'badge-ops'
+  producer:'badge-prod', sales:'badge-sales', marketing:'badge-mkt',
+  hr:'badge-hr', ceo:'badge-ceo', exec_dir:'badge-exec', ops_dir:'badge-ops'
 };
-
-const ADMIN_ROLES = ['hr','ceo','exec_dir','ops_dir'];
 
 function showAlert(msg) {
   const el = document.getElementById('alertMsg');
-  el.textContent = msg;
-  el.style.display = 'block';
+  el.textContent = msg; el.style.display = 'block';
   setTimeout(() => el.style.display = 'none', 3000);
 }
 
-// ── Инвайты
 function createInvite() {
   const role  = document.getElementById('newInviteRole').value;
   const label = document.getElementById('newInviteLabel').value.trim();
@@ -141,12 +135,9 @@ function renderInvites() {
   const tbody = document.getElementById('inviteTableBody');
   const inv   = Auth.getInvites();
   const codes = Object.keys(inv);
-  if (!codes.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Нет кодов — создайте первый</td></tr>';
-    return;
-  }
+  if (!codes.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Нет кодов — создайте первый</td></tr>'; return; }
   tbody.innerHTML = '';
-  codes.sort((a,b) => (inv[a].used ? 1 : 0) - (inv[b].used ? 1 : 0)).forEach(code => {
+  codes.sort((a,b) => (inv[a].used?1:0)-(inv[b].used?1:0)).forEach(code => {
     const c = inv[code];
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -154,93 +145,59 @@ function renderInvites() {
         <button class="copy-btn" onclick="copyCode('${code}')">копировать</button></td>
       <td><span class="ubadge ${ROLE_BADGES[c.role]||''}">${ROLE_NAMES[c.role]||c.role}</span></td>
       <td>${c.label||'—'}</td>
-      <td>${c.used
-        ? '<span class="ubadge badge-used">Использован</span>'
-        : '<span class="ubadge badge-active">Активен</span>'}</td>
-      <td>${c.used ? '' : `<button class="btn btn-danger btn-sm" onclick="delInvite('${code}')"> Удалить</button>`}</td>
-    `;
+      <td>${c.used ? '<span class="ubadge badge-used">Использован</span>' : '<span class="ubadge badge-active">Активен</span>'}</td>
+      <td>${c.used ? '' : `<button class="btn btn-danger btn-sm" onclick="delInvite('${code}')">Удалить</button>`}</td>`;
     tbody.appendChild(tr);
   });
 }
 
-function copyCode(code) {
-  navigator.clipboard.writeText(code).then(() => showAlert('📋 Скопировано: ' + code));
-}
+function copyCode(code) { navigator.clipboard.writeText(code).then(() => showAlert('📋 Скопировано: ' + code)); }
 function delInvite(code) {
   if (!confirm('Удалить код ' + code + '?')) return;
-  Auth.deleteInvite(code);
-  renderInvites();
+  Auth.deleteInvite(code); renderInvites();
 }
 
-// ── Пользователи
 function renderUsers() {
   const tbody   = document.getElementById('userTableBody');
   const users   = Auth.getUsers();
   const meLogin = Auth.currentLogin();
   const logins  = Object.keys(users);
-  if (!logins.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Нет пользователей</td></tr>';
-    return;
-  }
+  if (!logins.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Нет пользователей</td></tr>'; return; }
   tbody.innerHTML = '';
+  const allRoles = ['producer','sales','marketing','hr','ceo','exec_dir','ops_dir'];
   logins.sort((a,b) => users[a].fio.localeCompare(users[b].fio)).forEach(login => {
-    const u  = users[login];
-    const me = login === meLogin;
-    const allRoles = ['producer','sales','marketing','hr','ceo','exec_dir','ops_dir'];
+    const u = users[login]; const me = login === meLogin;
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${u.fio}
-        ${u.admin ? ' <span style="color:#0a4d8c;font-size:.75rem">★ admin</span>' : ''}
-        ${me     ? ' <span style="color:#888;font-size:.75rem">(вы)</span>'     : ''}
-      </td>
+      <td>${u.fio}${u.admin?' <span style="color:#0a4d8c;font-size:.75rem">★ admin</span>':''}${me?' <span style="color:#888;font-size:.75rem">(вы)</span>':''}</td>
       <td style="font-family:monospace;font-size:.85rem">${login}</td>
-      <td>
-        <select class="role-select" onchange="changeRole('${login}',this.value)" ${me ? 'disabled' : ''}>
-          ${allRoles.map(r => `<option value="${r}" ${u.role===r?'selected':''}>${ROLE_NAMES[r]}</option>`).join('')}
-        </select>
-      </td>
-      <td>${u.blocked
-        ? '<span class="ubadge badge-blocked">Заблокирован</span>'
-        : '<span class="ubadge badge-active">Активен</span>'}</td>
+      <td><select class="role-select" onchange="changeRole('${login}',this.value)" ${me?'disabled':''}>
+        ${allRoles.map(r=>`<option value="${r}" ${u.role===r?'selected':''}>${ROLE_NAMES[r]}</option>`).join('')}
+      </select></td>
+      <td>${u.blocked ? '<span class="ubadge badge-blocked">Заблокирован</span>' : '<span class="ubadge badge-active">Активен</span>'}</td>
       <td style="display:flex;gap:6px;flex-wrap:wrap">
-        ${!me && !u.blocked ? `<button class="btn btn-warn btn-sm" onclick="blockUser('${login}')">  Блок</button>` : ''}
-        ${!me &&  u.blocked ? `<button class="btn btn-primary btn-sm" onclick="unblockUser('${login}')">  Разблок</button>` : ''}
-        ${!me && !u.admin   ? `<button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc" onclick="promoteUser('${login}')">  → Admin</button>` : ''}
-        ${!me ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${login}')">  Удалить</button>` : ''}
-      </td>
-    `;
+        ${!me&&!u.blocked?`<button class="btn btn-warn btn-sm" onclick="blockUser('${login}')">Блок</button>`:''}
+        ${!me&&u.blocked ?`<button class="btn btn-primary btn-sm" onclick="unblockUser('${login}')">Разблок</button>`:''}
+        ${!me&&!u.admin  ?`<button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc" onclick="promoteUser('${login}')">→ Admin</button>`:''}
+        ${!me?`<button class="btn btn-danger btn-sm" onclick="deleteUser('${login}')">Удалить</button>`:''}
+      </td>`;
     tbody.appendChild(tr);
   });
 }
 
-function changeRole(login, role) {
-  Auth.setUserRole(login, role);
-  // Если новая роль админская — проставляем admin:true
-  if (ADMIN_ROLES.includes(role)) Auth.promoteToAdmin(login);
-  showAlert('✅ Роль обновлена');
-  renderUsers();
-}
-function blockUser(login) {
-  if (!confirm('Заблокировать ' + login + '?')) return;
-  Auth.blockUser(login); renderUsers(); showAlert('🔒 Заблокирован');
-}
-function unblockUser(login) {
-  Auth.unblockUser(login); renderUsers(); showAlert('🔓 Разблокирован');
-}
-function promoteUser(login) {
-  if (!confirm('Дать ' + login + ' права администратора?')) return;
-  Auth.promoteToAdmin(login); renderUsers(); showAlert('⭐ Повышен до admin');
-}
-function deleteUser(login) {
-  if (!confirm('Удалить пользователя ' + login + '? Это нельзя отменить!')) return;
-  Auth.deleteUser(login); renderUsers(); showAlert('🗑️ Удалён');
-}
+function changeRole(login, role) { Auth.setUserRole(login, role); showAlert('✅ Роль обновлена'); renderUsers(); }
+function blockUser(l)    { if(!confirm('Заблокировать '+l+'?')) return; Auth.blockUser(l);    renderUsers(); showAlert('🔒 Заблокирован'); }
+function unblockUser(l)  { Auth.unblockUser(l);  renderUsers(); showAlert('🔓 Разблокирован'); }
+function promoteUser(l)  { if(!confirm('Дать '+l+' права администратора?')) return; Auth.promoteToAdmin(l); renderUsers(); showAlert('⭐ Повышен до admin'); }
+function deleteUser(l)   { if(!confirm('Удалить пользователя '+l+'? Нельзя отменить!')) return; Auth.deleteUser(l); renderUsers(); showAlert('🗑️ Удалён'); }
 
-window.onload = function() {
+window.onload = async function() {
+  await DB.init();
+  document.getElementById('loadingScreen').style.display = 'none';
   if (!Auth.requireAuth()) return;
   if (!Auth.isAdmin()) { window.location.href = 'index.html'; return; }
   const u = Auth.current();
-  document.getElementById('headerUser').textContent = u.fio + ' · ' + (ROLE_NAMES[u.role]||'');
+  document.getElementById('headerUser').textContent = u.fio + ' · ' + (ROLE_NAMES[u.role]||u.role);
   renderInvites();
   renderUsers();
 };

@@ -1,14 +1,9 @@
 // ============================================================
-// db.js — оболочка JSONBin для межбраузерного хранения
-// Данные хранятся в JSONBin.io (бесплатный тариф)
-// При каждом init() — синхронизируем localStorage с облаком
-// Запись — при каждом изменении пользователей/инвайтов
+// db.js — JSONBin bridge for cross-browser shared storage
 // ============================================================
-
 const DB = (() => {
-  // ❗ Замените эти два значения на свои после регистрации на jsonbin.io
-  const BIN_ID  = 'REPLACE_BIN_ID';
-  const API_KEY = 'REPLACE_API_KEY';
+  const BIN_ID  = '6a07317badc21f119aa526dd';
+  const API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
   const URL     = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
   let _syncing = false;
@@ -35,7 +30,6 @@ const DB = (() => {
     } finally { _syncing = false; }
   }
 
-  // Синхронизация: облако → localStorage
   async function init() {
     const cloud = await fetchCloud();
     if (cloud && cloud.users) {
@@ -44,13 +38,11 @@ const DB = (() => {
     }
   }
 
-  // Вызывать после любого изменения пользователей/инвайтов
   function sync() {
-    const data = {
+    pushCloud({
       users:   JSON.parse(localStorage.getItem('ao_users')   || '{}'),
       invites: JSON.parse(localStorage.getItem('ao_invites') || '{}')
-    };
-    pushCloud(data);
+    });
   }
 
   return { init, sync };
