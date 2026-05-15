@@ -7,27 +7,20 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
 <header>
   <div class="header-inner">
     <div class="logo"><span class="logo-icon">🎓</span> Auditorium Onboard</div>
     <div class="user-badge"><span id="headerUser">—</span></div>
   </div>
 </header>
-
 <a href="index.html" class="back-link">← Вернуться к выбору роли</a>
-
 <div class="route-header">
   <h1>📣 Маршрут специалиста по маркетингу</h1>
   <p>90 дней · 3 уровня · Яндекс.Директ, контент-план, email, TG-канал</p>
-  <div class="route-progress-bar">
-    <div class="route-progress-fill" id="routeProgressFill" style="width:0%"></div>
-  </div>
+  <div class="route-progress-bar"><div class="route-progress-fill" id="routeProgressFill" style="width:0%"></div></div>
   <div class="route-progress-label" id="routeProgressLabel">Выполнено задач: 0 из 16</div>
 </div>
-
 <div class="levels-wrap">
-
   <div class="level-card">
     <div class="level-header l1" onclick="toggleLevel('l1')">
       <div class="level-title-wrap">
@@ -43,7 +36,7 @@
       <div class="task-section">
         <div class="task-section-title">🔨 Задачи (70% — практика)</div>
         <ul class="checklist">
-          <li onclick="toggle(this)" data-key="marketing_l1_p1" data-level="l1"><input type="checkbox"> Изучить Яндекс.Директ, Юнисендер, конструктор сайта MODX Revolution</li>
+          <li onclick="toggle(this)" data-key="marketing_l1_p1" data-level="l1"><input type="checkbox"> Изучить Яндекс.Директ, Юнисендер, конструктор сайта MODX</li>
           <li onclick="toggle(this)" data-key="marketing_l1_p2" data-level="l1"><input type="checkbox"> Изучить контент-план компании, профильный TG-канал</li>
           <li onclick="toggle(this)" data-key="marketing_l1_p3" data-level="l1"><input type="checkbox"> Подготовить 2–3 тестовых поста под контролем наставника</li>
           <li onclick="toggle(this)" data-key="marketing_l1_p4" data-level="l1"><input type="checkbox"> Изучить кейсы прошлых рекламных кампаний, шаблоны баннеров</li>
@@ -52,7 +45,7 @@
       <div class="task-section">
         <div class="task-section-title">🤝 Работа с наставником (20%)</div>
         <ul class="checklist">
-          <li onclick="toggle(this)" data-key="marketing_l1_m1" data-level="l1"><input type="checkbox"> Ежедневный контроль наставника (ген. директор / исп. директор) — первые 3 дня</li>
+          <li onclick="toggle(this)" data-key="marketing_l1_m1" data-level="l1"><input type="checkbox"> Ежедневный контроль наставника — первые 3 дня</li>
           <li onclick="toggle(this)" data-key="marketing_l1_m2" data-level="l1"><input type="checkbox"> Встреча на 7-й день: обратная связь по первым постам</li>
         </ul>
       </div>
@@ -68,7 +61,6 @@
       <div class="trophy-block" id="trophy-l1"><div class="trophy-icon">🏅</div><div class="trophy-text">Уровень 1 пройден! Первые посты — уже в деле!</div></div>
     </div>
   </div>
-
   <div class="level-card">
     <div class="level-header l2" onclick="toggleLevel('l2')">
       <div class="level-title-wrap">
@@ -109,7 +101,6 @@
       <div class="trophy-block" id="trophy-l2"><div class="trophy-icon">🥈</div><div class="trophy-text">Уровень 2 пройден! Первая кампания запущена!</div></div>
     </div>
   </div>
-
   <div class="level-card">
     <div class="level-header l3" onclick="toggleLevel('l3')">
       <div class="level-title-wrap">
@@ -126,7 +117,7 @@
         <div class="task-section-title">🔨 Задачи (80% — практика)</div>
         <ul class="checklist">
           <li onclick="toggle(this)" data-key="marketing_l3_p1" data-level="l3"><input type="checkbox"> Запустить полноценную рекламную кампанию для реального форума (Директ + email)</li>
-          <li onclick="toggle(this)" data-key="marketing_l3_p2" data-level="l3"><input type="checkbox"> SMM: стабильная публикация 1–2 постов в день (~120–180 постов за два месяца)</li>
+          <li onclick="toggle(this)" data-key="marketing_l3_p2" data-level="l3"><input type="checkbox"> SMM: стабильная публикация 1–2 поста в день (~120–180 постов за два месяца)</li>
           <li onclick="toggle(this)" data-key="marketing_l3_p3" data-level="l3"><input type="checkbox"> Аналитика: отчёт по эффективности кампаний, корректировка стратегии</li>
           <li onclick="toggle(this)" data-key="marketing_l3_p4" data-level="l3"><input type="checkbox"> Администрирование Strive: актуализация базы знаний</li>
         </ul>
@@ -148,72 +139,59 @@
       <div class="trophy-block" id="trophy-l3"><div class="trophy-icon">🏆</div><div class="trophy-text">Маршрут пройден! Ты — Профи! Маркетинг форума в надёжных руках!</div></div>
     </div>
   </div>
-
 </div>
-
 <footer><p>ООО «Аудиториум СиДжи» · Система геймификации адаптации · 2026</p></footer>
-
+<script src="auth.js"></script>
 <script>
 const ROLE = 'marketing';
 const TOTAL = 16;
-
 function toggle(li) {
   const key = li.dataset.key;
   const cb = li.querySelector('input[type="checkbox"]');
   const checked = !cb.checked;
   cb.checked = checked;
   li.classList.toggle('checked', checked);
-  localStorage.setItem('ao_' + key, checked ? '1' : '0');
+  Auth.setCheck(key, checked);
   updateProgress();
 }
-
 function toggleLevel(id) {
   document.getElementById('body-' + id).classList.toggle('open');
   document.getElementById('chev-' + id).classList.toggle('open');
 }
-
 function updateProgress() {
   let totalChecked = 0;
   document.querySelectorAll('.checklist li[data-key]').forEach(li => {
-    if (localStorage.getItem('ao_' + li.dataset.key) === '1') totalChecked++;
+    if (Auth.getCheck(li.dataset.key)) totalChecked++;
   });
   document.getElementById('routeProgressFill').style.width = Math.round(totalChecked / TOTAL * 100) + '%';
   document.getElementById('routeProgressLabel').textContent = 'Выполнено задач: ' + totalChecked + ' из ' + TOTAL;
-
-  ['l1','l2','l3'].forEach(function(lvl) {
-    const items = document.querySelectorAll('.checklist li[data-level="' + lvl + '"]');
-    let lvlChecked = 0;
-    items.forEach(function(li) {
-      if (localStorage.getItem('ao_' + li.dataset.key) === '1') lvlChecked++;
-    });
-    const pct = items.length > 0 ? Math.round(lvlChecked / items.length * 100) : 0;
-    const pctEl = document.getElementById(lvl + '-pct');
-    if (pctEl) pctEl.textContent = pct + '%';
-    const trophy = document.getElementById('trophy-' + lvl);
-    if (trophy) trophy.classList.toggle('visible', pct === 100);
+  ['l1','l2','l3'].forEach(lvl => {
+    const items = document.querySelectorAll('[data-level="' + lvl + '"]');
+    let n = 0;
+    items.forEach(li => { if (Auth.getCheck(li.dataset.key)) n++; });
+    const pct = items.length ? Math.round(n / items.length * 100) : 0;
+    const el = document.getElementById(lvl + '-pct');
+    if (el) el.textContent = pct + '%';
+    const tr = document.getElementById('trophy-' + lvl);
+    if (tr) tr.classList.toggle('visible', pct === 100);
   });
 }
-
 function loadChecks() {
   document.querySelectorAll('.checklist li[data-key]').forEach(li => {
-    const checked = localStorage.getItem('ao_' + li.dataset.key) === '1';
+    const checked = Auth.getCheck(li.dataset.key);
     const cb = li.querySelector('input[type="checkbox"]');
     if (cb) cb.checked = checked;
     li.classList.toggle('checked', checked);
   });
   updateProgress();
 }
-
 window.onload = function() {
-  const name = localStorage.getItem('ao_name');
-  if (name) {
-    const role = localStorage.getItem('ao_role');
-    const roleNames = { producer: 'Продюсер', sales: 'Менеджер по продажам', marketing: 'Специалист по маркетингу' };
-    document.getElementById('headerUser').textContent = name + ' · ' + (roleNames[role] || '');
-  }
+  if (!Auth.requireAuth()) return;
+  const u = Auth.current();
+  const rn = { producer: 'Продюсер', sales: 'Менеджер по продажам', marketing: 'Специалист по маркетингу' };
+  document.getElementById('headerUser').textContent = u.fio.split(' ')[0] + ' · ' + (rn[u.role] || '');
   loadChecks();
 };
 </script>
-
 </body>
 </html>
