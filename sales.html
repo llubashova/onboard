@@ -8,138 +8,198 @@
 </head>
 <body>
 
-  <header>
-    <div class="logo">🎓 Auditorium Onboard</div>
-    <p class="tagline">Система адаптации персонала ООО «Аудиториум СиДжи»</p>
-  </header>
+<header>
+  <div class="header-inner">
+    <div class="logo"><span class="logo-icon">🎓</span> Auditorium Onboard</div>
+    <div class="user-badge"><span id="headerUser">—</span></div>
+  </div>
+</header>
 
-  <a href="index.html" class="back-link">← Вернуться к выбору роли</a>
+<a href="index.html" class="back-link">← Вернуться к выбору роли</a>
 
-  <div class="route-header">
-    <h1>📞 Маршрут менеджера по продажам</h1>
-    <p>90 дней · 3 уровня · CRM, звонки, сделки, работа с клиентами</p>
+<div class="route-header">
+  <h1>📞 Маршрут менеджера по продажам</h1>
+  <p>90 дней · 3 уровня · CRM, звонки, сделки, работа с клиентами</p>
+  <div class="route-progress-bar">
+    <div class="route-progress-fill" id="routeProgressFill" style="width:0%"></div>
+  </div>
+  <div class="route-progress-label" id="routeProgressLabel">Выполнено задач: 0 из 15</div>
+</div>
+
+<div class="levels-wrap">
+
+  <div class="level-card">
+    <div class="level-header l1" onclick="toggleLevel('l1')">
+      <div class="level-title-wrap">
+        <span class="badge l1">Уровень 1</span>
+        <div><div class="level-name">«Новичок»</div><div class="level-days">📅 Дни 1–7</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <span id="l1-pct" style="font-size:0.9rem;color:#1a7fd4;font-weight:700;">0%</span>
+        <span class="level-chevron" id="chev-l1">▼</span>
+      </div>
+    </div>
+    <div class="level-body open" id="body-l1">
+      <div class="task-section">
+        <div class="task-section-title">🔨 Задачи (70% — практика)</div>
+        <ul class="checklist">
+          <li onclick="toggle(this)" data-key="sales_l1_p1"><input type="checkbox"> Изучить CRM Auditorium, освоить Zoiper (IP-телефония)</li>
+          <li onclick="toggle(this)" data-key="sales_l1_p2"><input type="checkbox"> Провести 20–30 звонков под контролем наставника (5–10 в день)</li>
+          <li onclick="toggle(this)" data-key="sales_l1_p3"><input type="checkbox"> Изучить базу клиентов, принципы сегментации</li>
+        </ul>
+      </div>
+      <div class="task-section">
+        <div class="task-section-title">🤝 Работа с наставником (20%)</div>
+        <ul class="checklist">
+          <li onclick="toggle(this)" data-key="sales_l1_m1"><input type="checkbox"> Ежедневный контроль наставника (исп. директор) — первые 3 дня</li>
+          <li onclick="toggle(this)" data-key="sales_l1_m2"><input type="checkbox"> Прослушивание записей звонков, корректировка техники</li>
+          <li onclick="toggle(this)" data-key="sales_l1_m3"><input type="checkbox"> Встреча на 7-й день: обратная связь</li>
+        </ul>
+      </div>
+      <div class="task-section">
+        <div class="task-section-title">📚 Материалы Strive (10%)</div>
+        <ul class="checklist">
+          <li onclick="toggle(this)" data-key="sales_l1_s1"><input type="checkbox"> Скрипты продаж (холодные и тёплые звонки)</li>
+          <li onclick="toggle(this)" data-key="sales_l1_s2"><input type="checkbox"> Шаблоны коммерческих предложений</li>
+          <li onclick="toggle(this)" data-key="sales_l1_s3"><input type="checkbox"> Описание продуктов: форумы, конференции, членство в деловом клубе</li>
+        </ul>
+      </div>
+      <div class="checkpoint"><strong>✅ Контрольная точка</strong>Google Forms: отчёт о звонках (количество, результаты, возражения)</div>
+      <div class="trophy-block" id="trophy-l1"><div class="trophy-icon">🏅</div><div class="trophy-text">Уровень 1 пройден! Ты — Новичок, который уже звонит!</div></div>
+    </div>
   </div>
 
-  <div class="levels">
-
-    <div class="level-card level-1">
-      <div class="level-title">Уровень 1. «Новичок»</div>
-      <div class="level-days">📅 Дни 1–7</div>
-
-      <div class="task-block">
-        <h4>🔨 Задачи (70% — практика)</h4>
-        <ul>
-          <li>Изучить CRM Auditorium, освоить Zoiper (IP-телефония)</li>
-          <li>Провести 20–30 звонков под контролем наставника (5–10 в день)</li>
-          <li>Изучить базу клиентов, принципы сегментации</li>
-        </ul>
+  <div class="level-card">
+    <div class="level-header l2" onclick="toggleLevel('l2')">
+      <div class="level-title-wrap">
+        <span class="badge l2">Уровень 2</span>
+        <div><div class="level-name">«Продвинутый»</div><div class="level-days">📅 Дни 8–30</div></div>
       </div>
-
-      <div class="task-block">
-        <h4>🤝 Работа с наставником (20%)</h4>
-        <ul>
-          <li>Ежедневный контроль наставника (исполнительный директор) в первые 3 дня</li>
-          <li>Прослушивание записей звонков, корректировка техники продаж</li>
-          <li>Встреча на 7-й день: обратная связь</li>
-        </ul>
-      </div>
-
-      <div class="task-block">
-        <h4>📚 Материалы Strive (10%)</h4>
-        <ul>
-          <li>Скрипты продаж (холодные и тёплые звонки)</li>
-          <li>Шаблоны коммерческих предложений</li>
-          <li>Описание продуктов: форумы, конференции, членство в деловом клубе</li>
-        </ul>
-      </div>
-
-      <div class="checkpoint">
-        <strong>✅ Контрольная точка</strong>
-        Заполнить Google Forms: отчёт о звонках (количество, результаты, возражения клиентов)
+      <div style="display:flex;align-items:center;gap:14px;">
+        <span id="l2-pct" style="font-size:0.9rem;color:#f39c12;font-weight:700;">0%</span>
+        <span class="level-chevron" id="chev-l2">▼</span>
       </div>
     </div>
-
-    <div class="level-card level-2">
-      <div class="level-title">Уровень 2. «Продвинутый»</div>
-      <div class="level-days">📅 Дни 8–30</div>
-
-      <div class="task-block">
-        <h4>🔨 Задачи (70% — практика)</h4>
-        <ul>
-          <li>Обзвон базы: 40–50 звонков в день самостоятельно (~900–1100 за три недели)</li>
-          <li>Подготовить 5–10 коммерческих предложений</li>
-          <li>Закрыть 3–5 сделок (с поддержкой наставника при необходимости)</li>
-          <li>Освоить работу с договорами, контроль оплат</li>
+    <div class="level-body" id="body-l2">
+      <div class="task-section">
+        <div class="task-section-title">🔨 Задачи (70% — практика)</div>
+        <ul class="checklist">
+          <li onclick="toggle(this)" data-key="sales_l2_p1"><input type="checkbox"> Обзвон базы: 40–50 звонков в день самостоятельно (~900–1100 за три недели)</li>
+          <li onclick="toggle(this)" data-key="sales_l2_p2"><input type="checkbox"> Подготовить 5–10 коммерческих предложений</li>
+          <li onclick="toggle(this)" data-key="sales_l2_p3"><input type="checkbox"> Закрыть 3–5 сделок (с поддержкой наставника при необходимости)</li>
+          <li onclick="toggle(this)" data-key="sales_l2_p4"><input type="checkbox"> Освоить работу с договорами, контроль оплат</li>
         </ul>
       </div>
-
-      <div class="task-block">
-        <h4>🤝 Работа с наставником (20%)</h4>
-        <ul>
-          <li>Еженедельные встречи с наставником</li>
-          <li>Разбор сложных клиентов и возражений</li>
-          <li>Обратная связь по закрытым сделкам</li>
+      <div class="task-section">
+        <div class="task-section-title">🤝 Работа с наставником (20%)</div>
+        <ul class="checklist">
+          <li onclick="toggle(this)" data-key="sales_l2_m1"><input type="checkbox"> Еженедельные встречи с наставником</li>
+          <li onclick="toggle(this)" data-key="sales_l2_m2"><input type="checkbox"> Разбор сложных клиентов и возражений</li>
         </ul>
       </div>
-
-      <div class="task-block">
-        <h4>📚 Материалы Strive (10%)</h4>
-        <ul>
-          <li>Шаблоны договоров</li>
-          <li>Инструкции по работе с CRM Auditorium</li>
-          <li>Кейсы успешных продаж</li>
+      <div class="task-section">
+        <div class="task-section-title">📚 Материалы Strive (10%)</div>
+        <ul class="checklist">
+          <li onclick="toggle(this)" data-key="sales_l2_s1"><input type="checkbox"> Шаблоны договоров</li>
+          <li onclick="toggle(this)" data-key="sales_l2_s2"><input type="checkbox"> Кейсы успешных продаж</li>
         </ul>
       </div>
-
-      <div class="checkpoint">
-        <strong>✅ Контрольная точка</strong>
-        Закрыть минимум 3 сделки за три недели
-      </div>
+      <div class="checkpoint"><strong>✅ Контрольная точка</strong>Закрыть минимум 3 сделки за три недели</div>
+      <div class="trophy-block" id="trophy-l2"><div class="trophy-icon">🥈</div><div class="trophy-text">Уровень 2 пройден! Продвинутый продавец!</div></div>
     </div>
-
-    <div class="level-card level-3">
-      <div class="level-title">Уровень 3. «Профи»</div>
-      <div class="level-days">📅 Дни 31–90</div>
-
-      <div class="task-block">
-        <h4>🔨 Задачи (80% — практика)</h4>
-        <ul>
-          <li>Обзвон базы: стабильно 40–50 звонков в день</li>
-          <li>Закрывать минимум 10 сделок в месяц (норма)</li>
-          <li>Полностью самостоятельная работа с CRM, договорами, оплатами</li>
-          <li>Работа с базами контактов: поиск новых клиентов</li>
-        </ul>
-      </div>
-
-      <div class="task-block">
-        <h4>🤝 Работа с наставником (15%)</h4>
-        <ul>
-          <li>Встречи по запросу</li>
-          <li>Если продаж меньше 10 в месяц — встреча с исполнительным директором, разбор проблем</li>
-          <li>Обратная связь после первого месяца самостоятельной работы</li>
-        </ul>
-      </div>
-
-      <div class="task-block">
-        <h4>📚 Материалы Strive (5%)</h4>
-        <ul>
-          <li>База знаний по продуктам компании</li>
-          <li>Актуальные коммерческие предложения</li>
-          <li>Инструкции по работе с оплатами</li>
-        </ul>
-      </div>
-
-      <div class="checkpoint">
-        <strong>✅ Контрольная точка</strong>
-        Понимание через ~30 дней: сработаемся ли дальше. Критерий — выполнение нормы 10 сделок в месяц
-      </div>
-    </div>
-
   </div>
 
-  <footer>
-    <p>ООО «Аудиториум СиДжи» · Система геймификации адаптации · 2026</p>
-  </footer>
+  <div class="level-card">
+    <div class="level-header l3" onclick="toggleLevel('l3')">
+      <div class="level-title-wrap">
+        <span class="badge l3">Уровень 3</span>
+        <div><div class="level-name">«Профи»</div><div class="level-days">📅 Дни 31–90</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <span id="l3-pct" style="font-size:0.9rem;color:#27ae60;font-weight:700;">0%</span>
+        <span class="level-chevron" id="chev-l3">▼</span>
+      </div>
+    </div>
+    <div class="level-body" id="body-l3">
+      <div class="task-section">
+        <div class="task-section-title">🔨 Задачи (80% — практика)</div>
+        <ul class="checklist">
+          <li onclick="toggle(this)" data-key="sales_l3_p1"><input type="checkbox"> Стабильный обзвон: 40–50 звонков в день</li>
+          <li onclick="toggle(this)" data-key="sales_l3_p2"><input type="checkbox"> Закрывать минимум 10 сделок в месяц (норма)</li>
+          <li onclick="toggle(this)" data-key="sales_l3_p3"><input type="checkbox"> Полностью самостоятельная работа с CRM, договорами, контролем оплат</li>
+          <li onclick="toggle(this)" data-key="sales_l3_p4"><input type="checkbox"> Работа с базами контактов: поиск новых клиентов</li>
+        </ul>
+      </div>
+      <div class="task-section">
+        <div class="task-section-title">🤝 Работа с наставником (15%)</div>
+        <ul class="checklist">
+          <li onclick="toggle(this)" data-key="sales_l3_m1"><input type="checkbox"> Встречи по запросу (если продаж меньше 10 — разбор проблем)</li>
+        </ul>
+      </div>
+      <div class="task-section">
+        <div class="task-section-title">📚 Материалы Strive (5%)</div>
+        <ul class="checklist">
+          <li onclick="toggle(this)" data-key="sales_l3_s1"><input type="checkbox"> База знаний по продуктам компании</li>
+          <li onclick="toggle(this)" data-key="sales_l3_s2"><input type="checkbox"> Актуальные коммерческие предложения</li>
+        </ul>
+      </div>
+      <div class="checkpoint"><strong>✅ Контрольная точка</strong>Критерий — выполнение нормы 10 сделок в месяц</div>
+      <div class="trophy-block" id="trophy-l3"><div class="trophy-icon">🏆</div><div class="trophy-text">Маршрут пройден! Ты — Профи! Продажи — это твоё!</div></div>
+    </div>
+  </div>
+
+</div>
+
+<footer><p>ООО «Аудиториум СиДжи» · Система геймификации адаптации · 2026</p></footer>
+
+<script>
+const ROLE = 'sales';
+const TOTAL = 15;
+
+function toggle(li) {
+  const key = 'ao_check_' + ROLE + '_' + li.dataset.key;
+  const cb = li.querySelector('input[type="checkbox"]');
+  const checked = !cb.checked;
+  cb.checked = checked;
+  li.classList.toggle('checked', checked);
+  localStorage.setItem(key, checked ? '1' : '0');
+  updateProgress();
+}
+
+function toggleLevel(id) {
+  document.getElementById('body-' + id).classList.toggle('open');
+  document.getElementById('chev-' + id).classList.toggle('open');
+}
+
+function updateProgress() {
+  const allKeys = Object.keys(localStorage).filter(k => k.startsWith('ao_check_' + ROLE + '_'));
+  const checked = allKeys.filter(k => localStorage.getItem(k) === '1').length;
+  const pct = Math.round(checked / TOTAL * 100);
+  document.getElementById('routeProgressFill').style.width = pct + '%';
+  document.getElementById('routeProgressLabel').textContent = 'Выполнено задач: ' + checked + ' из ' + TOTAL;
+}
+
+function loadChecks() {
+  document.querySelectorAll('.checklist li[data-key]').forEach(li => {
+    const key = 'ao_check_' + ROLE + '_' + li.dataset.key;
+    const checked = localStorage.getItem(key) === '1';
+    const cb = li.querySelector('input[type="checkbox"]');
+    if (cb) cb.checked = checked;
+    li.classList.toggle('checked', checked);
+  });
+  updateProgress();
+}
+
+window.onload = function() {
+  const name = localStorage.getItem('ao_name');
+  if (name) {
+    const role = localStorage.getItem('ao_role');
+    const roleNames = { producer: 'Продюсер', sales: 'Менеджер по продажам', marketing: 'Специалист по маркетингу' };
+    document.getElementById('headerUser').textContent = name + ' · ' + (roleNames[role] || '');
+  }
+  loadChecks();
+};
+</script>
 
 </body>
 </html>

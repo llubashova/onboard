@@ -8,28 +8,59 @@
 </head>
 <body>
 
-  <header>
-    <div class="logo">🎓 Auditorium Onboard</div>
-    <p class="tagline">Система адаптации персонала ООО «Аудиториум СиДжи»</p>
-  </header>
-
-  <a href="index.html" class="back-link">← Вернуться на главную</a>
-
-  <div class="route-header">
-    <h1>💬 Обратная связь</h1>
-    <p>Контрольные точки, вопросы, пожелания — всё здесь</p>
+<header>
+  <div class="header-inner">
+    <div class="logo"><span class="logo-icon">🎓</span> Auditorium Onboard</div>
+    <div class="user-badge"><span id="headerUser">—</span></div>
   </div>
+</header>
 
-  <div class="feedback-wrap">
-    <h1>Как прошёл твой уровень?</h1>
-    <p>После каждого уровня маршрута заполни короткую форму обратной связи. Это помогает нам улучшать процесс адаптации и поддерживать тебя в нужный момент.</p>
-    <p>Форма занимает <strong>3–5 минут</strong>. Ответы видит только HR и наставник.</p>
-    <a href="https://forms.google.com" class="feedback-btn" target="_blank">Заполнить форму обратной связи →</a>
+<a href="index.html" class="back-link">← Вернуться на главную</a>
+
+<div class="route-header">
+  <h1>💬 Обратная связь</h1>
+  <p>Контрольные точки, вопросы, пожелания</p>
+</div>
+
+<div class="feedback-wrap">
+  <div style="display:flex;flex-direction:column;gap:20px;margin-bottom:40px;">
+
+    <div style="background:white;border-radius:14px;padding:28px;box-shadow:0 4px 24px rgba(26,127,212,0.10);border-left:5px solid #1a7fd4;">
+      <div style="font-size:1.8rem;margin-bottom:10px;">🏅</div>
+      <h3 style="color:#0a4d8c;margin-bottom:8px;">После Уровня 1 (день 7)</h3>
+      <p style="color:#4a5568;margin-bottom:18px;font-size:0.95rem;">Первая неделя позади! Расскажи как прошло, что было сложно, что помогло.</p>
+      <a href="https://forms.google.com" class="feedback-btn" target="_blank">Заполнить форму →</a>
+    </div>
+
+    <div style="background:white;border-radius:14px;padding:28px;box-shadow:0 4px 24px rgba(26,127,212,0.10);border-left:5px solid #f39c12;">
+      <div style="font-size:1.8rem;margin-bottom:10px;">🥈</div>
+      <h3 style="color:#0a4d8c;margin-bottom:8px;">После Уровня 2 (день 30)</h3>
+      <p style="color:#4a5568;margin-bottom:18px;font-size:0.95rem;">Первый месяц! Оцени насколько портал и маршрут помогают в работе.</p>
+      <a href="https://forms.google.com" class="feedback-btn" target="_blank">Заполнить форму →</a>
+    </div>
+
+    <div style="background:white;border-radius:14px;padding:28px;box-shadow:0 4px 24px rgba(26,127,212,0.10);border-left:5px solid #27ae60;">
+      <div style="font-size:1.8rem;margin-bottom:10px;">🏆</div>
+      <h3 style="color:#0a4d8c;margin-bottom:8px;">После Уровня 3 (день 90)</h3>
+      <p style="color:#4a5568;margin-bottom:18px;font-size:0.95rem;">Адаптация завершена! Финальная оценка: что сработало, что улучшить.</p>
+      <a href="https://forms.google.com" class="feedback-btn" target="_blank">Заполнить форму →</a>
+    </div>
+
   </div>
+</div>
 
-  <footer>
-    <p>ООО «Аудиториум СиДжи» · Система геймификации адаптации · 2026</p>
-  </footer>
+<footer><p>ООО «Аудиториум СиДжи» · Система геймификации адаптации · 2026</p></footer>
+
+<script>
+window.onload = function() {
+  const name = localStorage.getItem('ao_name');
+  if (name) {
+    const role = localStorage.getItem('ao_role');
+    const roleNames = { producer: 'Продюсер', sales: 'Менеджер по продажам', marketing: 'Специалист по маркетингу' };
+    document.getElementById('headerUser').textContent = name + ' · ' + (roleNames[role] || '');
+  }
+};
+</script>
 
 </body>
 </html>
