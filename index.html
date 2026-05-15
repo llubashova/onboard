@@ -12,8 +12,10 @@
     .account-modal h3{color:#0a4d8c;font-size:1.2rem;margin:0 0 18px}
     .account-modal input,.account-modal select{width:100%;box-sizing:border-box;padding:11px 14px;border:2px solid #e8f0fe;border-radius:10px;font-size:.95rem;font-family:inherit;margin-bottom:10px;outline:none}
     .account-modal input:focus,.account-modal select:focus{border-color:#1a7fd4}
-    .acc-btn{width:100%;padding:11px;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;margin-bottom:8px}
+    .acc-btn{width:100%;padding:11px;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;margin-bottom:8px;transition:.15s}
     .acc-btn.primary{background:linear-gradient(135deg,#0a4d8c,#1a7fd4);color:#fff}
+    .acc-btn.primary:hover{opacity:.9}
+    .acc-btn.admin-link{background:#f0f7ff;color:#0a4d8c;border:2px solid #c7d7f0}
     .acc-btn.danger{background:#fff;color:#e74c3c;border:2px solid #e74c3c}
     .acc-btn.logout{background:#f5f5f5;color:#555}
     .acc-divider{border:none;border-top:1px solid #eee;margin:14px 0}
@@ -33,23 +35,25 @@
 <body>
 
 <!-- ЛИЧНЫЙ КАБИНЕТ -->
-<div class="account-modal-overlay" id="accOverlay" onclick="closeAcc(event)">
+<div class="account-modal-overlay" id="accOverlay">
   <div class="account-modal">
     <h3>👤 Личный кабинет</h3>
     <input type="text" id="accFio" placeholder="ФИО">
     <input type="password" id="accPass" placeholder="Новый пароль (оставь пустым, если не менять)">
-    <!-- Смена роли -->
-    <select id="accRole">
+    <!-- Смена роли — только для admin/hr -->
+    <select id="accRole" style="display:none">
       <option value="producer">🎬 Продюсер</option>
       <option value="sales">📞 Менеджер по продажам</option>
       <option value="marketing">📣 Специалист по маркетингу</option>
       <option value="hr">👩‍💼 HR-менеджер</option>
     </select>
     <div class="acc-msg" id="accMsg"></div>
-    <button class="acc-btn primary" onclick="saveAcc()">💾 Сохранить изменения</button>
+    <button class="acc-btn primary" id="accSaveBtn">💾 Сохранить изменения</button>
+    <button class="acc-btn admin-link" id="accAdminBtn" style="display:none" onclick="window.location.href='admin.html'">🛠️ Панель администратора</button>
     <hr class="acc-divider">
     <button class="acc-btn danger" onclick="confirmReset()">🗑️ Сбросить мой прогресс</button>
     <button class="acc-btn logout" onclick="Auth.logout()">🚪 Выйти из аккаунта</button>
+    <button class="acc-btn logout" onclick="closeAcc()" style="margin-top:4px">✕ Закрыть</button>
   </div>
 </div>
 
@@ -142,43 +146,53 @@ const TASK_KEYS = {
 
 function calcProgress(userId, role) {
   const keys = TASK_KEYS[role] || [];
-  if (!keys.length) return { checked: 0, total: 0, pct: 0 };
+  if (!keys.length) return { checked:0, total:0, pct:0 };
   let checked = 0;
-  keys.forEach(k => {
-    if (localStorage.getItem('ao_p_' + userId + '_' + k) === '1') checked++;
-  });
-  return { checked, total: keys.length, pct: Math.round(checked / keys.length * 100) };
+  keys.forEach(k => { if (localStorage.getItem('ao_p_'+userId+'_'+k)==='1') checked++; });
+  return { checked, total: keys.length, pct: Math.round(checked/keys.length*100) };
 }
 
 function openAcc() {
   const u = Auth.current(); if (!u) return;
-  document.getElementById('accFio').value = u.fio;
+  document.getElementById('accFio').value  = u.fio;
   document.getElementById('accPass').value = '';
   document.getElementById('accMsg').textContent = '';
-  // Устанавливаем текущую роль в дропдауне
-  document.getElementById('accRole').value = u.role;
+  // Дропдаун роли — только для HR/admin
+  const roleSelect = document.getElementById('accRole');
+  if (Auth.isAdmin()) {
+    roleSelect.style.display = 'block';
+    roleSelect.value = u.role;
+  } else {
+    roleSelect.style.display = 'none';
+  }
+  document.getElementById('accAdminBtn').style.display = Auth.isAdmin() ? 'block' : 'none';
   document.getElementById('accOverlay').classList.add('open');
 }
-function closeAcc(e) {
-  if (e.target === document.getElementById('accOverlay'))
-    document.getElementById('accOverlay').classList.remove('open');
+function closeAcc() {
+  document.getElementById('accOverlay').classList.remove('open');
 }
-function saveAcc() {
+
+// Вешаем обработчик на кнопку сохранения через addEventListener
+document.getElementById('accSaveBtn').addEventListener('click', function() {
   const fio  = document.getElementById('accFio').value.trim();
   const pass = document.getElementById('accPass').value;
-  const role = document.getElementById('accRole').value;
-  if (!fio) { document.getElementById('accMsg').textContent = 'ФИО не может быть пустым'; return; }
-  if (pass && pass.length < 4) { document.getElementById('accMsg').textContent = 'Пароль минимум 4 символа'; return; }
-  Auth.update(fio, pass || null);
-  Auth.updateRole(role); // сохраняем новую роль
-  document.getElementById('accMsg').textContent = '✅ Сохранено!';
-  document.getElementById('accOverlay').classList.remove('open');
-  updateUI(); // перерисовываем главную под новую роль
-}
+  const msg  = document.getElementById('accMsg');
+  if (!fio) { msg.style.color='#e74c3c'; msg.textContent='ФИО не может быть пустым'; return; }
+  if (pass && pass.length < 4) { msg.style.color='#e74c3c'; msg.textContent='Пароль минимум 4 символа'; return; }
+  Auth.update(fio, pass||null);
+  if (Auth.isAdmin()) {
+    Auth.updateRole(document.getElementById('accRole').value);
+  }
+  msg.style.color = '#27ae60';
+  msg.textContent = '✅ Сохранено!';
+  updateUI();
+  setTimeout(() => { msg.textContent=''; closeAcc(); }, 1200);
+});
+
 function confirmReset() {
   if (confirm('Сбросить весь твой прогресс? Отменить будет нельзя!')) {
     Auth.resetProgress();
-    document.getElementById('accOverlay').classList.remove('open');
+    closeAcc();
     updateUI();
     alert('Прогресс сброшен.');
   }
@@ -186,63 +200,56 @@ function confirmReset() {
 
 function updateUI() {
   const u = Auth.current(); if (!u) return;
-  const rn = { producer: 'Продюсер', sales: 'Менеджер по продажам', marketing: 'Специалист по маркетингу', hr: 'HR-менеджер' };
+  const rn = { producer:'Продюсер', sales:'Менеджер по продажам', marketing:'Специалист по маркетингу', hr:'HR-менеджер' };
   const firstName = u.fio.split(' ')[0];
-  document.getElementById('headerUser').textContent = firstName + ' · ' + (rn[u.role] || '');
+  document.getElementById('headerUser').textContent = firstName + ' · ' + (rn[u.role]||'');
   document.getElementById('welcomeTitle').textContent = 'Привет, ' + firstName + '! 👋';
-
-  const isHR = u.role === 'hr';
-
+  const isHR = Auth.isAdmin();
   if (isHR) {
     document.getElementById('welcomeSubtitle').textContent = 'Панель HR-менеджера · все маршруты доступны';
     document.getElementById('overallLabel').textContent = 'сотрудников';
     const users = Auth.getUsers();
-    const employees = Object.values(users).filter(u2 => u2.role !== 'hr');
-    document.getElementById('overallPct').textContent = employees.length;
+    const employees = Object.values(users).filter(u2 => !Auth.isAdmin || u2.role !== 'hr');
+    const nonHR = Object.values(users).filter(u2 => u2.role !== 'hr');
+    document.getElementById('overallPct').textContent = nonHR.length;
     ['producer','sales','marketing'].forEach(r => {
-      document.getElementById('card-' + r).classList.remove('locked');
-      const usersOfRole = employees.filter(u2 => u2.role === r);
+      document.getElementById('card-'+r).classList.remove('locked');
+      const usersOfRole = nonHR.filter(u2 => u2.role===r);
       if (usersOfRole.length) {
-        const avg = Math.round(usersOfRole.reduce((s, u2) => s + calcProgress(u2.id, r).pct, 0) / usersOfRole.length);
-        const el   = document.getElementById('prog-' + r);
-        const fill = document.getElementById('fill-' + r);
-        if (el)   el.textContent  = avg + '%';
-        if (fill) fill.style.width = avg + '%';
+        const avg = Math.round(usersOfRole.reduce((s,u2)=>s+calcProgress(u2.id,r).pct,0)/usersOfRole.length);
+        document.getElementById('prog-'+r).textContent = avg+'%';
+        document.getElementById('fill-'+r).style.width = avg+'%';
       }
     });
     document.getElementById('hrDashboard').style.display = 'block';
     const tbody = document.getElementById('hrTableBody');
     tbody.innerHTML = '';
-    if (!employees.length) {
+    if (!nonHR.length) {
       tbody.innerHTML = '<tr><td colspan="4" style="color:#888;text-align:center">Пока нет зарегистрированных сотрудников</td></tr>';
     } else {
-      employees.sort((a,b) => a.fio.localeCompare(b.fio)).forEach(emp => {
+      nonHR.sort((a,b)=>a.fio.localeCompare(b.fio)).forEach(emp => {
         const prog = calcProgress(emp.id, emp.role);
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${emp.fio}</td><td>${rn[emp.role]||emp.role}</td><td><div class="hr-pbar"><div class="hr-pfill" style="width:${prog.pct}%"></div></div></td><td><strong>${prog.pct}%</strong> (${prog.checked}/${prog.total})</td>`;
+        tr.innerHTML = `<td>${emp.fio}${emp.blocked?' <span style="color:#e74c3c;font-size:.75rem">(заблок.)</span>':''}</td><td>${rn[emp.role]||emp.role}</td><td><div class="hr-pbar"><div class="hr-pfill" style="width:${prog.pct}%"></div></div></td><td><strong>${prog.pct}%</strong> (${prog.checked}/${prog.total})</td>`;
         tbody.appendChild(tr);
       });
     }
   } else {
-    document.getElementById('welcomeSubtitle').textContent = 'Твоя роль: ' + (rn[u.role] || '') + ' · 90 дней адаптации';
+    document.getElementById('welcomeSubtitle').textContent = 'Твоя роль: '+(rn[u.role]||'')+' · 90 дней адаптации';
     document.getElementById('overallLabel').textContent = 'общий прогресс';
     document.getElementById('hrDashboard').style.display = 'none';
     ['producer','sales','marketing'].forEach(r => {
-      const card = document.getElementById('card-' + r);
-      if (r === u.role) {
+      const card = document.getElementById('card-'+r);
+      if (r===u.role) {
         card.classList.remove('locked');
-        const prog = calcProgress(u.id, r);
-        const el   = document.getElementById('prog-' + r);
-        const fill = document.getElementById('fill-' + r);
-        if (el)   el.textContent  = prog.pct + '%';
-        if (fill) fill.style.width = prog.pct + '%';
-        document.getElementById('overallPct').textContent = prog.pct + '%';
+        const prog = calcProgress(u.id,r);
+        document.getElementById('prog-'+r).textContent = prog.pct+'%';
+        document.getElementById('fill-'+r).style.width = prog.pct+'%';
+        document.getElementById('overallPct').textContent = prog.pct+'%';
       } else {
         card.classList.add('locked');
-        const el   = document.getElementById('prog-' + r);
-        const fill = document.getElementById('fill-' + r);
-        if (el)   el.textContent  = '—';
-        if (fill) fill.style.width = '0%';
+        document.getElementById('prog-'+r).textContent = '—';
+        document.getElementById('fill-'+r).style.width = '0%';
       }
     });
   }

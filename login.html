@@ -15,12 +15,14 @@
     .auth-tab{flex:1;padding:10px;border:2px solid #e8f0fe;border-radius:10px;background:#f8fbff;cursor:pointer;font-weight:700;color:#888;text-align:center;transition:.2s}
     .auth-tab.active{border-color:#1a7fd4;background:#1a7fd4;color:#fff}
     .auth-form{display:flex;flex-direction:column;gap:14px}
-    .auth-form input,.auth-form select{padding:13px 16px;border:2px solid #e8f0fe;border-radius:10px;font-size:1rem;font-family:inherit;outline:none;transition:.2s}
-    .auth-form input:focus,.auth-form select:focus{border-color:#1a7fd4}
+    .auth-form input{padding:13px 16px;border:2px solid #e8f0fe;border-radius:10px;font-size:1rem;font-family:inherit;outline:none;transition:.2s}
+    .auth-form input:focus{border-color:#1a7fd4}
     .auth-btn{background:linear-gradient(135deg,#0a4d8c,#1a7fd4);color:#fff;border:none;border-radius:10px;padding:14px;font-size:1rem;font-weight:700;cursor:pointer;transition:.2s}
     .auth-btn:hover{opacity:.9;transform:translateY(-1px)}
     .auth-err{color:#e74c3c;font-size:.88rem;text-align:center;min-height:20px}
     .reg-only{display:none}
+    .invite-hint{font-size:.8rem;color:#888;text-align:center;margin-top:-8px}
+    .bootstrap-note{background:#fff8e1;border:1px solid #ffe082;border-radius:10px;padding:12px 16px;font-size:.85rem;color:#795548;text-align:center;margin-bottom:12px}
   </style>
 </head>
 <body>
@@ -28,6 +30,12 @@
   <div class="auth-logo">🎓</div>
   <div class="auth-title">Auditorium Onboard</div>
   <div class="auth-sub">Система адаптации персонала</div>
+
+  <!-- Баннер первого запуска (показывается если 0 пользователей) -->
+  <div class="bootstrap-note" id="bootstrapNote" style="display:none">
+    👋 Первый запуск! Зарегистрируйтесь — вы станете HR-администратором системы.
+  </div>
+
   <div class="auth-tabs">
     <div class="auth-tab active" id="tabLogin" onclick="switchTab('login')">Войти</div>
     <div class="auth-tab" id="tabReg" onclick="switchTab('reg')">Регистрация</div>
@@ -36,13 +44,8 @@
     <input type="text" id="inLogin" placeholder="Логин" autocomplete="username">
     <input type="password" id="inPass" placeholder="Пароль" autocomplete="current-password">
     <input type="text" id="inFio" placeholder="ФИО (например, Иванова Лера)" class="reg-only">
-    <select id="inRole" class="reg-only">
-      <option value="">— Выберите роль —</option>
-      <option value="producer">🎬 Продюсер</option>
-      <option value="sales">📞 Менеджер по продажам</option>
-      <option value="marketing">📣 Специалист по маркетингу</option>
-      <option value="hr">👩‍💼 HR-менеджер</option>
-    </select>
+    <input type="text" id="inInvite" placeholder="Код приглашения (например, AO-X7K2PQ)" class="reg-only invite-field">
+    <div class="invite-hint reg-only">Код выдаёт HR-менеджер. Роль определяется автоматически.</div>
     <div class="auth-err" id="authErr"></div>
     <button class="auth-btn" id="authBtn" onclick="doAuth()">Войти →</button>
   </div>
@@ -50,6 +53,13 @@
 <script src="auth.js"></script>
 <script>
 let mode = 'login';
+let isFirstRun = Object.keys(Auth.getUsers()).length === 0;
+
+if (isFirstRun) {
+  document.getElementById('bootstrapNote').style.display = 'block';
+  switchTab('reg');
+}
+
 function switchTab(m) {
   mode = m;
   document.getElementById('tabLogin').classList.toggle('active', m==='login');
@@ -57,19 +67,31 @@ function switchTab(m) {
   document.querySelectorAll('.reg-only').forEach(el => el.style.display = m==='reg' ? 'block' : 'none');
   document.getElementById('authBtn').textContent = m==='login' ? 'Войти →' : 'Зарегистрироваться →';
   document.getElementById('authErr').textContent = '';
+  // При первом запуске скрываем поле инвайта
+  if (isFirstRun && m==='reg') {
+    document.querySelectorAll('.invite-field').forEach(el => el.style.display='none');
+    document.querySelectorAll('.invite-hint').forEach(el => el.style.display='none');
+  }
 }
+
 function doAuth() {
   const login = document.getElementById('inLogin').value.trim();
   const pass  = document.getElementById('inPass').value;
   document.getElementById('authErr').textContent = '';
+
   if (mode === 'login') {
     const res = Auth.login(login, pass);
     if (!res.ok) { document.getElementById('authErr').textContent = res.msg; return; }
     window.location.href = 'index.html';
   } else {
-    const fio  = document.getElementById('inFio').value.trim();
-    const role = document.getElementById('inRole').value;
-    const res  = Auth.register(login, pass, fio, role);
+    const fio    = document.getElementById('inFio').value.trim();
+    const invite = document.getElementById('inInvite').value.trim();
+    let res;
+    if (isFirstRun) {
+      res = Auth.bootstrapAdmin(login, pass, fio);
+    } else {
+      res = Auth.register(login, pass, fio, invite);
+    }
     if (!res.ok) { document.getElementById('authErr').textContent = res.msg; return; }
     Auth.login(login, pass);
     window.location.href = 'index.html';
