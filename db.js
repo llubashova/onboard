@@ -1,4 +1,4 @@
-// db.js — JSONBin bridge v3
+// db.js — JSONBin bridge v4
 const DB = (() => {
   const BIN_ID  = '6a07317badc21f119aa526dd';
   const API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
@@ -23,13 +23,26 @@ const DB = (() => {
     });
   }
 
+  // Нормализация пользователей: все логины → нижний регистр
+  // Работает автоматически — не нужно ничего править вручную
+  function normalizeUsers(users) {
+    if (!users || typeof users !== 'object') return {};
+    const normalized = {};
+    Object.entries(users).forEach(([login, u]) => {
+      const lowerLogin = login.toLowerCase();
+      normalized[lowerLogin] = u;
+    });
+    return normalized;
+  }
+
   const cloudFetch = fetch(URL, {
     headers: { 'X-Master-Key': API_KEY, 'X-Bin-Meta': 'false' }
   })
   .then(r => r.ok ? r.json() : null)
   .then(cloud => {
     if (cloud && cloud.users && Object.keys(cloud.users).length > 0) {
-      localStorage.setItem('ao_users',   JSON.stringify(cloud.users));
+      const normalizedUsers = normalizeUsers(cloud.users);
+      localStorage.setItem('ao_users',   JSON.stringify(normalizedUsers));
       localStorage.setItem('ao_invites', JSON.stringify(cloud.invites || '{}'));
       restoreProgress(cloud.progress);
     }
@@ -39,13 +52,11 @@ const DB = (() => {
   const timeout = new Promise(resolve => setTimeout(resolve, 3000));
   const ready = Promise.race([cloudFetch, timeout]);
 
-  // sync() — для фоновых сохранений (debounce 2с)
   function sync() {
     if (_syncTimer) clearTimeout(_syncTimer);
     _syncTimer = setTimeout(_doSync, 2000);
   }
 
-  // syncNow() — немедленный синк, возвращает Promise — для использования перед редиректом
   function syncNow() {
     if (_syncTimer) { clearTimeout(_syncTimer); _syncTimer = null; }
     return fetch(URL, {
