@@ -6,17 +6,14 @@
 
 const Auth = {
 
-  // Получить всех пользователей (объект {login: {pass, fio, role, id}})
   getUsers() {
     return JSON.parse(localStorage.getItem('ao_users') || '{}');
   },
 
-  // Сохранить всех пользователей
   saveUsers(users) {
     localStorage.setItem('ao_users', JSON.stringify(users));
   },
 
-  // Текущий пользователь (объект или null)
   current() {
     const login = localStorage.getItem('ao_session');
     if (!login) return null;
@@ -24,12 +21,10 @@ const Auth = {
     return users[login] || null;
   },
 
-  // Логин пользователя
   currentLogin() {
     return localStorage.getItem('ao_session');
   },
 
-  // Зарегистрировать нового пользователя
   register(login, pass, fio, role) {
     const users = this.getUsers();
     if (users[login]) return { ok: false, msg: 'Логин уже занят' };
@@ -37,13 +32,11 @@ const Auth = {
     if (!pass || pass.length < 4) return { ok: false, msg: 'Пароль минимум 4 символа' };
     if (!fio) return { ok: false, msg: 'Введите ФИО' };
     if (!role) return { ok: false, msg: 'Выберите роль' };
-    // id = timestamp — уникальный идентификатор для изоляции прогресса
     users[login] = { pass, fio, role, id: Date.now().toString() };
     this.saveUsers(users);
     return { ok: true };
   },
 
-  // Войти
   login(login, pass) {
     const users = this.getUsers();
     const user = users[login];
@@ -53,13 +46,12 @@ const Auth = {
     return { ok: true };
   },
 
-  // Выйти
   logout() {
     localStorage.removeItem('ao_session');
     window.location.href = 'login.html';
   },
 
-  // Обновить данные пользователя
+  // Обновить ФИО и/или пароль
   update(newFio, newPass) {
     const login = this.currentLogin();
     if (!login) return;
@@ -69,31 +61,35 @@ const Auth = {
     this.saveUsers(users);
   },
 
-  // Сбросить прогресс текущего пользователя
+  // Обновить роль (прогресс старой роли сохраняется, не сбрасывается)
+  updateRole(newRole) {
+    const login = this.currentLogin();
+    if (!login || !newRole) return;
+    const users = this.getUsers();
+    users[login].role = newRole;
+    this.saveUsers(users);
+  },
+
   resetProgress() {
     const user = this.current();
     if (!user) return;
-    // Удаляем все ключи вида ao_p_{userId}_*
     Object.keys(localStorage)
       .filter(k => k.startsWith('ao_p_' + user.id + '_'))
       .forEach(k => localStorage.removeItem(k));
   },
 
-  // Прочитать состояние чекбокса для текущего пользователя
   getCheck(key) {
     const user = this.current();
     if (!user) return false;
     return localStorage.getItem('ao_p_' + user.id + '_' + key) === '1';
   },
 
-  // Записать состояние чекбокса
   setCheck(key, val) {
     const user = this.current();
     if (!user) return;
     localStorage.setItem('ao_p_' + user.id + '_' + key, val ? '1' : '0');
   },
 
-  // Проверить авторизацию и редиректнуть если нет сессии
   requireAuth() {
     if (!this.current()) {
       window.location.href = 'login.html';
