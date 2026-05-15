@@ -8,58 +8,161 @@
 </head>
 <body>
 
-  <header>
-    <div class="logo">🎓 Auditorium Onboard</div>
-    <p class="tagline">Система адаптации персонала ООО «Аудиториум СиДжи»</p>
-  </header>
+<!-- МОДАЛЬНОЕ ОКНО: ВХОД -->
+<div class="modal-overlay active" id="loginModal">
+  <div class="modal">
+    <div style="font-size:2.8rem;margin-bottom:12px;">🎓</div>
+    <h2>Добро пожаловать!</h2>
+    <p>Введи своё имя и выбери роль,<br>чтобы начать адаптацию</p>
+    <input type="text" id="userName" placeholder="Твоё имя (например, Лера)" maxlength="30">
+    <select id="userRole">
+      <option value="">— Выбери свою роль —</option>
+      <option value="producer">🎬 Продюсер</option>
+      <option value="sales">📞 Менеджер по продажам</option>
+      <option value="marketing">📣 Специалист по маркетингу</option>
+    </select>
+    <button class="modal-btn" onclick="startOnboarding()">Начать →</button>
+  </div>
+</div>
 
-  <main>
-    <section class="welcome">
-      <h1>Добро пожаловать в команду!</h1>
-      <p>Этот портал поможет тебе пройти адаптацию шаг за шагом — в своём темпе, с понятными задачами и всеми нужными материалами под рукой.</p>
-      <p>Выбери свою роль, чтобы начать:</p>
-    </section>
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">🎓</span>
+      Auditorium Onboard
+    </div>
+    <div class="user-badge" onclick="resetUser()">
+      <span id="headerUser">Войти</span>
+      <span>⚙️</span>
+    </div>
+  </div>
+</header>
 
-    <section class="roles">
-      <a href="producer.html" class="role-card">
-        <div class="role-icon">🎬</div>
-        <h2>Продюсер</h2>
-        <p>Исследования, деловая программа, работа со спикерами</p>
-        <span class="btn">Начать маршрут →</span>
-      </a>
+<div class="main-wrap">
 
-      <a href="sales.html" class="role-card">
-        <div class="role-icon">📞</div>
-        <h2>Менеджер по продажам</h2>
-        <p>CRM, звонки, сделки, работа с клиентами</p>
-        <span class="btn">Начать маршрут →</span>
-      </a>
+  <div class="welcome-block">
+    <div>
+      <h1 id="welcomeTitle">Привет! 👋</h1>
+      <p id="welcomeSubtitle">Выбери свою роль и начни адаптацию</p>
+    </div>
+    <div class="overall-progress">
+      <div class="big-num" id="overallPct">0%</div>
+      <div class="label">общий прогресс</div>
+    </div>
+  </div>
 
-      <a href="marketing.html" class="role-card">
-        <div class="role-icon">📣</div>
-        <h2>Специалист по маркетингу</h2>
-        <p>Яндекс.Директ, контент-план, email, TG-канал</p>
-        <span class="btn">Начать маршрут →</span>
-      </a>
-    </section>
+  <div class="section-title">🗺️ Выбери маршрут</div>
+  <div class="roles-grid">
 
-    <section class="info-blocks">
-      <a href="knowledge.html" class="info-card">
-        <div class="info-icon">📚</div>
-        <h3>База знаний</h3>
-        <p>Все шаблоны, чек-листы, инструкции и кейсы</p>
-      </a>
-      <a href="feedback.html" class="info-card">
-        <div class="info-icon">💬</div>
-        <h3>Обратная связь</h3>
-        <p>Контрольные точки, вопросы, пожелания</p>
-      </a>
-    </section>
-  </main>
+    <a href="producer.html" class="role-card">
+      <div class="role-icon">🎬</div>
+      <h2>Продюсер</h2>
+      <p class="role-desc">Исследования, деловая программа, работа со спикерами</p>
+      <div class="progress-wrap">
+        <div class="progress-label"><span>Прогресс</span><span id="prog-producer">0%</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="fill-producer" style="width:0%"></div></div>
+      </div>
+      <span class="role-btn">Открыть маршрут →</span>
+    </a>
 
-  <footer>
-    <p>ООО «Аудиториум СиДжи» · Система геймификации адаптации · 2026</p>
-  </footer>
+    <a href="sales.html" class="role-card">
+      <div class="role-icon">📞</div>
+      <h2>Менеджер по продажам</h2>
+      <p class="role-desc">CRM, звонки, сделки, работа с клиентами</p>
+      <div class="progress-wrap">
+        <div class="progress-label"><span>Прогресс</span><span id="prog-sales">0%</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="fill-sales" style="width:0%"></div></div>
+      </div>
+      <span class="role-btn">Открыть маршрут →</span>
+    </a>
+
+    <a href="marketing.html" class="role-card">
+      <div class="role-icon">📣</div>
+      <h2>Специалист по маркетингу</h2>
+      <p class="role-desc">Яндекс.Директ, контент-план, email, TG-канал</p>
+      <div class="progress-wrap">
+        <div class="progress-label"><span>Прогресс</span><span id="prog-marketing">0%</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="fill-marketing" style="width:0%"></div></div>
+      </div>
+      <span class="role-btn">Открыть маршрут →</span>
+    </a>
+
+  </div>
+
+  <div class="section-title">📌 Дополнительно</div>
+  <div class="bottom-grid">
+    <a href="knowledge.html" class="info-card">
+      <div class="info-icon">📚</div>
+      <div><h3>База знаний</h3><p>Шаблоны, чек-листы, инструкции и кейсы</p></div>
+    </a>
+    <a href="feedback.html" class="info-card">
+      <div class="info-icon">💬</div>
+      <div><h3>Обратная связь</h3><p>Контрольные точки, вопросы, пожелания</p></div>
+    </a>
+  </div>
+
+</div>
+
+<footer><p>ООО «Аудиториум СиДжи» · Система геймификации адаптации · 2026</p></footer>
+
+<script>
+function startOnboarding() {
+  const name = document.getElementById('userName').value.trim();
+  const role = document.getElementById('userRole').value;
+  if (!name) { alert('Введи своё имя!'); return; }
+  if (!role) { alert('Выбери роль!'); return; }
+  localStorage.setItem('ao_name', name);
+  localStorage.setItem('ao_role', role);
+  document.getElementById('loginModal').classList.remove('active');
+  updateUI();
+}
+
+function updateUI() {
+  const name = localStorage.getItem('ao_name');
+  const role = localStorage.getItem('ao_role');
+  if (!name) return;
+  const roleNames = { producer: 'Продюсер', sales: 'Менеджер по продажам', marketing: 'Специалист по маркетингу' };
+  document.getElementById('headerUser').textContent = name + ' · ' + (roleNames[role] || '');
+  document.getElementById('welcomeTitle').textContent = 'Привет, ' + name + '! 👋';
+  document.getElementById('welcomeSubtitle').textContent = 'Твоя роль: ' + (roleNames[role] || '') + ' · 90 дней адаптации';
+  const roles = ['producer', 'sales', 'marketing'];
+  const totals = { producer: 17, sales: 15, marketing: 16 };
+  let totalChecked = 0, totalTasks = 0;
+  roles.forEach(r => {
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('ao_check_' + r + '_'));
+    const checked = keys.filter(k => localStorage.getItem(k) === '1').length;
+    const total = totals[r];
+    totalChecked += checked;
+    totalTasks += total;
+    const pct = Math.round(checked / total * 100);
+    const el = document.getElementById('prog-' + r);
+    const fill = document.getElementById('fill-' + r);
+    if (el) el.textContent = pct + '%';
+    if (fill) fill.style.width = pct + '%';
+  });
+  const overall = Math.round(totalChecked / totalTasks * 100);
+  document.getElementById('overallPct').textContent = overall + '%';
+}
+
+function resetUser() {
+  if (confirm('Сбросить профиль? Прогресс сохранится.')) {
+    localStorage.removeItem('ao_name');
+    localStorage.removeItem('ao_role');
+    document.getElementById('loginModal').classList.add('active');
+    document.getElementById('welcomeTitle').textContent = 'Привет! 👋';
+    document.getElementById('welcomeSubtitle').textContent = 'Выбери свою роль и начни адаптацию';
+    document.getElementById('headerUser').textContent = 'Войти';
+  }
+}
+
+window.onload = function() {
+  const name = localStorage.getItem('ao_name');
+  if (name) {
+    document.getElementById('loginModal').classList.remove('active');
+    updateUI();
+  }
+};
+</script>
 
 </body>
 </html>
