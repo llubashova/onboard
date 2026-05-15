@@ -18,6 +18,7 @@
     .auth-input:focus{border-color:#1a7fd4}
     .auth-btn{width:100%;padding:14px;background:linear-gradient(135deg,#0a4d8c,#1a7fd4);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;margin-top:4px}
     .auth-btn:hover{opacity:.9}
+    .auth-btn:disabled{opacity:.6;cursor:not-allowed}
     .auth-msg{font-size:.87rem;text-align:center;min-height:20px;margin-bottom:8px;font-weight:500}
     #regForm{display:none}
     .card-loader{position:absolute;inset:0;background:rgba(255,255,255,.95);border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-size:.95rem;color:#1a7fd4;font-weight:500;z-index:10}
@@ -51,7 +52,7 @@
       <input class="auth-input" type="password" id="regPass"   placeholder="Пароль (мин. 4 символа)">
       <input class="auth-input" type="text"     id="regInvite" placeholder="Код приглашения (AO-XXXXXX)">
       <div class="auth-msg" id="regMsg"></div>
-      <button class="auth-btn" onclick="doRegister()">Зарегистрироваться</button>
+      <button class="auth-btn" id="regBtn" onclick="doRegister()">Зарегистрироваться</button>
     </div>
   </div>
 </div>
@@ -81,25 +82,39 @@ function doLogin() {
   else { msg.style.color='#e74c3c'; msg.textContent=res.msg; }
 }
 
-function doRegister() {
+async function doRegister() {
   const fio    = document.getElementById('regFio').value.trim();
   const login  = document.getElementById('regLogin').value.trim();
   const pass   = document.getElementById('regPass').value;
   const invite = document.getElementById('regInvite').value.trim();
   const msg    = document.getElementById('regMsg');
-  const users  = Auth.getUsers();
+  const btn    = document.getElementById('regBtn');
+
+  const users = Auth.getUsers();
+  let res;
   if (Object.keys(users).length === 0) {
-    const res = Auth.bootstrapAdmin(login, pass, fio);
-    if (res.ok) { DB.sync(); Auth.login(login, pass); window.location.href='index.html'; }
-    else { msg.style.color='#e74c3c'; msg.textContent=res.msg; }
+    res = Auth.bootstrapAdmin(login, pass, fio);
+  } else {
+    res = Auth.register(login, pass, fio, invite);
+  }
+
+  if (!res.ok) {
+    msg.style.color = '#e74c3c';
+    msg.textContent = res.msg;
     return;
   }
-  const res = Auth.register(login, pass, fio, invite);
-  if (res.ok) { DB.sync(); Auth.login(login, pass); window.location.href='index.html'; }
-  else { msg.style.color='#e74c3c'; msg.textContent=res.msg; }
+
+  // Сначала синкаем в облако, потом редирект
+  msg.style.color = '#1a7fd4';
+  msg.textContent = '☁️ Сохранение…';
+  btn.disabled = true;
+
+  await DB.syncNow();
+
+  Auth.login(login, pass);
+  window.location.href = 'index.html';
 }
 
-// Ждём облако (макс 3 секунды через Promise.race в db.js)
 DB.ready.then(hideLoader);
 </script>
 </body>
