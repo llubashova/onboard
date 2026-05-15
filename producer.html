@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Маршрут продюсера | Auditorium Onboard</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    .xp-bar-wrap{background:#e8f0fe;border-radius:12px;height:14px;overflow:hidden;margin:10px 0 4px}
+    .xp-bar-fill{height:100%;border-radius:12px;background:linear-gradient(90deg,#1a7fd4,#27ae60);transition:width .4s}
+    .xp-summary{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:8px 0 0}
+    .xp-badge{background:#e8f0fe;color:#0a4d8c;border-radius:20px;padding:4px 14px;font-size:.88rem;font-weight:700}
+    .xp-level{background:linear-gradient(135deg,#0a4d8c,#1a7fd4);color:#fff;border-radius:20px;padding:4px 16px;font-size:.88rem;font-weight:700}
+    .xp-pts{color:#888;font-size:.82rem}
+  </style>
 </head>
 <body>
 <header>
@@ -17,8 +25,12 @@
 <div class="route-header">
   <h1>🎬 Маршрут продюсера</h1>
   <p>90 дней · 3 уровня · Исследования, программа форума, работа со спикерами</p>
-  <div class="route-progress-bar"><div class="route-progress-fill" id="routeProgressFill" style="width:0%"></div></div>
-  <div class="route-progress-label" id="routeProgressLabel">Выполнено задач: 0 из …</div>
+  <div class="xp-bar-wrap"><div class="xp-bar-fill" id="xpBarFill" style="width:0%"></div></div>
+  <div class="xp-summary">
+    <span class="xp-level" id="xpLevel">🌱 Новичок</span>
+    <span class="xp-badge" id="xpScore">0 / 331 XP</span>
+    <span class="xp-pts" id="xpPct">0%</span>
+  </div>
 </div>
 <div class="levels-wrap">
   <div class="level-card">
@@ -36,25 +48,25 @@
       <div class="task-section">
         <div class="task-section-title">🔨 Задачи (70% — практика)</div>
         <ul class="checklist">
-          <li onclick="toggle(this)" data-key="producer_l1_p1" data-level="l1"><input type="checkbox"> Провести минимум 10 исследований в день (~70 за неделю): глубокие телефонные интервью с топ-менеджерами</li>
-          <li onclick="toggle(this)" data-key="producer_l1_p2" data-level="l1"><input type="checkbox"> Изучить конструктор сайта MODX Revolution (видеоинструкции из Strive)</li>
-          <li onclick="toggle(this)" data-key="producer_l1_p3" data-level="l1"><input type="checkbox"> Освоить внутренний сервер (192.168.0.30), CRM Auditorium, Zoiper</li>
+          <li onclick="toggle(this)" data-key="producer_l1_p1" data-level="l1" data-points="10"><input type="checkbox"> Провести минимум 10 исследований в день (~70 за неделю): глубокие телефонные интервью с топ-менеджерами</li>
+          <li onclick="toggle(this)" data-key="producer_l1_p2" data-level="l1" data-points="10"><input type="checkbox"> Изучить конструктор сайта MODX Revolution (видеоинструкции из Strive)</li>
+          <li onclick="toggle(this)" data-key="producer_l1_p3" data-level="l1" data-points="10"><input type="checkbox"> Освоить внутренний сервер (192.168.0.30), CRM Auditorium, Zoiper</li>
         </ul>
       </div>
       <div class="task-section">
         <div class="task-section-title">🤝 Работа с наставником (20%)</div>
         <ul class="checklist">
-          <li onclick="toggle(this)" data-key="producer_l1_m1" data-level="l1"><input type="checkbox"> Ежедневный контроль наставника — первые 3 дня</li>
-          <li onclick="toggle(this)" data-key="producer_l1_m2" data-level="l1"><input type="checkbox"> Встреча на 7-й день: обратная связь по первым интервью</li>
+          <li onclick="toggle(this)" data-key="producer_l1_m1" data-level="l1" data-points="8"><input type="checkbox"> Ежедневный контроль наставника — первые 3 дня</li>
+          <li onclick="toggle(this)" data-key="producer_l1_m2" data-level="l1" data-points="8"><input type="checkbox"> Встреча на 7-й день: обратная связь по первым интервью</li>
         </ul>
       </div>
       <div class="task-section">
         <div class="task-section-title">📚 Материалы Strive (10%)</div>
         <ul class="checklist">
-          <li onclick="toggle(this)" data-key="producer_l1_s1" data-level="l1"><input type="checkbox"> Кейсы прошлых форумов</li>
-          <li onclick="toggle(this)" data-key="producer_l1_s2" data-level="l1"><input type="checkbox"> Шаблоны исследований</li>
-          <li onclick="toggle(this)" data-key="producer_l1_s3" data-level="l1"><input type="checkbox"> Чек-листы: спикеры, модераторы, участники, полиграфия</li>
-          <li onclick="toggle(this)" data-key="producer_l1_s4" data-level="l1"><input type="checkbox"> Видеоинструкции по MODX Revolution</li>
+          <li onclick="toggle(this)" data-key="producer_l1_s1" data-level="l1" data-points="5"><input type="checkbox"> Кейсы прошлых форумов</li>
+          <li onclick="toggle(this)" data-key="producer_l1_s2" data-level="l1" data-points="5"><input type="checkbox"> Шаблоны исследований</li>
+          <li onclick="toggle(this)" data-key="producer_l1_s3" data-level="l1" data-points="5"><input type="checkbox"> Чек-листы: спикеры, модераторы, участники, полиграфия</li>
+          <li onclick="toggle(this)" data-key="producer_l1_s4" data-level="l1" data-points="5"><input type="checkbox"> Видеоинструкции по MODX Revolution</li>
         </ul>
       </div>
       <div class="checkpoint"><strong>✅ Контрольная точка</strong>Заполнить Google Forms: отчёт о проведённых исследованиях</div>
@@ -76,27 +88,27 @@
       <div class="task-section">
         <div class="task-section-title">🔨 Задачи (70% — практика)</div>
         <ul class="checklist">
-          <li onclick="toggle(this)" data-key="producer_l2_p1" data-level="l2"><input type="checkbox"> Проводить 10+ исследований в день самостоятельно (~230 за три недели)</li>
-          <li onclick="toggle(this)" data-key="producer_l2_p2" data-level="l2"><input type="checkbox"> Подготовить черновик деловой программы форума (10–15 тем)</li>
-          <li onclick="toggle(this)" data-key="producer_l2_p3" data-level="l2"><input type="checkbox"> Связаться с 10–15 потенциальными спикерами</li>
-          <li onclick="toggle(this)" data-key="producer_l2_p4" data-level="l2"><input type="checkbox"> Освоить TG-бот для участников</li>
-          <li onclick="toggle(this)" data-key="producer_l2_p5" data-level="l2"><input type="checkbox"> Самостоятельная работа с сервером, Strive, CRM Auditorium</li>
+          <li onclick="toggle(this)" data-key="producer_l2_p1" data-level="l2" data-points="15"><input type="checkbox"> Проводить 10+ исследований в день самостоятельно (~230 за три недели)</li>
+          <li onclick="toggle(this)" data-key="producer_l2_p2" data-level="l2" data-points="15"><input type="checkbox"> Подготовить черновик деловой программы форума (10–15 тем)</li>
+          <li onclick="toggle(this)" data-key="producer_l2_p3" data-level="l2" data-points="15"><input type="checkbox"> Связаться с 10–15 потенциальными спикерами</li>
+          <li onclick="toggle(this)" data-key="producer_l2_p4" data-level="l2" data-points="15"><input type="checkbox"> Освоить TG-бот для участников</li>
+          <li onclick="toggle(this)" data-key="producer_l2_p5" data-level="l2" data-points="15"><input type="checkbox"> Самостоятельная работа с сервером, Strive, CRM Auditorium</li>
         </ul>
       </div>
       <div class="task-section">
         <div class="task-section-title">🤝 Работа с наставником (20%)</div>
         <ul class="checklist">
-          <li onclick="toggle(this)" data-key="producer_l2_m1" data-level="l2"><input type="checkbox"> Еженедельные встречи с наставником</li>
-          <li onclick="toggle(this)" data-key="producer_l2_m2" data-level="l2"><input type="checkbox"> Разбор сложных кейсов исследований</li>
-          <li onclick="toggle(this)" data-key="producer_l2_m3" data-level="l2"><input type="checkbox"> Обратная связь по черновику деловой программы</li>
+          <li onclick="toggle(this)" data-key="producer_l2_m1" data-level="l2" data-points="8"><input type="checkbox"> Еженедельные встречи с наставником</li>
+          <li onclick="toggle(this)" data-key="producer_l2_m2" data-level="l2" data-points="8"><input type="checkbox"> Разбор сложных кейсов исследований</li>
+          <li onclick="toggle(this)" data-key="producer_l2_m3" data-level="l2" data-points="8"><input type="checkbox"> Обратная связь по черновику деловой программы</li>
         </ul>
       </div>
       <div class="task-section">
         <div class="task-section-title">📚 Материалы Strive (10%)</div>
         <ul class="checklist">
-          <li onclick="toggle(this)" data-key="producer_l2_s1" data-level="l2"><input type="checkbox"> Шаблоны деловых программ прошлых форумов</li>
-          <li onclick="toggle(this)" data-key="producer_l2_s2" data-level="l2"><input type="checkbox"> Шаблоны коммуникаций со спикерами</li>
-          <li onclick="toggle(this)" data-key="producer_l2_s3" data-level="l2"><input type="checkbox"> Инструкции по работе с TG-ботом и сервером</li>
+          <li onclick="toggle(this)" data-key="producer_l2_s1" data-level="l2" data-points="5"><input type="checkbox"> Шаблоны деловых программ прошлых форумов</li>
+          <li onclick="toggle(this)" data-key="producer_l2_s2" data-level="l2" data-points="5"><input type="checkbox"> Шаблоны коммуникаций со спикерами</li>
+          <li onclick="toggle(this)" data-key="producer_l2_s3" data-level="l2" data-points="5"><input type="checkbox"> Инструкции по работе с TG-ботом и сервером</li>
         </ul>
       </div>
       <div class="checkpoint"><strong>✅ Контрольная точка</strong>Черновик деловой программы на согласование наставнику</div>
@@ -118,25 +130,25 @@
       <div class="task-section">
         <div class="task-section-title">🔨 Задачи (80% — практика)</div>
         <ul class="checklist">
-          <li onclick="toggle(this)" data-key="producer_l3_p1" data-level="l3"><input type="checkbox"> Завершить полный цикл исследований для реального форума (40+ интервью)</li>
-          <li onclick="toggle(this)" data-key="producer_l3_p2" data-level="l3"><input type="checkbox"> Написать финальную деловую программу на 3 дня форума</li>
-          <li onclick="toggle(this)" data-key="producer_l3_p3" data-level="l3"><input type="checkbox"> Подготовить 40–45 спикеров</li>
-          <li onclick="toggle(this)" data-key="producer_l3_p4" data-level="l3"><input type="checkbox"> Управление TG-ботом участников</li>
-          <li onclick="toggle(this)" data-key="producer_l3_p5" data-level="l3"><input type="checkbox"> Сбор обратной связи от участников после форума</li>
+          <li onclick="toggle(this)" data-key="producer_l3_p1" data-level="l3" data-points="25"><input type="checkbox"> Завершить полный цикл исследований для реального форума (40+ интервью)</li>
+          <li onclick="toggle(this)" data-key="producer_l3_p2" data-level="l3" data-points="25"><input type="checkbox"> Написать финальную деловую программу на 3 дня форума</li>
+          <li onclick="toggle(this)" data-key="producer_l3_p3" data-level="l3" data-points="25"><input type="checkbox"> Подготовить 40–45 спикеров</li>
+          <li onclick="toggle(this)" data-key="producer_l3_p4" data-level="l3" data-points="25"><input type="checkbox"> Управление TG-ботом участников</li>
+          <li onclick="toggle(this)" data-key="producer_l3_p5" data-level="l3" data-points="25"><input type="checkbox"> Сбор обратной связи от участников после форума</li>
         </ul>
       </div>
       <div class="task-section">
         <div class="task-section-title">🤝 Работа с наставником (15%)</div>
         <ul class="checklist">
-          <li onclick="toggle(this)" data-key="producer_l3_m1" data-level="l3"><input type="checkbox"> Встречи по запросу</li>
-          <li onclick="toggle(this)" data-key="producer_l3_m2" data-level="l3"><input type="checkbox"> Обратная связь после первого форума</li>
+          <li onclick="toggle(this)" data-key="producer_l3_m1" data-level="l3" data-points="8"><input type="checkbox"> Встречи по запросу</li>
+          <li onclick="toggle(this)" data-key="producer_l3_m2" data-level="l3" data-points="8"><input type="checkbox"> Обратная связь после первого форума</li>
         </ul>
       </div>
       <div class="task-section">
         <div class="task-section-title">📚 Материалы Strive (5%)</div>
         <ul class="checklist">
-          <li onclick="toggle(this)" data-key="producer_l3_s1" data-level="l3"><input type="checkbox"> Чек-листы для спикеров и модераторов</li>
-          <li onclick="toggle(this)" data-key="producer_l3_s2" data-level="l3"><input type="checkbox"> Регламент по полиграфии</li>
+          <li onclick="toggle(this)" data-key="producer_l3_s1" data-level="l3" data-points="5"><input type="checkbox"> Чек-листы для спикеров и модераторов</li>
+          <li onclick="toggle(this)" data-key="producer_l3_s2" data-level="l3" data-points="5"><input type="checkbox"> Регламент по полиграфии</li>
         </ul>
       </div>
       <div class="checkpoint"><strong>✅ Контрольная точка</strong>Критерий — готовность форума к запуску</div>
@@ -148,6 +160,18 @@
 <script src="auth.js"></script>
 <script>
 const ROLE = 'producer';
+const MAX_XP = 331;
+const LEVELS = [
+  { min: 0,   max: 66,  label: '🌱 Новичок' },
+  { min: 67,  max: 180, label: '🚀 Продвинутый' },
+  { min: 181, max: 331, label: '🏆 Профи' }
+];
+
+function getXpLevel(xp) {
+  for (const l of LEVELS) if (xp <= l.max) return l.label;
+  return LEVELS[LEVELS.length-1].label;
+}
+
 function toggle(li) {
   const key = li.dataset.key;
   const cb = li.querySelector('input[type="checkbox"]');
@@ -163,20 +187,29 @@ function toggleLevel(id) {
 }
 function updateProgress() {
   const allItems = document.querySelectorAll('.checklist li[data-key]');
-  const TOTAL = allItems.length;
-  let totalChecked = 0;
-  allItems.forEach(li => { if (Auth.getCheck(li.dataset.key)) totalChecked++; });
-  document.getElementById('routeProgressFill').style.width = Math.round(totalChecked / TOTAL * 100) + '%';
-  document.getElementById('routeProgressLabel').textContent = 'Выполнено задач: ' + totalChecked + ' из ' + TOTAL;
+  let totalXp = 0;
+  allItems.forEach(li => {
+    if (Auth.getCheck(li.dataset.key)) totalXp += parseInt(li.dataset.points || 0);
+  });
+  const pct = Math.round(totalXp / MAX_XP * 100);
+  document.getElementById('xpBarFill').style.width = pct + '%';
+  document.getElementById('xpScore').textContent = totalXp + ' / ' + MAX_XP + ' XP';
+  document.getElementById('xpPct').textContent = pct + '%';
+  document.getElementById('xpLevel').textContent = getXpLevel(totalXp);
+
   ['l1','l2','l3'].forEach(lvl => {
     const items = document.querySelectorAll('[data-level="' + lvl + '"]');
-    let n = 0;
-    items.forEach(li => { if (Auth.getCheck(li.dataset.key)) n++; });
-    const pct = items.length ? Math.round(n / items.length * 100) : 0;
+    let earned = 0, max = 0;
+    items.forEach(li => {
+      const pts = parseInt(li.dataset.points || 0);
+      max += pts;
+      if (Auth.getCheck(li.dataset.key)) earned += pts;
+    });
+    const lpct = max ? Math.round(earned / max * 100) : 0;
     const el = document.getElementById(lvl + '-pct');
-    if (el) el.textContent = pct + '%';
+    if (el) el.textContent = lpct + '%';
     const tr = document.getElementById('trophy-' + lvl);
-    if (tr) tr.classList.toggle('visible', pct === 100);
+    if (tr) tr.classList.toggle('visible', lpct === 100);
   });
 }
 function loadChecks() {
