@@ -1,4 +1,4 @@
-// db.js — JSONBin bridge
+// db.js — JSONBin bridge v2
 // DB.ready — всегда резолвится: либо данные из облака, либо через 3 секунды
 const DB = (() => {
   const BIN_ID  = '6a07317badc21f119aa526dd';
@@ -6,6 +6,7 @@ const DB = (() => {
   const URL     = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
   let _syncing = false;
+  let _syncTimer = null;
 
   // Собрать весь прогресс из localStorage в объект { "ao_p_<id>_<key>": "1" }
   function collectProgress() {
@@ -48,8 +49,14 @@ const DB = (() => {
   // ready всегда резолвится — нет бесконечной загрузки
   const ready = Promise.race([cloudFetch, timeout]);
 
+  // Дебаунс синка: не чаще 1 раза в 2 секунды
   function sync() {
-    if (_syncing) return;
+    if (_syncTimer) clearTimeout(_syncTimer);
+    _syncTimer = setTimeout(_doSync, 2000);
+  }
+
+  function _doSync() {
+    if (_syncing) { _syncTimer = setTimeout(_doSync, 1000); return; }
     _syncing = true;
     fetch(URL, {
       method:  'PUT',

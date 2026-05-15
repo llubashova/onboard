@@ -1,5 +1,5 @@
 // ============================================================
-// auth.js — модуль авторизации Auditorium Onboard v4
+// auth.js — модуль авторизации Auditorium Onboard v5
 // ============================================================
 
 const ADMIN_ROLES = ['hr', 'ceo', 'exec_dir', 'ops_dir'];
@@ -10,8 +10,27 @@ const Auth = {
     const users = this.getUsers();
     let changed = false;
     Object.values(users).forEach(u => {
+      // Миграция ролей
       if (ADMIN_ROLES.includes(u.role) && u.admin !== true) {
         u.admin = true; changed = true;
+      }
+      // Миграция id: если id без префикса id_ — исправляем
+      // JSONBin превращает числовые строки в float с потерей точности
+      if (u.id && !String(u.id).startsWith('id_')) {
+        // Переносим ключи прогресса под новый id
+        const oldId = String(u.id);
+        const newId = 'id_' + oldId.replace(/[^0-9]/g, '').slice(0, 13);
+        const oldPrefix = 'ao_p_' + oldId + '_';
+        const newPrefix = 'ao_p_' + newId + '_';
+        Object.keys(localStorage)
+          .filter(k => k.startsWith(oldPrefix))
+          .forEach(k => {
+            const val = localStorage.getItem(k);
+            localStorage.setItem(newPrefix + k.slice(oldPrefix.length), val);
+            localStorage.removeItem(k);
+          });
+        u.id = newId;
+        changed = true;
       }
     });
     if (changed) this.saveUsers(users);
@@ -26,7 +45,7 @@ const Auth = {
   createInvite(role, label) {
     const inv  = this.getInvites();
     const code = 'AO-' + Math.random().toString(36).substr(2,6).toUpperCase();
-    inv[code]  = { role: role||'', label: label||'', used: false, createdAt: Date.now() };
+    inv[code]  = { role: role||'', label: label||'', used: false, createdAt: 'id_' + Date.now() };
     this.saveInvites(inv);
     return code;
   },
@@ -39,7 +58,7 @@ const Auth = {
   useInvite(code) {
     const inv = this.getInvites();
     const key = code.trim().toUpperCase();
-    if (inv[key]) { inv[key].used = true; inv[key].usedAt = Date.now(); }
+    if (inv[key]) { inv[key].used = true; inv[key].usedAt = 'id_' + Date.now(); }
     this.saveInvites(inv);
   },
   deleteInvite(code) {
@@ -78,10 +97,10 @@ const Auth = {
     const role = invite.role || 'producer';
     users[login] = {
       pass, fio, role,
-      id:        Date.now().toString(),
+      id:        'id_' + Date.now(),
       admin:     ADMIN_ROLES.includes(role),
       blocked:   false,
-      createdAt: Date.now()
+      createdAt: 'id_' + Date.now()
     };
     this.saveUsers(users);
     this.useInvite(inviteCode);
@@ -96,10 +115,10 @@ const Auth = {
     if (!fio)                        return { ok:false, msg:'Введите ФИО' };
     users[login] = {
       pass, fio, role: 'hr',
-      id:        Date.now().toString(),
+      id:        'id_' + Date.now(),
       admin:     true,
       blocked:   false,
-      createdAt: Date.now()
+      createdAt: 'id_' + Date.now()
     };
     this.saveUsers(users);
     return { ok:true };
@@ -179,6 +198,7 @@ const Auth = {
   setCheck(key, val) {
     const user = this.current(); if (!user) return;
     localStorage.setItem('ao_p_' + user.id + '_' + key, val ? '1' : '0');
+    _dbSync();
   },
 
   // Читает прогресс по любому userId (для HR-дашборда)
