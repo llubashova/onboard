@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auditorium Onboard</title>
+  <script>if(!localStorage.getItem('ao_session'))location.replace('login.html');</script>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="game.css">
+  <style>
+    .account-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center}
+    .account-modal-overlay.open{display:flex}
+    .account-modal{background:#fff;border-radius:18px;padding:32px 28px;width:100%;max-width:400px;box-shadow:0 16px 48px rgba(0,0,0,.18)}
+    .account-modal h3{color:#0a4d8c;font-size:1.2rem;margin:0 0 18px}
+    .account-modal input,.account-modal select{width:100%;box-sizing:border-box;padding:11px 14px;border:2px solid #e8f0fe;border-radius:10px;font-size:.95rem;font-family:inherit;margin-bottom:10px;outline:none}
+    .account-modal input:focus,.account-modal select:focus{border-color:#1a7fd4}
+    .acc-btn{width:100%;padding:11px;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;margin-bottom:8px;transition:.15s}
+    .acc-btn.primary{background:linear-gradient(135deg,#0a4d8c,#1a7fd4);color:#fff}
+    .acc-btn.primary:hover{opacity:.9}
+    .acc-btn.admin-link{background:#f0f7ff;color:#0a4d8c;border:2px solid #c7d7f0}
+    .acc-btn.danger{background:#fff;color:#e74c3c;border:2px solid #e74c3c}
+    .acc-btn.logout{background:#f5f5f5;color:#555}
+    .acc-divider{border:none;border-top:1px solid #eee;margin:14px 0}
+    .acc-msg{font-size:.85rem;color:#27ae60;text-align:center;min-height:18px;margin-bottom:4px}
+    .hr-dashboard{background:#f0f7ff;border-radius:16px;padding:20px 24px;margin-bottom:24px}
+    .hr-dashboard h3{color:#0a4d8c;margin:0 0 14px;font-size:1.05rem}
+    .hr-table{width:100%;border-collapse:collapse;font-size:.88rem}
+    .hr-table th{background:#0a4d8c;color:#fff;padding:8px 12px;text-align:left;font-weight:600}
+    .hr-table td{padding:8px 12px;border-bottom:1px solid #dde8f5}
+    .hr-table tr:hover td{background:#e8f3ff}
+    .hr-pbar{height:8px;background:#dde8f5;border-radius:4px;overflow:hidden;min-width:80px}
+    .hr-pfill{height:100%;background:linear-gradient(90deg,#1a7fd4,#27ae60);border-radius:4px;transition:.3s}
+    .role-card.locked{opacity:.55;pointer-events:none;cursor:not-allowed}
+    .role-card.locked .role-btn{background:#ccc;color:#888}
+    .badges-section{margin:24px 0 8px}
+    .badges-section-title{font-size:.85rem;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px}
+    #dayCounterWrap{margin-bottom:12px}
+    .admin-card-meta{font-size:.8rem;color:#1a7fd4;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+    .admin-card-meta .staff-count{background:#e8f3ff;border-radius:20px;padding:2px 9px;font-size:.78rem;color:#0a4d8c}
+    .admin-card-empty{font-size:.82rem;color:#aaa;font-style:italic}
+  </style>
+</head>
+<body>
+
+<div class="account-modal-overlay" id="accOverlay">
+  <div class="account-modal">
+    <h3>👤 Личный кабинет</h3>
+    <input type="text" id="accFio" placeholder="ФИО">
+    <input type="password" id="accPass" placeholder="Новый пароль (оставь пустым, если не менять)">
+    <select id="accRole" style="display:none">
+      <optgroup label="— Сотрудники —">
+        <option value="producer">🎬 Продюсер</option>
+        <option value="sales">📞 Менеджер по продажам</option>
+        <option value="marketing">📣 Специалист по маркетингу</option>
+      </optgroup>
+      <optgroup label="— Администраторы —">
+        <option value="hr">👩‍💼 HR-менеджер</option>
+        <option value="ceo">👑 Генеральный директор</option>
+        <option value="exec_dir">🏢 Исполнительный директор</option>
+        <option value="ops_dir">⚙️ Операционный директор</option>
+      </optgroup>
+    </select>
+    <div class="acc-msg" id="accMsg"></div>
+    <button class="acc-btn primary" id="accSaveBtn">💾 Сохранить изменения</button>
+    <button class="acc-btn admin-link" id="accAdminBtn" style="display:none" onclick="window.location.href='admin.html'">🛠️ Панель администратора</button>
+    <hr class="acc-divider">
+    <button class="acc-btn danger" onclick="confirmReset()">🗑️ Сбросить мой прогресс</button>
+    <button class="acc-btn danger" onclick="confirmDeleteSelf()">❌ Удалить мой аккаунт</button>
+    <button class="acc-btn logout" onclick="Auth.logout()">🚪 Выйти из аккаунта</button>
+    <button class="acc-btn logout" onclick="closeAcc()" style="margin-top:4px">✕ Закрыть</button>
+  </div>
+</div>
+
+<header>
+  <div class="header-inner">
+    <div class="logo"><span class="logo-icon">🎓</span> Auditorium Onboard</div>
+    <div class="user-badge" onclick="openAcc()" style="cursor:pointer">
+      <span id="headerUser">—</span>
+      <span>⚙️</span>
+    </div>
+  </div>
+</header>
+
+<div class="main-wrap">
+  <div class="welcome-block">
+    <div>
+      <h1 id="welcomeTitle">Привет! 👋</h1>
+      <p id="welcomeSubtitle">Добро пожаловать в систему адаптации</p>
+      <div id="dayCounterWrap"></div>
+    </div>
+    <div class="overall-progress">
+      <div class="big-num" id="overallPct">0%</div>
+      <div class="label" id="overallLabel">общий прогресс</div>
+    </div>
+  </div>
+
+  <div class="badges-section" id="badgesSection" style="display:none">
+    <div class="badges-section-title">🏅 Мои достижения</div>
+    <div class="badges-panel" id="badgesPanel"></div>
+  </div>
+
+  <div class="hr-dashboard" id="hrDashboard" style="display:none">
+    <h3>📊 Прогресс сотрудников</h3>
+    <table class="hr-table">
+      <thead><tr><th>ФИО</th><th>Роль</th><th>Уровень</th><th>Прогресс</th><th>XP / %</th></tr></thead>
+      <tbody id="hrTableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="section-title">🗺️ Выбери маршрут</div>
+  <div class="roles-grid">
+    <a href="producer.html" class="role-card" id="card-producer">
+      <div class="role-icon">🎬</div>
+      <h2>Продюсер</h2>
+      <p class="role-desc">Исследования, деловая программа, работа со спикерами</p>
+      <div class="progress-wrap" id="progwrap-producer">
+        <div class="progress-label"><span>Прогресс</span><span id="prog-producer">—</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="fill-producer" style="width:0%"></div></div>
+      </div>
+      <span class="role-btn">Открыть маршрут →</span>
+    </a>
+    <a href="sales.html" class="role-card" id="card-sales">
+      <div class="role-icon">📞</div>
+      <h2>Менеджер по продажам</h2>
+      <p class="role-desc">CRM, звонки, сделки, работа с клиентами</p>
+      <div class="progress-wrap" id="progwrap-sales">
+        <div class="progress-label"><span>Прогресс</span><span id="prog-sales">—</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="fill-sales" style="width:0%"></div></div>
+      </div>
+      <span class="role-btn">Открыть маршрут →</span>
+    </a>
+    <a href="marketing.html" class="role-card" id="card-marketing">
+      <div class="role-icon">📣</div>
+      <h2>Специалист по маркетингу</h2>
+      <p class="role-desc">Яндекс.Директ, контент-план, email, TG-канал</p>
+      <div class="progress-wrap" id="progwrap-marketing">
+        <div class="progress-label"><span>Прогресс</span><span id="prog-marketing">—</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="fill-marketing" style="width:0%"></div></div>
+      </div>
+      <span class="role-btn">Открыть маршрут →</span>
+    </a>
+  </div>
+
+  <div class="section-title">📌 Дополнительно</div>
+  <div class="bottom-grid">
+    <a href="knowledge.html" class="info-card">
+      <div class="info-icon">📚</div>
+      <div><h3>База знаний</h3><p>Шаблоны, чек-листы, инструкции и кейсы</p></div>
+    </a>
+    <a href="feedback.html" class="info-card">
+      <div class="info-icon">💬</div>
+      <div><h3>Обратная связь</h3><p>Контрольные точки, вопросы, пожелания</p></div>
+    </a>
+    <a href="team.html" class="info-card">
+      <div class="info-icon">👥</div>
+      <div><h3>Команда</h3><p>Кто есть кто и к кому обратиться</p></div>
+    </a>
+    <a href="quiz.html" class="info-card">
+      <div class="info-icon">🧠</div>
+      <div><h3>Квиз</h3><p>Проверь знания о компании и заработай XP</p></div>
+    </a>
+  </div>
+</div>
+
+<footer><p>ООО «Аудиториум СиДжи» · Система геймификации адаптации · 2026</p></footer>
+
+<script src="db.js"></script>
+<script src="auth.js"></script>
+<script src="game.js"></script>
+<script>
+const PAGE_ADMIN_ROLES = ['hr','ceo','exec_dir','ops_dir'];
+
+const ROLE_NAMES = {
+  producer:'Продюсер', sales:'Менеджер по продажам', marketing:'Специалист по маркетингу',
+  hr:'HR-менеджер', ceo:'Генеральный директор', exec_dir:'Исполнительный директор', ops_dir:'Операционный директор'
+};
+
+function getXpLevelProducer(xp) {
+  if (xp >= 180) return '🏆 Профи';
+  if (xp >= 66)  return '🚀 Продвинутый';
+  return '🌱 Новичок';
+}
+function getXpLevelGeneric(xp, maxXp) {
+  const pct = maxXp ? xp / maxXp * 100 : 0;
+  if (pct >= 55) return '🏆 Профи';
+  if (pct >= 20) return '🚀 Продвинутый';
+  return '🌱 Новичок';
+}
+function getXpLevel(xp, role) {
+  if (role === 'producer') return getXpLevelProducer(xp);
+  const maxXp = MAX_XP[role] || 300;
+  return getXpLevelGeneric(xp, maxXp);
+}
+
+const TASK_XP = {
+  producer_l1_p1:10, producer_l1_p2:10, producer_l1_p3:10,
+  producer_l1_m1:8,  producer_l1_m2:8,
+  producer_l1_s1:5,  producer_l1_s2:5,  producer_l1_s3:5,  producer_l1_s4:5,
+  producer_l2_p1:15, producer_l2_p2:15, producer_l2_p3:15, producer_l2_p4:15, producer_l2_p5:15,
+  producer_l2_m1:8,  producer_l2_m2:8,  producer_l2_m3:8,
+  producer_l2_s1:5,  producer_l2_s2:5,  producer_l2_s3:5,
+  producer_l3_p1:25, producer_l3_p2:25, producer_l3_p3:25, producer_l3_p4:25, producer_l3_p5:25,
+  producer_l3_m1:8,  producer_l3_m2:8,
+  producer_l3_s1:5,  producer_l3_s2:5,
+  sales_l1_p1:10, sales_l1_p2:10, sales_l1_p3:10,
+  sales_l1_m1:8,  sales_l1_m2:8,  sales_l1_m3:8,
+  sales_l1_s1:5,  sales_l1_s2:5,  sales_l1_s3:5,
+  sales_l2_p1:15, sales_l2_p2:15, sales_l2_p3:15, sales_l2_p4:15,
+  sales_l2_m1:8,  sales_l2_m2:8,
+  sales_l2_s1:5,  sales_l2_s2:5,
+  sales_l3_p1:25, sales_l3_p2:25, sales_l3_p3:25, sales_l3_p4:25,
+  sales_l3_m1:8,
+  sales_l3_s1:5,  sales_l3_s2:5,
+  marketing_l1_p1:10, marketing_l1_p2:10, marketing_l1_p3:10, marketing_l1_p4:10,
+  marketing_l1_m1:8,  marketing_l1_m2:8,
+  marketing_l1_s1:5,  marketing_l1_s2:5,  marketing_l1_s3:5,
+  marketing_l2_p1:15, marketing_l2_p2:15, marketing_l2_p3:15, marketing_l2_p4:15, marketing_l2_p5:15,
+  marketing_l2_m1:8,  marketing_l2_m2:8,
+  marketing_l2_s1:5,  marketing_l2_s2:5,
+  marketing_l3_p1:25, marketing_l3_p2:25, marketing_l3_p3:25, marketing_l3_p4:25,
+  marketing_l3_m1:8,
+  marketing_l3_s1:5,  marketing_l3_s2:5
+};
+
+const MAX_XP = { producer:331, sales:294, marketing:316 };
+
+// Считает прогресс любого пользователя по логину
+function calcProgress(userLogin, role) {
+  const prefix = role + '_';
+  const keys = Object.keys(TASK_XP).filter(k => k.startsWith(prefix));
+  if (!keys.length) return { xp:0, maxXp:0, pct:0 };
+  let xp = 0;
+  keys.forEach(k => {
+    if (Auth.getCheckForUser(userLogin, k)) xp += TASK_XP[k];
+  });
+  const maxXp = MAX_XP[role] || keys.reduce((s,k) => s + TASK_XP[k], 0);
+  return { xp, maxXp, pct: Math.round(xp / maxXp * 100) };
+}
+
+// ── Личный кабинет ──
+function openAcc() {
+  const u = Auth.current(); if (!u) return;
+  document.getElementById('accFio').value  = u.fio;
+  document.getElementById('accPass').value = '';
+  document.getElementById('accMsg').textContent = '';
+  const roleSelect = document.getElementById('accRole');
+  if (Auth.isAdmin()) { roleSelect.style.display='block'; roleSelect.value=u.role; }
+  else roleSelect.style.display = 'none';
+  document.getElementById('accAdminBtn').style.display = Auth.isAdmin() ? 'block' : 'none';
+  document.getElementById('accOverlay').classList.add('open');
+}
+function closeAcc() { document.getElementById('accOverlay').classList.remove('open'); }
+
+document.getElementById('accSaveBtn').addEventListener('click', function() {
+  const fio  = document.getElementById('accFio').value.trim();
+  const pass = document.getElementById('accPass').value;
+  const msg  = document.getElementById('accMsg');
+  if (!fio) { msg.style.color='#e74c3c'; msg.textContent='ФИО не может быть пустым'; return; }
+  if (pass && pass.length < 4) { msg.style.color='#e74c3c'; msg.textContent='Пароль минимум 4 символа'; return; }
+  Auth.update(fio, pass||null);
+  if (Auth.isAdmin()) Auth.updateRole(document.getElementById('accRole').value);
+  msg.style.color='#27ae60'; msg.textContent='✅ Сохранено!';
+  updateUI();
+  setTimeout(() => { msg.textContent=''; closeAcc(); }, 1200);
+});
+
+function confirmReset() {
+  if (!confirm('Сбросить весь твой прогресс? Это нельзя отменить.')) return;
+  Auth.resetProgress();
+  closeAcc();
+  updateUI();
+}
+function confirmDeleteSelf() {
+  if (!confirm('Удалить свой аккаунт? Это нельзя отменить!')) return;
+  Auth.deleteSelf();
+}
+
+// ── HR-дашборд: показывает прогресс ВСЕХ сотрудников ──
+// Использует Object.entries чтобы получать login вместе с данными пользователя
+function renderHrDashboard() {
+  const tbody = document.getElementById('hrTableBody');
+  const users = Auth.getUsers(); // { login: { fio, role, ... } }
+  const EMPLOYEE_ROLES = ['producer', 'sales', 'marketing'];
+
+  // Фильтруем только сотрудников (не администраторов)
+  const employees = Object.entries(users).filter(([, u]) => EMPLOYEE_ROLES.includes(u.role));
+
+  if (!employees.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="color:#aaa;text-align:center;padding:16px">Нет зарегистрированных сотрудников</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = employees
+    .sort((a, b) => a[1].fio.localeCompare(b[1].fio))
+    .map(([login, u]) => {
+      const p = calcProgress(login, u.role); // login — строковый ключ из Object.entries
+      const level = getXpLevel(p.xp, u.role);
+      return `<tr>
+        <td>${u.fio}</td>
+        <td>${ROLE_NAMES[u.role] || u.role}</td>
+        <td>${level}</td>
+        <td><div class="hr-pbar"><div class="hr-pfill" style="width:${p.pct}%"></div></div></td>
+        <td>${p.xp}/${p.maxXp} XP &middot; ${p.pct}%</td>
+      </tr>`;
+    }).join('');
+}
+
+// ── Карточки ролей на главной ──
+function renderRoleCards() {
+  const u = Auth.current();
+  const myLogin = Auth.currentLogin();
+  const isAdmin = Auth.isAdmin();
+  const EMPLOYEE_ROLES = ['producer', 'sales', 'marketing'];
+  const users = Auth.getUsers();
+
+  EMPLOYEE_ROLES.forEach(role => {
+    const card    = document.getElementById('card-' + role);
+    const progEl  = document.getElementById('prog-' + role);
+    const fillEl  = document.getElementById('fill-' + role);
+    if (!card) return;
+
+    if (isAdmin) {
+      // Для администраторов: показываем сколько сотрудников на этом маршруте
+      // и средний прогресс по роли
+      const staff = Object.entries(users).filter(([, su]) => su.role === role);
+      const meta = card.querySelector('.admin-card-meta') || (() => {
+        const el = document.createElement('div');
+        el.className = 'admin-card-meta';
+        card.querySelector('.role-desc').insertAdjacentElement('afterend', el);
+        return el;
+      })();
+
+      if (!staff.length) {
+        meta.innerHTML = '<span class="admin-card-empty">Нет сотрудников</span>';
+        progEl.textContent = '—';
+        fillEl.style.width = '0%';
+      } else {
+        const avgPct = Math.round(
+          staff.reduce((sum, [login]) => sum + calcProgress(login, role).pct, 0) / staff.length
+        );
+        meta.innerHTML = `<span class="staff-count">👤 ${staff.length} чел.</span>`;
+        progEl.textContent = avgPct + '% (ср.)';
+        fillEl.style.width = avgPct + '%';
+      }
+      // Администраторы могут открывать любой маршрут
+      card.classList.remove('locked');
+    } else {
+      // Для сотрудников: показываем только свой маршрут, остальные locked
+      if (u && u.role === role) {
+        const p = calcProgress(myLogin, role);
+        progEl.textContent = p.xp + ' XP · ' + p.pct + '%';
+        fillEl.style.width = p.pct + '%';
+        card.classList.remove('locked');
+      } else {
+        card.classList.add('locked');
+        progEl.textContent = '—';
+        fillEl.style.width = '0%';
+      }
+    }
+  });
+}
+
+// ── Общий прогресс текущего пользователя ──
+function renderOverallProgress() {
+  const u = Auth.current();
+  const myLogin = Auth.currentLogin();
+  const isAdmin = Auth.isAdmin();
+
+  if (isAdmin) {
+    // Для HR/CEO показываем общую статистику
+    const users = Auth.getUsers();
+    const EMPLOYEE_ROLES = ['producer', 'sales', 'marketing'];
+    const employees = Object.entries(users).filter(([, su]) => EMPLOYEE_ROLES.includes(su.role));
+    if (!employees.length) {
+      document.getElementById('overallPct').textContent = '—';
+      document.getElementById('overallLabel').textContent = 'нет сотрудников';
+    } else {
+      const avgPct = Math.round(
+        employees.reduce((sum, [login, su]) => sum + calcProgress(login, su.role).pct, 0) / employees.length
+      );
+      document.getElementById('overallPct').textContent = avgPct + '%';
+      document.getElementById('overallLabel').textContent = 'средний прогресс команды';
+    }
+  } else if (u && MAX_XP[u.role]) {
+    const p = calcProgress(myLogin, u.role);
+    document.getElementById('overallPct').textContent = p.pct + '%';
+    document.getElementById('overallLabel').textContent = 'твой прогресс';
+  } else {
+    document.getElementById('overallPct').textContent = '—';
+    document.getElementById('overallLabel').textContent = 'общий прогресс';
+  }
+}
+
+// ── Счётчик дней ──
+function renderDayCounter() {
+  const u = Auth.current();
+  if (!u || !u.createdAt) return;
+  const days = Math.floor((Date.now() - u.createdAt) / 86400000) + 1;
+  document.getElementById('dayCounterWrap').innerHTML =
+    `<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">📅 День адаптации: <strong>${days}</strong></div>`;
+}
+
+// ── Главная функция обновления UI ──
+function updateUI() {
+  const u = Auth.current();
+  if (!u) return;
+
+  document.getElementById('headerUser').textContent = u.fio.split(' ')[0];
+  document.getElementById('welcomeTitle').textContent = 'Привет, ' + u.fio.split(' ')[0] + '! 👋';
+  document.getElementById('welcomeSubtitle').textContent =
+    Auth.isAdmin() ? 'Панель HR — управление адаптацией' : 'Добро пожаловать в систему адаптации';
+
+  renderDayCounter();
+  renderOverallProgress();
+  renderRoleCards();
+
+  // HR-дашборд виден только администраторам
+  const hrDash = document.getElementById('hrDashboard');
+  if (Auth.isAdmin()) {
+    hrDash.style.display = 'block';
+    renderHrDashboard();
+  } else {
+    hrDash.style.display = 'none';
+  }
+
+  // Бейджи — только для сотрудников с маршрутом
+  const badgesSection = document.getElementById('badgesSection');
+  const badgesPanel   = document.getElementById('badgesPanel');
+  if (!Auth.isAdmin() && typeof Game !== 'undefined' && Game.getBadges) {
+    const myLogin = Auth.currentLogin();
+    const badges = Game.getBadges ? Game.getBadges(myLogin) : [];
+    if (badges && badges.length) {
+      badgesSection.style.display = 'block';
+      badgesPanel.innerHTML = badges.map(b =>
+        `<div class="badge-item" title="${b.desc || ''}"><span class="badge-icon">${b.icon}</span><span class="badge-name">${b.name}</span></div>`
+      ).join('');
+    } else {
+      badgesSection.style.display = 'none';
+    }
+  } else {
+    badgesSection.style.display = 'none';
+  }
+}
+
+window.onload = function() {
+  if (!Auth.requireAuth()) return;
+  DB.ready.then(() => {
+    updateUI();
+  });
+};
+</script>
+</body>
+</html>
