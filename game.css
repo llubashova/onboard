@@ -1,0 +1,207 @@
+/* ============================================================
+   game.css — стили игровых механик
+   ============================================================ */
+
+/* +XP попап */
+.xp-popup {
+  position: fixed;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #27ae60;
+  text-shadow: 0 1px 4px rgba(0,0,0,.18);
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 1;
+  transform: translateY(0);
+  transition: none;
+  white-space: nowrap;
+}
+.xp-popup.fly {
+  transition: transform .8s cubic-bezier(.2,1,.4,1), opacity .8s ease;
+  transform: translateY(-70px);
+  opacity: 0;
+}
+
+/* Бейдж-тост (снизу справа) */
+.badge-toast {
+  position: fixed;
+  bottom: 24px;
+  right: -320px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.18);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  z-index: 9997;
+  transition: right .4s cubic-bezier(.2,1,.4,1);
+  max-width: 300px;
+}
+.badge-toast.show { right: 24px; }
+.badge-toast-icon { font-size: 2.2rem; flex-shrink: 0; }
+.badge-toast-name { font-size: .75rem; color: #888; margin-bottom: 2px; }
+.badge-toast-title { font-size: 1rem; font-weight: 800; color: #0a4d8c; }
+.badge-toast-desc { font-size: .8rem; color: #555; margin-top: 2px; }
+
+/* Панель бейджей */
+.badges-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0 8px;
+}
+.badge-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: .82rem;
+  font-weight: 700;
+  transition: .2s;
+  cursor: default;
+}
+.badge-chip.earned {
+  background: linear-gradient(135deg,#0a4d8c,#1a7fd4);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(26,127,212,.3);
+}
+.badge-chip.locked {
+  background: #f0f0f0;
+  color: #bbb;
+  filter: grayscale(1);
+}
+.badge-chip.locked .badge-chip-icon { opacity: .4; }
+.badge-chip-icon { font-size: 1.1rem; }
+
+/* Level-up оверлей */
+.levelup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity .3s;
+}
+.levelup-overlay.show { opacity: 1; }
+.levelup-box {
+  background: #fff;
+  border-radius: 24px;
+  padding: 48px 40px;
+  text-align: center;
+  box-shadow: 0 24px 80px rgba(0,0,0,.3);
+  transform: scale(.8);
+  transition: transform .4s cubic-bezier(.2,1.4,.4,1);
+  max-width: 340px;
+  width: 90%;
+}
+.levelup-overlay.show .levelup-box { transform: scale(1); }
+.levelup-emoji { font-size: 4rem; margin-bottom: 8px; animation: bounce-lvl 0.6s ease infinite alternate; }
+@keyframes bounce-lvl { from{transform:scale(1)} to{transform:scale(1.15)} }
+.levelup-title { font-size: 2rem; font-weight: 900; color: #0a4d8c; letter-spacing: 2px; }
+.levelup-sub { color: #888; margin: 8px 0 4px; font-size: .9rem; }
+.levelup-name { font-size: 1.5rem; font-weight: 800; color: #1a7fd4; margin-bottom: 24px; }
+.levelup-box button {
+  background: linear-gradient(135deg,#0a4d8c,#1a7fd4);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 32px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity .2s;
+}
+.levelup-box button:hover { opacity: .85; }
+
+/* Welcome оверлей */
+.welcome-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10,30,60,.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  opacity: 0;
+  transition: opacity .4s;
+}
+.welcome-overlay.show { opacity: 1; }
+.welcome-box {
+  background: #fff;
+  border-radius: 24px;
+  padding: 40px 36px;
+  text-align: center;
+  max-width: 420px;
+  width: 92%;
+  box-shadow: 0 24px 80px rgba(0,0,0,.35);
+  transform: translateY(30px);
+  transition: transform .5s cubic-bezier(.2,1.2,.4,1);
+}
+.welcome-overlay.show .welcome-box { transform: translateY(0); }
+.welcome-rocket { font-size: 3.5rem; margin-bottom: 12px; }
+.welcome-box h2 { color: #0a4d8c; font-size: 1.4rem; margin-bottom: 6px; }
+.welcome-box p { color: #555; font-size: .95rem; margin: 6px 0; }
+.welcome-mission { background: #f0f7ff; border-radius: 10px; padding: 10px 14px; margin: 14px 0 !important; color: #0a4d8c !important; }
+.welcome-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 0 20px;
+  text-align: left;
+}
+.welcome-steps div {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: .9rem;
+  color: #333;
+  font-weight: 500;
+}
+.welcome-btn {
+  background: linear-gradient(135deg,#0a4d8c,#27ae60);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  padding: 14px 36px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+  width: 100%;
+  transition: opacity .2s;
+}
+.welcome-btn:hover { opacity: .88; }
+
+/* Счётчик дней */
+.day-counter {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 160px;
+}
+.day-counter-num { font-size: .9rem; color: #555; }
+.day-counter-num strong { color: #0a4d8c; font-size: 1.1rem; }
+.day-counter-num span { color: #aaa; }
+.day-counter-bar {
+  height: 6px;
+  background: #dde8f5;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.day-counter-fill {
+  height: 100%;
+  background: linear-gradient(90deg,#1a7fd4,#27ae60);
+  border-radius: 3px;
+  transition: width .5s;
+}
+
+/* Анимация пульса на кнопке при первом входе */
+@keyframes pulse-btn {
+  0%,100% { box-shadow: 0 0 0 0 rgba(26,127,212,.4); }
+  50% { box-shadow: 0 0 0 10px rgba(26,127,212,0); }
+}
+.pulse { animation: pulse-btn 1.5s infinite; }
