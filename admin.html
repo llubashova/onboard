@@ -6,8 +6,13 @@
   <title>Панель администратора | Auditorium Onboard</title>
   <script>if(!localStorage.getItem('ao_session'))location.replace('login.html');</script>
   <link rel="stylesheet" href="style.css">
+  <!-- SheetJS для Excel -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <!-- jsPDF для PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
-    .admin-wrap{max-width:980px;margin:0 auto;padding:24px 16px}
+    .admin-wrap{max-width:960px;margin:0 auto;padding:24px 16px}
     h2{color:#0a4d8c;margin:0 0 6px}
     .section-card{background:#fff;border-radius:16px;padding:24px;margin-bottom:24px;box-shadow:0 4px 20px rgba(0,0,0,.07)}
     .section-card h3{color:#0a4d8c;margin:0 0 16px;font-size:1.05rem;border-bottom:2px solid #e8f0fe;padding-bottom:8px}
@@ -16,9 +21,9 @@
     .invite-controls select:focus,.invite-controls input:focus{border-color:#1a7fd4}
     .btn{padding:9px 18px;border:none;border-radius:8px;font-size:.88rem;font-weight:700;cursor:pointer;transition:.15s}
     .btn-primary{background:linear-gradient(135deg,#0a4d8c,#1a7fd4);color:#fff}
-    .btn-success{background:#d1fae5;color:#065f46;border:1.5px solid #6ee7b7}
     .btn-danger{background:#fff;color:#e74c3c;border:2px solid #e74c3c}
     .btn-warn{background:#fff3e0;color:#e65100;border:2px solid #ffb74d}
+    .btn-success{background:#d1fae5;color:#065f46;border:2px solid #6ee7b7}
     .btn-sm{padding:5px 12px;font-size:.8rem}
     .invite-table,.user-table{width:100%;border-collapse:collapse;font-size:.87rem}
     .invite-table th,.user-table th{background:#f0f7ff;color:#0a4d8c;padding:9px 12px;text-align:left;font-weight:700}
@@ -48,18 +53,20 @@
     .loading-screen p{color:#1a7fd4;font-size:1rem;font-weight:500}
     .spinner{width:40px;height:40px;border:4px solid #c7d7f0;border-top-color:#1a7fd4;border-radius:50%;animation:spin .8s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
-    .progress-mini-wrap{background:#e8f0fe;border-radius:6px;height:8px;overflow:hidden;width:90px;display:inline-block;vertical-align:middle;margin-right:6px}
-    .progress-mini-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#1a7fd4,#27ae60);width:0;transition:width 1s cubic-bezier(.4,0,.2,1)}
+    .progress-mini-wrap{background:#e8f0fe;border-radius:6px;height:8px;overflow:hidden;width:100px;display:inline-block;vertical-align:middle;margin-right:6px}
     .xp-level-badge{display:inline-block;border-radius:12px;padding:2px 9px;font-size:.75rem;font-weight:700}
     .lvl-novice{background:#e8f0fe;color:#0a4d8c}
     .lvl-advanced{background:#fff3cd;color:#854d0e}
     .lvl-pro{background:#d1fae5;color:#065f46}
-    /* ===== ФИЛЬТРЫ ===== */
-    .filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:12px 16px;background:#f8fbff;border-radius:10px;border:1px solid #e8f0fe}
-    .filter-bar label{font-size:.82rem;color:#555;font-weight:600;white-space:nowrap}
-    .filter-bar select{padding:6px 10px;border:1.5px solid #d1e8f5;border-radius:7px;font-size:.85rem;font-family:inherit;outline:none;background:white;cursor:pointer}
+    /* Фильтры */
+    .filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+    .filter-bar select{padding:7px 12px;border:2px solid #e8f0fe;border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;cursor:pointer}
     .filter-bar select:focus{border-color:#1a7fd4}
-    .filter-stats{font-size:.82rem;color:#888;margin-left:auto;white-space:nowrap}
+    .filter-bar label{font-size:.85rem;color:#555;font-weight:600}
+    .export-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    .stats-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+    .stat-chip{background:#f0f7ff;border-radius:10px;padding:8px 16px;font-size:.82rem;color:#0a4d8c;font-weight:600}
+    .stat-chip span{font-size:1.2rem;font-weight:800;display:block}
   </style>
 </head>
 <body>
@@ -81,10 +88,9 @@
 
 <div class="admin-wrap">
   <h2>🛠️ Панель администратора</h2>
-  <p style="color:#888;margin:0 0 24px">Управление приглашениями и сотрудниками</p>
+  <p style="color:#888;margin:0 0 24px">Управление приглашениями и пользователями</p>
   <div class="alert" id="alertMsg"></div>
 
-  <!-- ИНВАЙТЫ -->
   <div class="section-card">
     <h3>🔑 Коды приглашений</h3>
     <div class="invite-controls">
@@ -111,30 +117,39 @@
     </table>
   </div>
 
-  <!-- СОТРУДНИКИ + ФИЛЬТРЫ -->
   <div class="section-card">
     <h3>👥 Сотрудники и прогресс</h3>
 
+    <!-- Статистика -->
+    <div class="stats-row" id="statsRow"></div>
+
+    <!-- Фильтры -->
     <div class="filter-bar">
       <label>Роль:</label>
-      <select id="filterRole" onchange="renderUsers()">
-        <option value="all">Все роли</option>
+      <select id="filterRole" onchange="applyFilters()">
+        <option value="">Все роли</option>
         <option value="producer">🎬 Продюсер</option>
         <option value="sales">📞 Менеджер по продажам</option>
         <option value="marketing">📣 Специалист по маркетингу</option>
-        <option value="__admin">★ Администраторы</option>
+        <option value="hr">👩‍💼 HR-менеджер</option>
+        <option value="ceo">👑 Генеральный директор</option>
+        <option value="exec_dir">🏢 Исполнительный директор</option>
+        <option value="ops_dir">⚙️ Операционный директор</option>
       </select>
-
       <label>Уровень:</label>
-      <select id="filterLevel" onchange="renderUsers()">
-        <option value="all">Все уровни</option>
+      <select id="filterLevel" onchange="applyFilters()">
+        <option value="">Все уровни</option>
         <option value="novice">🌱 Новичок</option>
         <option value="advanced">🚀 Продвинутый</option>
         <option value="pro">🏆 Профи</option>
+        <option value="none">— Нет прогресса</option>
       </select>
+    </div>
 
-      <button class="btn btn-success btn-sm" onclick="exportCSV()">⬇️ Экспорт CSV</button>
-      <span class="filter-stats" id="filterStats"></span>
+    <!-- Экспорт -->
+    <div class="export-bar">
+      <button class="btn btn-success btn-sm" onclick="exportExcel()">📥 Экспорт Excel</button>
+      <button class="btn btn-warn btn-sm" onclick="exportPDF()">📄 Экспорт PDF</button>
     </div>
 
     <table class="user-table">
@@ -155,103 +170,224 @@ const ROLE_BADGES = {
   producer:'badge-prod', sales:'badge-sales', marketing:'badge-mkt',
   hr:'badge-hr', ceo:'badge-ceo', exec_dir:'badge-exec', ops_dir:'badge-ops'
 };
-const ADMIN_ROLES = ['hr','ceo','exec_dir','ops_dir'];
 
 const ROLE_KEYS = {
   producer: {
     maxXp: 331,
     keys: [
       ['producer_l1_p1',10],['producer_l1_p2',10],['producer_l1_p3',10],
-      ['producer_l1_m1',8],['producer_l1_m2',8],
-      ['producer_l1_s1',5],['producer_l1_s2',5],['producer_l1_s3',5],['producer_l1_s4',5],
+      ['producer_l1_m1',8], ['producer_l1_m2',8],
+      ['producer_l1_s1',5], ['producer_l1_s2',5],['producer_l1_s3',5],['producer_l1_s4',5],
       ['producer_l2_p1',15],['producer_l2_p2',15],['producer_l2_p3',15],['producer_l2_p4',15],['producer_l2_p5',15],
-      ['producer_l2_m1',8],['producer_l2_m2',8],['producer_l2_m3',8],
-      ['producer_l2_s1',5],['producer_l2_s2',5],['producer_l2_s3',5],
+      ['producer_l2_m1',8], ['producer_l2_m2',8],['producer_l2_m3',8],
+      ['producer_l2_s1',5], ['producer_l2_s2',5],['producer_l2_s3',5],
       ['producer_l3_p1',25],['producer_l3_p2',25],['producer_l3_p3',25],['producer_l3_p4',25],['producer_l3_p5',25],
-      ['producer_l3_m1',8],['producer_l3_m2',8],
-      ['producer_l3_s1',5],['producer_l3_s2',5]
+      ['producer_l3_m1',8], ['producer_l3_m2',8],
+      ['producer_l3_s1',5], ['producer_l3_s2',5]
     ],
     getLevel(xp) {
-      if (xp >= 180) return { label:'🏆 Профи', cls:'lvl-pro', key:'pro' };
+      if (xp >= 180) return { label:'🏆 Профи',       cls:'lvl-pro',      key:'pro' };
       if (xp >= 66)  return { label:'🚀 Продвинутый', cls:'lvl-advanced', key:'advanced' };
-      return { label:'🌱 Новичок', cls:'lvl-novice', key:'novice' };
+      return                 { label:'🌱 Новичок',     cls:'lvl-novice',   key:'novice' };
     }
   },
   sales: {
     maxXp: 294,
     keys: [
       ['sales_l1_p1',10],['sales_l1_p2',10],['sales_l1_p3',10],
-      ['sales_l1_m1',8],['sales_l1_m2',8],['sales_l1_m3',8],
-      ['sales_l1_s1',5],['sales_l1_s2',5],['sales_l1_s3',5],
+      ['sales_l1_m1',8], ['sales_l1_m2',8], ['sales_l1_m3',8],
+      ['sales_l1_s1',5], ['sales_l1_s2',5], ['sales_l1_s3',5],
       ['sales_l2_p1',15],['sales_l2_p2',15],['sales_l2_p3',15],['sales_l2_p4',15],
-      ['sales_l2_m1',8],['sales_l2_m2',8],
-      ['sales_l2_s1',5],['sales_l2_s2',5],
+      ['sales_l2_m1',8], ['sales_l2_m2',8],
+      ['sales_l2_s1',5], ['sales_l2_s2',5],
       ['sales_l3_p1',25],['sales_l3_p2',25],['sales_l3_p3',25],['sales_l3_p4',25],
       ['sales_l3_m1',8],
-      ['sales_l3_s1',5],['sales_l3_s2',5]
+      ['sales_l3_s1',5], ['sales_l3_s2',5]
     ],
     getLevel(xp) {
-      const p = xp / 294 * 100;
-      if (p >= 55) return { label:'🏆 Профи', cls:'lvl-pro', key:'pro' };
-      if (p >= 20) return { label:'🚀 Продвинутый', cls:'lvl-advanced', key:'advanced' };
-      return { label:'🌱 Новичок', cls:'lvl-novice', key:'novice' };
+      const pct = xp / 294 * 100;
+      if (pct >= 55) return { label:'🏆 Профи',       cls:'lvl-pro',      key:'pro' };
+      if (pct >= 20) return { label:'🚀 Продвинутый', cls:'lvl-advanced', key:'advanced' };
+      return                 { label:'🌱 Новичок',     cls:'lvl-novice',   key:'novice' };
     }
   },
   marketing: {
     maxXp: 316,
     keys: [
       ['marketing_l1_p1',10],['marketing_l1_p2',10],['marketing_l1_p3',10],['marketing_l1_p4',10],
-      ['marketing_l1_m1',8],['marketing_l1_m2',8],
-      ['marketing_l1_s1',5],['marketing_l1_s2',5],['marketing_l1_s3',5],
+      ['marketing_l1_m1',8], ['marketing_l1_m2',8],
+      ['marketing_l1_s1',5], ['marketing_l1_s2',5],['marketing_l1_s3',5],
       ['marketing_l2_p1',15],['marketing_l2_p2',15],['marketing_l2_p3',15],['marketing_l2_p4',15],['marketing_l2_p5',15],
-      ['marketing_l2_m1',8],['marketing_l2_m2',8],
-      ['marketing_l2_s1',5],['marketing_l2_s2',5],
+      ['marketing_l2_m1',8], ['marketing_l2_m2',8],
+      ['marketing_l2_s1',5], ['marketing_l2_s2',5],
       ['marketing_l3_p1',25],['marketing_l3_p2',25],['marketing_l3_p3',25],['marketing_l3_p4',25],
       ['marketing_l3_m1',8],
-      ['marketing_l3_s1',5],['marketing_l3_s2',5]
+      ['marketing_l3_s1',5], ['marketing_l3_s2',5]
     ],
     getLevel(xp) {
-      const p = xp / 316 * 100;
-      if (p >= 55) return { label:'🏆 Профи', cls:'lvl-pro', key:'pro' };
-      if (p >= 20) return { label:'🚀 Продвинутый', cls:'lvl-advanced', key:'advanced' };
-      return { label:'🌱 Новичок', cls:'lvl-novice', key:'novice' };
+      const pct = xp / 316 * 100;
+      if (pct >= 55) return { label:'🏆 Профи',       cls:'lvl-pro',      key:'pro' };
+      if (pct >= 20) return { label:'🚀 Продвинутый', cls:'lvl-advanced', key:'advanced' };
+      return                 { label:'🌱 Новичок',     cls:'lvl-novice',   key:'novice' };
     }
   }
 };
 
 function getUserXp(login, role) {
   const cfg = ROLE_KEYS[role];
-  if (!cfg) return null;
+  if (!cfg || !cfg.keys.length) return null;
   let xp = 0;
-  cfg.keys.forEach(([key, pts]) => { if (Auth.getCheckForUser(login, key)) xp += pts; });
+  cfg.keys.forEach(([key, pts]) => {
+    if (Auth.getCheckForUser(login, key)) xp += pts;
+  });
   return { xp, maxXp: cfg.maxXp, level: cfg.getLevel(xp) };
 }
 
 function renderProgressCell(login, role) {
   const data = getUserXp(login, role);
   if (!data) return '<span style="color:#ccc;font-size:.8rem">—</span>';
-  const pct = Math.round(data.xp / data.maxXp * 100);
-  const uid = 'pb_' + login.replace(/[^a-z0-9]/gi,'_');
+  const pct = data.maxXp ? Math.round(data.xp / data.maxXp * 100) : 0;
   return `
     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-      <div class="progress-mini-wrap"><div class="progress-mini-fill" id="${uid}" style="width:0%" data-target="${pct}"></div></div>
+      <div class="progress-mini-wrap"><div class="progress-mini-fill" style="width:${pct}%"></div></div>
       <span style="font-size:.8rem;color:#555;min-width:54px">${data.xp}/${data.maxXp} XP</span>
       <span class="xp-level-badge ${data.level.cls}">${data.level.label}</span>
     </div>`;
 }
 
-function animateBars() {
-  requestAnimationFrame(() => {
-    document.querySelectorAll('.progress-mini-fill[data-target]').forEach(el => {
-      el.style.width = el.dataset.target + '%';
-    });
+// ─── ГЛОБАЛЬНЫЙ КЭШ для фильтрации и экспорта ───
+let _allEntries = [];
+
+function buildEntries() {
+  const users = Auth.getUsers();
+  _allEntries = Object.entries(users).map(([login, u]) => {
+    const xpData = getUserXp(login, u.role);
+    return { login, u, xpData };
   });
 }
 
-function showAlert(msg, type) {
+function renderStats() {
+  const total = _allEntries.length;
+  const employees = _allEntries.filter(e => ROLE_KEYS[e.u.role]).length;
+  const pro       = _allEntries.filter(e => e.xpData && e.xpData.level.key === 'pro').length;
+  const advanced  = _allEntries.filter(e => e.xpData && e.xpData.level.key === 'advanced').length;
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-chip"><span>${total}</span>Всего пользователей</div>
+    <div class="stat-chip"><span>${employees}</span>Сотрудников с прогрессом</div>
+    <div class="stat-chip"><span>${advanced}</span>Продвинутых</div>
+    <div class="stat-chip"><span>${pro}</span>Профи</div>
+  `;
+}
+
+function applyFilters() {
+  const roleF  = document.getElementById('filterRole').value;
+  const levelF = document.getElementById('filterLevel').value;
+  const filtered = _allEntries.filter(({ u, xpData }) => {
+    if (roleF && u.role !== roleF) return false;
+    if (levelF) {
+      if (levelF === 'none' && xpData) return false;
+      if (levelF !== 'none' && (!xpData || xpData.level.key !== levelF)) return false;
+    }
+    return true;
+  });
+  renderUserTable(filtered);
+}
+
+function renderUserTable(entries) {
+  const tbody   = document.getElementById('userTableBody');
+  const meLogin = Auth.currentLogin();
+  const allRoles = ['producer','sales','marketing','hr','ceo','exec_dir','ops_dir'];
+  if (!entries.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Нет пользователей по выбранным фильтрам</td></tr>';
+    return;
+  }
+  tbody.innerHTML = '';
+  [...entries]
+    .sort(([,{u:a}],[,{u:b}]) => a.fio.localeCompare(b.fio))
+    .forEach(({ login, u }) => {
+      const me = login === meLogin;
+      const tr = document.createElement('tr');
+      const progressHTML = renderProgressCell(login, u.role);
+      tr.innerHTML = `
+        <td>${u.fio}${u.admin?' <span style="color:#0a4d8c;font-size:.75rem">★ admin</span>':''}${me?' <span style="color:#888;font-size:.75rem">(вы)</span>':''}</td>
+        <td style="font-family:monospace;font-size:.85rem">${login}</td>
+        <td><select class="role-select" onchange="changeRole('${login}',this.value)" ${me?'disabled':''}>
+          ${allRoles.map(r=>`<option value="${r}" ${u.role===r?'selected':''}>${ROLE_NAMES[r]}</option>`).join('')}
+        </select></td>
+        <td>${progressHTML}</td>
+        <td>${u.blocked ? '<span class="ubadge badge-blocked">Заблокирован</span>' : '<span class="ubadge badge-active">Активен</span>'}</td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap">
+          ${!me&&!u.blocked?`<button class="btn btn-warn btn-sm" onclick="blockUser('${login}')">Блок</button>`:''}
+          ${!me&&u.blocked ?`<button class="btn btn-primary btn-sm" onclick="unblockUser('${login}')">Разблок</button>`:''}
+          ${!me&&!u.admin  ?`<button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc" onclick="promoteUser('${login}')">→ Admin</button>`:''}
+          ${!me?`<button class="btn btn-danger btn-sm" onclick="deleteUser('${login}')">Удалить</button>`:''}
+        </td>`;
+      tbody.appendChild(tr);
+    });
+}
+
+function renderUsers() {
+  buildEntries();
+  renderStats();
+  applyFilters();
+}
+
+// ─── ЭКСПОРТ EXCEL ───
+function exportExcel() {
+  const rows = _allEntries.map(({ login, u, xpData }) => ({
+    'ФИО':      u.fio,
+    'Логин':    login,
+    'Роль':     ROLE_NAMES[u.role] || u.role,
+    'XP':       xpData ? xpData.xp : '—',
+    'Max XP':   xpData ? xpData.maxXp : '—',
+    'Прогресс %': xpData ? Math.round(xpData.xp / xpData.maxXp * 100) + '%' : '—',
+    'Уровень':  xpData ? xpData.level.label.replace(/[^a-zA-Zа-яА-ЯёЁ\s]/gu,'').trim() : '—',
+    'Статус':   u.blocked ? 'Заблокирован' : 'Активен'
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Прогресс');
+  const date = new Date().toLocaleDateString('ru-RU').replace(/\./g,'-');
+  XLSX.writeFile(wb, `onboard_progress_${date}.xlsx`);
+  showAlert('📥 Excel-файл скачан!');
+}
+
+// ─── ЭКСПОРТ PDF ───
+function exportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+
+  doc.setFontSize(16);
+  doc.text('Auditorium Onboard — Прогресс сотрудников', 14, 18);
+  doc.setFontSize(9);
+  doc.text('Дата: ' + new Date().toLocaleDateString('ru-RU'), 14, 25);
+
+  const rows = _allEntries.map(({ login, u, xpData }) => [
+    u.fio,
+    login,
+    ROLE_NAMES[u.role] || u.role,
+    xpData ? xpData.xp + '/' + xpData.maxXp : '—',
+    xpData ? Math.round(xpData.xp / xpData.maxXp * 100) + '%' : '—',
+    xpData ? xpData.level.label.replace(/[^a-zA-Zа-яА-ЯёЁ\s]/gu,'').trim() : '—',
+    u.blocked ? 'Заблокирован' : 'Активен'
+  ]);
+
+  doc.autoTable({
+    head: [['ФИО','Логин','Роль','XP','%','Уровень','Статус']],
+    body: rows,
+    startY: 30,
+    styles: { font:'helvetica', fontSize:8 },
+    headStyles: { fillColor:[10,77,140], textColor:255 },
+    alternateRowStyles: { fillColor:[240,247,255] }
+  });
+
+  const date = new Date().toLocaleDateString('ru-RU').replace(/\./g,'-');
+  doc.save(`onboard_progress_${date}.pdf`);
+  showAlert('📄 PDF-файл скачан!');
+}
+
+function showAlert(msg) {
   const el = document.getElementById('alertMsg');
-  el.style.background = type === 'error' ? '#fee2e2' : '#d1fae5';
-  el.style.color = type === 'error' ? '#991b1b' : '#065f46';
   el.textContent = msg; el.style.display = 'block';
   setTimeout(() => el.style.display = 'none', 3000);
 }
@@ -269,7 +405,7 @@ function clearUsedInvites() {
   if (!confirm('Удалить все использованные ключи из истории?')) return;
   Auth.clearUsedInvites();
   renderInvites();
-  showAlert('🧹 История очищена');
+  showAlert('🧹 История использованных ключей очищена');
 }
 
 function renderInvites() {
@@ -296,97 +432,6 @@ function copyCode(code) { navigator.clipboard.writeText(code).then(() => showAle
 function delInvite(code) {
   if (!confirm('Удалить код ' + code + '?')) return;
   Auth.deleteInvite(code); renderInvites();
-}
-
-// ===== РЕНДЕР ПОЛЬЗОВАТЕЛЕЙ С ФИЛЬТРАМИ =====
-function renderUsers() {
-  const tbody      = document.getElementById('userTableBody');
-  const filterRole = document.getElementById('filterRole').value;
-  const filterLvl  = document.getElementById('filterLevel').value;
-  const meLogin    = Auth.currentLogin();
-  const users      = Auth.getUsers();
-  let entries      = Object.entries(users);
-
-  // Фильтр по роли
-  if (filterRole === '__admin') {
-    entries = entries.filter(([, u]) => ADMIN_ROLES.includes(u.role));
-  } else if (filterRole !== 'all') {
-    entries = entries.filter(([, u]) => u.role === filterRole);
-  }
-
-  // Фильтр по уровню (только для сотрудников с маршрутом)
-  if (filterLvl !== 'all') {
-    entries = entries.filter(([login, u]) => {
-      const data = getUserXp(login, u.role);
-      return data && data.level.key === filterLvl;
-    });
-  }
-
-  // Статистика
-  document.getElementById('filterStats').textContent =
-    'Показано: ' + entries.length + ' из ' + Object.keys(users).length;
-
-  if (!entries.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Нет сотрудников по выбранным фильтрам</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = '';
-  const allRoles = ['producer','sales','marketing','hr','ceo','exec_dir','ops_dir'];
-  entries.sort(([,a],[,b]) => a.fio.localeCompare(b.fio)).forEach(([login, u]) => {
-    const me = login === meLogin;
-    const tr = document.createElement('tr');
-    const progressHTML = renderProgressCell(login, u.role);
-    tr.innerHTML = `
-      <td>${u.fio}${u.admin?' <span style="color:#0a4d8c;font-size:.75rem">★ admin</span>':''}${me?' <span style="color:#888;font-size:.75rem">(вы)</span>':''}</td>
-      <td style="font-family:monospace;font-size:.85rem">${login}</td>
-      <td><select class="role-select" onchange="changeRole('${login}',this.value)" ${me?'disabled':''}>
-        ${allRoles.map(r=>`<option value="${r}" ${u.role===r?'selected':''}>${ROLE_NAMES[r]}</option>`).join('')}
-      </select></td>
-      <td>${progressHTML}</td>
-      <td>${u.blocked ? '<span class="ubadge badge-blocked">Заблокирован</span>' : '<span class="ubadge badge-active">Активен</span>'}</td>
-      <td style="display:flex;gap:6px;flex-wrap:wrap">
-        ${!me&&!u.blocked?`<button class="btn btn-warn btn-sm" onclick="blockUser('${login}')">Блок</button>`:''}
-        ${!me&&u.blocked ?`<button class="btn btn-primary btn-sm" onclick="unblockUser('${login}')">Разблок</button>`:''}
-        ${!me&&!u.admin  ?`<button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc" onclick="promoteUser('${login}')">→ Admin</button>`:''}
-        ${!me?`<button class="btn btn-danger btn-sm" onclick="deleteUser('${login}')">Удалить</button>`:''}
-      </td>`;
-    tbody.appendChild(tr);
-  });
-
-  // Анимация прогресс-баров после рендера
-  animateBars();
-}
-
-// ===== ЭКСПОРТ CSV =====
-function exportCSV() {
-  const users   = Auth.getUsers();
-  const entries = Object.entries(users);
-  const rows    = [['ФИО','Логин','Роль','XP','Макс XP','Прогресс %','Уровень','Статус']];
-
-  entries.sort(([,a],[,b]) => a.fio.localeCompare(b.fio)).forEach(([login, u]) => {
-    const data = getUserXp(login, u.role);
-    const xp   = data ? data.xp : '—';
-    const max  = data ? data.maxXp : '—';
-    const pct  = data ? Math.round(data.xp / data.maxXp * 100) + '%' : '—';
-    const lvl  = data ? data.level.label.replace(/[🌱🚀🏆]/gu,'').trim() : '—';
-    rows.push([
-      u.fio, login, ROLE_NAMES[u.role]||u.role,
-      xp, max, pct, lvl,
-      u.blocked ? 'Заблокирован' : 'Активен'
-    ]);
-  });
-
-  const bom = '\uFEFF'; // UTF-8 BOM для корректного открытия в Excel
-  const csv = bom + rows.map(r => r.map(v => '"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url;
-  a.download = 'onboard_progress_' + new Date().toISOString().slice(0,10) + '.csv';
-  a.click();
-  URL.revokeObjectURL(url);
-  showAlert('📥 CSV выгружен!');
 }
 
 function changeRole(login, role) { Auth.setUserRole(login, role); showAlert('✅ Роль обновлена'); renderUsers(); }

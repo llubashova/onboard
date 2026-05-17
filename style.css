@@ -1,4 +1,4 @@
-/* ===== ШРИФТЫ ===== */
+/* ===== ШРИФТЫ (группа Helios / Helvetica Neue) ===== */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -204,8 +204,15 @@ header {
   min-width: 160px;
 }
 
-.overall-progress .big-num { font-size: 2.2rem; font-weight: 700; }
-.overall-progress .label { font-size: 0.82rem; opacity: 0.8; }
+.overall-progress .big-num {
+  font-size: 2.2rem;
+  font-weight: 700;
+}
+
+.overall-progress .label {
+  font-size: 0.82rem;
+  opacity: 0.8;
+}
 
 /* ===== КАРТОЧКИ РОЛЕЙ ===== */
 .section-title {
@@ -273,50 +280,36 @@ header {
   overflow: hidden;
 }
 
-/* Анимация: при загрузке страницы полоска "въезжает" слева */
-@keyframes progressSlideIn {
+/* Анимация прогресс-бара при загрузке */
+@keyframes progressGrow {
   from { width: 0% !important; }
-  to   { /* width задаётся инлайн */ }
+  to   { width: var(--target-width); }
 }
 
 .progress-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--blue-main), var(--blue-dark));
   border-radius: 8px;
-  /* start from 0 and animate to real value */
-  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-  animation: none;
-}
-
-/* Класс-триггер: вешается JS'ом, сбрасывает width в 0 до старта transition */
-.progress-fill.animate-in {
-  animation: progressSlideIn 0.05s linear forwards;
-}
-
-/* Прогресс-бар на страницах маршрутов (в хедере) */
-.route-progress-bar {
-  background: rgba(255,255,255,0.2);
-  height: 10px;
-  border-radius: 8px;
-  margin-top: 20px;
-  overflow: hidden;
-  max-width: 500px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.route-progress-fill {
-  height: 100%;
-  background: white;
-  border-radius: 8px;
   width: 0%;
-  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.6s ease;
+  animation: progressGrow 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-.route-progress-label {
-  font-size: 0.85rem;
-  opacity: 0.8;
-  margin-top: 8px;
+.progress-fill.animated {
+  animation: progressGrow 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Анимация мини-баров в HR-дашборде */
+@keyframes miniProgressGrow {
+  from { width: 0% !important; }
+}
+
+.progress-mini-fill {
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #1a7fd4, #27ae60);
+  animation: miniProgressGrow 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transition: width 0.6s ease;
 }
 
 .role-btn {
@@ -404,6 +397,31 @@ footer {
 
 .route-header h1 { font-size: 1.8rem; margin-bottom: 8px; }
 .route-header p { opacity: 0.85; font-size: 1rem; }
+
+.route-progress-bar {
+  background: rgba(255,255,255,0.2);
+  height: 10px;
+  border-radius: 8px;
+  margin-top: 20px;
+  overflow: hidden;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.route-progress-fill {
+  height: 100%;
+  background: white;
+  border-radius: 8px;
+  width: 0%;
+  animation: progressGrow 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.route-progress-label {
+  font-size: 0.85rem;
+  opacity: 0.8;
+  margin-top: 8px;
+}
 
 /* ===== УРОВНИ ===== */
 .levels-wrap {
@@ -616,7 +634,12 @@ footer {
 
 /* ===== АДАПТИВ ===== */
 @media (max-width: 600px) {
-  .header-inner { flex-direction: row; flex-wrap: wrap; padding: 14px 16px; gap: 8px; }
+  .header-inner {
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 14px 16px;
+    gap: 8px;
+  }
   .logo { font-size: 1.1rem; }
   .logo-icon { font-size: 1.3rem; }
   .header-right { gap: 6px; }
