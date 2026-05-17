@@ -1,4 +1,6 @@
-// db.js — JSONBin bridge v4
+// db.js — JSONBin bridge v5
+// fix: restoreProgress теперь сначала чистит старые ao_p_ ключи,
+//      потом накатывает данные из облака — HR видит актуальный прогресс
 const DB = (() => {
   const BIN_ID  = '6a07317badc21f119aa526dd';
   const API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
@@ -16,7 +18,20 @@ const DB = (() => {
     return progress;
   }
 
+  // ИСПРАВЛЕНО: сначала удаляем ВСЕ старые ao_p_ ключи из localStorage,
+  // потом накатываем то, что пришло из облака.
+  // Иначе сброс прогресса сотрудника не отображался у HR —
+  // облако присылало пустой объект, но restoreProgress ничего не затирал.
   function restoreProgress(progress) {
+    // 1. Стираем все локальные ключи прогресса
+    const keysToDelete = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('ao_p_')) keysToDelete.push(k);
+    }
+    keysToDelete.forEach(k => localStorage.removeItem(k));
+
+    // 2. Накатываем актуальные данные из облака
     if (!progress || typeof progress !== 'object') return;
     Object.keys(progress).forEach(k => {
       if (k.startsWith('ao_p_')) localStorage.setItem(k, progress[k]);
@@ -24,13 +39,11 @@ const DB = (() => {
   }
 
   // Нормализация пользователей: все логины → нижний регистр
-  // Работает автоматически — не нужно ничего править вручную
   function normalizeUsers(users) {
     if (!users || typeof users !== 'object') return {};
     const normalized = {};
     Object.entries(users).forEach(([login, u]) => {
-      const lowerLogin = login.toLowerCase();
-      normalized[lowerLogin] = u;
+      normalized[login.toLowerCase()] = u;
     });
     return normalized;
   }
@@ -44,7 +57,7 @@ const DB = (() => {
       const normalizedUsers = normalizeUsers(cloud.users);
       localStorage.setItem('ao_users',   JSON.stringify(normalizedUsers));
       localStorage.setItem('ao_invites', JSON.stringify(cloud.invites || '{}'));
-      restoreProgress(cloud.progress);
+      restoreProgress(cloud.progress || {});
     }
   })
   .catch(() => {});
