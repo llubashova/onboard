@@ -7,24 +7,19 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
 <header>
   <div class="header-inner">
     <div class="logo"><span class="logo-icon">🎓</span> Auditorium Onboard</div>
     <div class="user-badge"><span id="headerUser">—</span></div>
   </div>
 </header>
-
 <a href="index.html" class="back-link">← Вернуться на главную</a>
-
 <div class="route-header">
   <h1>📚 База знаний</h1>
   <p>Все шаблоны, чек-листы, инструкции и кейсы компании</p>
 </div>
-
 <div class="knowledge-wrap">
   <div class="knowledge-grid">
-
     <div class="knowledge-card">
       <h3>🎬 Для продюсера</h3>
       <ul>
@@ -40,7 +35,6 @@
         <li>📁 Кейсы прошлых форумов</li>
       </ul>
     </div>
-
     <div class="knowledge-card">
       <h3>📞 Для менеджера по продажам</h3>
       <ul>
@@ -54,7 +48,6 @@
         <li>💼 Кейсы успешных продаж</li>
       </ul>
     </div>
-
     <div class="knowledge-card">
       <h3>📣 Для специалиста по маркетингу</h3>
       <ul>
@@ -69,11 +62,10 @@
         <li>📁 Кейсы прошлых кампаний</li>
       </ul>
     </div>
-
     <div class="knowledge-card">
       <h3>🏢 Общие материалы</h3>
       <ul>
-        <li>🏛️ О компании: история, миссия, ценности</li>
+        <li>🏗️ О компании: история, миссия, ценности</li>
         <li>👥 Структура команды</li>
         <li>📜 Регламенты и правила работы</li>
         <li>🖥️ Инструкция: внутренний сервер</li>
@@ -81,22 +73,21 @@
         <li>📋 Инструкция: Strive</li>
       </ul>
     </div>
-
   </div>
 </div>
-
 <footer><p>ООО «Аудиториум СиДжи» · Система геймификации адаптации · 2026</p></footer>
-
+<script src="db.js"></script>
+<script src="auth.js"></script>
+<script src="header.js"></script>
 <script>
 window.onload = function() {
-  const name = localStorage.getItem('ao_name');
-  if (name) {
-    const role = localStorage.getItem('ao_role');
-    const roleNames = { producer: 'Продюсер', sales: 'Менеджер по продажам', marketing: 'Специалист по маркетингу' };
-    document.getElementById('headerUser').textContent = name + ' · ' + (roleNames[role] || '');
-  }
+  if (!Auth.requireAuth()) return;
+  DB.ready.then(() => {
+    const u = Auth.current();
+    const rn = {producer:'Продюсер',sales:'Менеджер по продажам',marketing:'Специалист по маркетингу',hr:'HR-менеджер'};
+    document.getElementById('headerUser').textContent = u.fio.split(' ')[0]+' · '+(rn[u.role]||u.role);
+  });
 };
 </script>
-
 </body>
 </html>
