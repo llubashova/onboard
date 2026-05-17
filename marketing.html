@@ -13,6 +13,9 @@
     .xp-badge{background:#e8f0fe;color:#0a4d8c;border-radius:20px;padding:4px 14px;font-size:.88rem;font-weight:700}
     .xp-level{background:linear-gradient(135deg,#0a4d8c,#1a7fd4);color:#fff;border-radius:20px;padding:4px 16px;font-size:.88rem;font-weight:700}
     .xp-pts{color:#888;font-size:.82rem}
+    .admin-view-banner{background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:10px 16px;margin:0 0 16px;font-size:.9rem;color:#7d4e00;display:flex;align-items:center;gap:8px;}
+    body.admin-view .checklist li{cursor:default!important;pointer-events:none;opacity:.85;}
+    body.admin-view .checklist li.checked{opacity:1;}
   </style>
 </head>
 <body>
@@ -23,6 +26,7 @@
   </div>
 </header>
 <a href="index.html" class="back-link">← Вернуться к выбору роли</a>
+<div id="adminBanner" style="display:none" class="admin-view-banner">👁️ Режим просмотра — <strong id="bannerName"></strong>. Изменения недоступны.</div>
 <div class="route-header">
   <h1>📣 Маршрут специалиста по маркетингу</h1>
   <p>90 дней · 3 уровня · Яндекс.Директ, контент-план, email, TG-канал</p>
@@ -148,11 +152,21 @@ const LEVELS = [
   {min:72, max:187, label:'🚀 Продвинутый'},
   {min:188,max:316, label:'🏆 Профи'}
 ];
+
+// --- Режим просмотра (для админов) ---
+const _viewLogin = new URLSearchParams(location.search).get('view') || '';
+const _isViewMode = !!_viewLogin;
+
+function _getCheck(key) {
+  return _isViewMode ? Auth.getCheckForUser(_viewLogin, key) : Auth.getCheck(key);
+}
+
 function getXpLevel(xp) {
   for (const l of LEVELS) if (xp <= l.max) return l.label;
   return LEVELS[LEVELS.length-1].label;
 }
 function toggle(li) {
+  if (_isViewMode) return; // read-only
   const key = li.dataset.key;
   const cb = li.querySelector('input[type="checkbox"]');
   const checked = !cb.checked;
@@ -174,18 +188,17 @@ function toggleLevel(id) {
 function updateProgress() {
   const allItems = document.querySelectorAll('.checklist li[data-key]');
   let totalXp = 0;
-  allItems.forEach(li => { if(Auth.getCheck(li.dataset.key)) totalXp += parseInt(li.dataset.points||0); });
+  allItems.forEach(li => { if (_getCheck(li.dataset.key)) totalXp += parseInt(li.dataset.points||0); });
   const pct = Math.round(totalXp / MAX_XP * 100);
   document.getElementById('xpBarFill').style.width = pct+'%';
   document.getElementById('xpScore').textContent = totalXp+' / '+MAX_XP+' XP';
   document.getElementById('xpPct').textContent = pct+'%';
   document.getElementById('xpLevel').textContent = getXpLevel(totalXp);
-  trackLevelUp(totalXp);
-  checkBadges(totalXp, pct);
+  if (!_isViewMode) { trackLevelUp(totalXp); checkBadges(totalXp, pct); }
   ['l1','l2','l3'].forEach(lvl => {
     const items = document.querySelectorAll('[data-level="'+lvl+'"]');
     let earned=0,max=0;
-    items.forEach(li=>{const p=parseInt(li.dataset.points||0);max+=p;if(Auth.getCheck(li.dataset.key))earned+=p;});
+    items.forEach(li=>{const p=parseInt(li.dataset.points||0);max+=p;if(_getCheck(li.dataset.key))earned+=p;});
     const lp=max?Math.round(earned/max*100):0;
     const el=document.getElementById(lvl+'-pct');if(el)el.textContent=lp+'%';
     const tr=document.getElementById('trophy-'+lvl);if(tr)tr.classList.toggle('visible',lp===100);
@@ -193,7 +206,7 @@ function updateProgress() {
 }
 function loadChecks() {
   document.querySelectorAll('.checklist li[data-key]').forEach(li => {
-    const checked = Auth.getCheck(li.dataset.key);
+    const checked = _getCheck(li.dataset.key);
     const cb = li.querySelector('input[type="checkbox"]');
     if(cb) cb.checked=checked;
     li.classList.toggle('checked',checked);
@@ -203,13 +216,25 @@ function loadChecks() {
 window.onload = function() {
   if (!Auth.requireAuth()) return;
   DB.ready.then(() => {
-    const u = Auth.current();
+    const me = Auth.current();
     const rn={producer:'Продюсер',sales:'Менеджер по продажам',marketing:'Специалист по маркетингу',hr:'HR-менеджер'};
-    document.getElementById('headerUser').textContent = u.fio.split(' ')[0]+' · '+(rn[u.role]||'');
+    if (_isViewMode) {
+      const users = Auth.getUsers();
+      const target = users[_viewLogin];
+      const targetName = target ? target.fio : _viewLogin;
+      document.getElementById('headerUser').textContent = me.fio.split(' ')[0]+' · просмотр';
+      document.getElementById('bannerName').textContent = targetName;
+      document.getElementById('adminBanner').style.display = 'flex';
+      document.body.classList.add('admin-view');
+    } else {
+      document.getElementById('headerUser').textContent = me.fio.split(' ')[0]+' · '+(rn[me.role]||'');
+    }
     loadChecks();
-    const allItems = document.querySelectorAll('.checklist li[data-key]');
-    let xp=0;allItems.forEach(li=>{if(Auth.getCheck(li.dataset.key))xp+=parseInt(li.dataset.points||0);});
-    initLevelTracker(xp);
+    if (!_isViewMode) {
+      const allItems = document.querySelectorAll('.checklist li[data-key]');
+      let xp=0;allItems.forEach(li=>{if(_getCheck(li.dataset.key))xp+=parseInt(li.dataset.points||0);});
+      initLevelTracker(xp);
+    }
   });
 };
 </script>
