@@ -35,6 +35,11 @@
     .badges-section{margin:24px 0 8px}
     .badges-section-title{font-size:.85rem;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px}
     #dayCounterWrap{margin-bottom:12px}
+
+    /* Стили для admin-карточек маршрутов */
+    .admin-card-meta{font-size:.8rem;color:#1a7fd4;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+    .admin-card-meta .staff-count{background:#e8f3ff;border-radius:20px;padding:2px 9px;font-size:.78rem;color:#0a4d8c}
+    .admin-card-empty{font-size:.82rem;color:#aaa;font-style:italic}
   </style>
 </head>
 <body>
@@ -111,8 +116,8 @@
       <div class="role-icon">🎬</div>
       <h2>Продюсер</h2>
       <p class="role-desc">Исследования, деловая программа, работа со спикерами</p>
-      <div class="progress-wrap">
-        <div class="progress-label"><span>Прогресс</span><span id="prog-producer">0%</span></div>
+      <div class="progress-wrap" id="progwrap-producer">
+        <div class="progress-label"><span>Прогресс</span><span id="prog-producer">—</span></div>
         <div class="progress-bar"><div class="progress-fill" id="fill-producer" style="width:0%"></div></div>
       </div>
       <span class="role-btn">Открыть маршрут →</span>
@@ -121,8 +126,8 @@
       <div class="role-icon">📞</div>
       <h2>Менеджер по продажам</h2>
       <p class="role-desc">CRM, звонки, сделки, работа с клиентами</p>
-      <div class="progress-wrap">
-        <div class="progress-label"><span>Прогресс</span><span id="prog-sales">0%</span></div>
+      <div class="progress-wrap" id="progwrap-sales">
+        <div class="progress-label"><span>Прогресс</span><span id="prog-sales">—</span></div>
         <div class="progress-bar"><div class="progress-fill" id="fill-sales" style="width:0%"></div></div>
       </div>
       <span class="role-btn">Открыть маршрут →</span>
@@ -131,8 +136,8 @@
       <div class="role-icon">📣</div>
       <h2>Специалист по маркетингу</h2>
       <p class="role-desc">Яндекс.Директ, контент-план, email, TG-канал</p>
-      <div class="progress-wrap">
-        <div class="progress-label"><span>Прогресс</span><span id="prog-marketing">0%</span></div>
+      <div class="progress-wrap" id="progwrap-marketing">
+        <div class="progress-label"><span>Прогресс</span><span id="prog-marketing">—</span></div>
         <div class="progress-bar"><div class="progress-fill" id="fill-marketing" style="width:0%"></div></div>
       </div>
       <span class="role-btn">Открыть маршрут →</span>
@@ -278,18 +283,29 @@ function updateUI() {
     const staffEntries = Object.entries(users).filter(([, u2]) => !PAGE_ADMIN_ROLES.includes(u2.role));
     document.getElementById('overallPct').textContent = staffEntries.length;
 
+    // Карточки маршрутов для админа: показываем кол-во сотрудников + средний прогресс по группе
     ['producer','sales','marketing'].forEach(r => {
       const group = staffEntries.filter(([, u2]) => u2.role === r);
-      if (group.length) {
-        const avg = Math.round(group.reduce((s,[login]) => s + calcProgress(login, r).pct, 0) / group.length);
-        document.getElementById('prog-'+r).textContent = avg+'%';
-        document.getElementById('fill-'+r).style.width = avg+'%';
+      const progLabel = document.getElementById('prog-'+r);
+      const progFill  = document.getElementById('fill-'+r);
+      const progWrap  = document.getElementById('progwrap-'+r);
+
+      if (group.length === 0) {
+        // Нет сотрудников в этой роли
+        progWrap.innerHTML = '<div class="admin-card-empty">Нет сотрудников</div>';
       } else {
-        document.getElementById('prog-'+r).textContent = '—';
-        document.getElementById('fill-'+r).style.width = '0%';
+        const avg = Math.round(group.reduce((s,[login]) => s + calcProgress(login, r).pct, 0) / group.length);
+        const noun = group.length === 1 ? 'сотрудник' : (group.length < 5 ? 'сотрудника' : 'сотрудников');
+        progWrap.innerHTML = `
+          <div class="admin-card-meta">
+            <span class="staff-count">👥 ${group.length} ${noun}</span>
+            <span>средний прогресс: <strong>${avg}%</strong></span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${avg}%"></div></div>`;
       }
     });
 
+    // Таблица HR-дашборда
     document.getElementById('hrDashboard').style.display = 'block';
     const tbody = document.getElementById('hrTableBody');
     tbody.innerHTML = '';
@@ -318,22 +334,24 @@ function updateUI() {
 
     ['producer','sales','marketing'].forEach(r => {
       const card = document.getElementById('card-'+r);
+      const progWrap = document.getElementById('progwrap-'+r);
       if (r === u.role) {
         card.classList.remove('locked');
         const prog = calcProgress(myLogin, r);
-        document.getElementById('prog-'+r).textContent = prog.pct+'%';
-        document.getElementById('fill-'+r).style.width = prog.pct+'%';
+        // Восстанавливаем стандартный вид progress-wrap для сотрудника
+        progWrap.innerHTML = `
+          <div class="progress-label"><span>Прогресс</span><span id="prog-${r}">${prog.pct}%</span></div>
+          <div class="progress-bar"><div class="progress-fill" id="fill-${r}" style="width:${prog.pct}%"></div></div>`;
         document.getElementById('overallPct').textContent = prog.pct+'%';
-        // Проверяем бейджи
         checkBadges(prog.xp, prog.pct);
       } else {
         card.classList.add('locked');
-        document.getElementById('prog-'+r).textContent = '—';
-        document.getElementById('fill-'+r).style.width = '0%';
+        progWrap.innerHTML = `
+          <div class="progress-label"><span>Прогресс</span><span>—</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>`;
       }
     });
 
-    // Welcome экран при первом входе
     maybeShowWelcome(firstName, roleName);
   }
 }
