@@ -1,12 +1,21 @@
-// header.js — автоматически добавляет кнопку «Выйти» во все страницы
-// и защищает страницы ролей от чужого входа
+// header.js — автоматически добавляет кнопку «Выйти» во все страницы,
+// защищает страницы ролей от чужого входа,
+// и подключает favicon на все страницы
 (function () {
+  // 0. Favicon — вставляем <link rel="icon"> если его ещё нет
+  if (!document.querySelector('link[rel="icon"]')) {
+    const link = document.createElement('link');
+    link.rel  = 'icon';
+    link.type = 'image/svg+xml';
+    link.href = 'favicon.svg';
+    document.head.appendChild(link);
+  }
+
   // 1. Кнопка выхода в хедере
   document.addEventListener('DOMContentLoaded', function () {
     const badge = document.querySelector('.user-badge');
     if (!badge) return;
 
-    // Добавляем кнопку рядом с badge
     const btn = document.createElement('button');
     btn.className = 'logout-btn';
     btn.setAttribute('title', 'Выйти');
@@ -16,12 +25,10 @@
       if (typeof Auth !== 'undefined') Auth.logout();
     };
 
-    // Вставляем кнопку после badge
     const inner = badge.closest('.header-inner');
     if (inner) {
       const wrap = document.createElement('div');
       wrap.className = 'header-right';
-      // Переносим badge в wrap, добавляем кнопку
       badge.parentNode.insertBefore(wrap, badge);
       wrap.appendChild(badge);
       wrap.appendChild(btn);
@@ -39,11 +46,9 @@
     document.addEventListener('DOMContentLoaded', function () {
       if (typeof Auth === 'undefined') return;
       const u = Auth.current();
-      if (!u) return; // requireAuth уже редиректит
-      // Администраторы (HR) могут смотреть любой маршрут
+      if (!u) return;
       if (u.admin) return;
       if (u.role !== ROLE_PAGES[filename]) {
-        // Редирект на свой маршрут
         const myPage = ROLE_PAGES[u.role + '.html'] ? u.role + '.html' : 'index.html';
         window.location.href = myPage;
       }
