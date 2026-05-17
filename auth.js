@@ -1,5 +1,5 @@
 // ============================================================
-// auth.js — модуль авторизации Auditorium Onboard v7
+// auth.js — модуль авторизации Auditorium Onboard v8
 // Прогресс хранится по ключу ao_p_<login>_<taskKey>
 // Логин всегда хранится в нижнем регистре
 // ============================================================
@@ -68,7 +68,6 @@ const Auth = {
   },
 
   register(login, pass, fio, inviteCode) {
-    // Логин всегда в нижнем регистре
     login = (login || '').trim().toLowerCase();
     if (login.length < 3)           return { ok:false, msg:'Логин минимум 3 символа' };
     if (!pass || pass.length  < 4)  return { ok:false, msg:'Пароль минимум 4 символа' };
@@ -97,7 +96,6 @@ const Auth = {
   },
 
   login(login, pass) {
-    // Вход тоже с нижним регистром
     login = (login || '').trim().toLowerCase();
     const users = this.getUsers();
     const user  = users[login];
@@ -147,15 +145,35 @@ const Auth = {
     const users = this.getUsers();
     delete users[login];
     this.saveUsers(users);
+    // Принудительная синхронизация с облаком — чтобы прогресс удалился и там
+    if (typeof DB !== 'undefined' && DB.syncNow) DB.syncNow();
     localStorage.removeItem('ao_session');
     window.location.href = 'login.html';
   },
 
+  // Сброс прогресса текущего пользователя (самосброс)
   resetProgress() {
     const login = this.currentLogin(); if (!login) return;
     const prefix = 'ao_p_' + login + '_';
     Object.keys(localStorage).filter(k => k.startsWith(prefix)).forEach(k => localStorage.removeItem(k));
-    _dbSync();
+    // Принудительная синхронизация — без неё HR увидит старые данные из облака
+    if (typeof DB !== 'undefined' && DB.syncNow) {
+      DB.syncNow();
+    } else {
+      _dbSync();
+    }
+  },
+
+  // Сброс прогресса конкретного пользователя (HR сбрасывает сотруднику)
+  resetProgressForUser(targetLogin) {
+    if (!this.isAdmin()) return;
+    const prefix = 'ao_p_' + targetLogin + '_';
+    Object.keys(localStorage).filter(k => k.startsWith(prefix)).forEach(k => localStorage.removeItem(k));
+    if (typeof DB !== 'undefined' && DB.syncNow) {
+      DB.syncNow();
+    } else {
+      _dbSync();
+    }
   },
 
   getCheck(key) {
@@ -169,6 +187,12 @@ const Auth = {
   },
   getCheckForUser(userLogin, key) {
     return localStorage.getItem('ao_p_' + userLogin + '_' + key) === '1';
+  },
+  // Запись прогресса за конкретного пользователя (например, квизовый XP)
+  setCheckForUser(userLogin, key, val) {
+    if (!userLogin) return;
+    localStorage.setItem('ao_p_' + userLogin + '_' + key, val ? '1' : String(val));
+    _dbSync();
   },
 
   requireAuth() {
