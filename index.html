@@ -146,7 +146,6 @@
 <script src="db.js"></script>
 <script src="auth.js"></script>
 <script>
-// ⚠️ Объявляем здесь, чтобы не зависеть от auth.js-константы
 const PAGE_ADMIN_ROLES = ['hr','ceo','exec_dir','ops_dir'];
 
 const ROLE_NAMES = {
@@ -154,14 +153,11 @@ const ROLE_NAMES = {
   hr:'HR-менеджер', ceo:'Генеральный директор', exec_dir:'Исполнительный директор', ops_dir:'Операционный директор'
 };
 
-// Пороги уровней для продюсера (XP включительно)
-// xp >= 180 → Профи, xp >= 66 → Продвинутый, иначе → Новичок
 function getXpLevelProducer(xp) {
   if (xp >= 180) return '🏆 Профи';
   if (xp >= 66)  return '🚀 Продвинутый';
   return '🌱 Новичок';
 }
-// Универсальная для других ролей (аналогичная логика ~20% / ~55%)
 function getXpLevelGeneric(xp, maxXp) {
   const pct = maxXp ? xp / maxXp * 100 : 0;
   if (pct >= 55) return '🏆 Профи';
@@ -206,13 +202,14 @@ const TASK_XP = {
 
 const MAX_XP = { producer:331, sales:294, marketing:316 };
 
-function calcProgress(userId, role) {
+// ФИX: принимаем login (строку), а не объект пользователя
+function calcProgress(userLogin, role) {
   const prefix = role + '_';
   const keys = Object.keys(TASK_XP).filter(k => k.startsWith(prefix));
   if (!keys.length) return { xp:0, maxXp:0, pct:0 };
   let xp = 0;
   keys.forEach(k => {
-    if (Auth.getCheckForUser(userId, k)) xp += TASK_XP[k];
+    if (Auth.getCheckForUser(userLogin, k)) xp += TASK_XP[k];
   });
   const maxXp = MAX_XP[role] || keys.reduce((s,k)=>s+TASK_XP[k],0);
   return { xp, maxXp, pct: Math.round(xp / maxXp * 100) };
@@ -253,6 +250,8 @@ function confirmDeleteSelf() {
 
 function updateUI() {
   const u = Auth.current(); if (!u) return;
+  // ФИX: получаем логин текущего пользователя через Auth.currentLogin()
+  const myLogin   = Auth.currentLogin();
   const firstName = u.fio.split(' ')[0];
   const roleName  = ROLE_NAMES[u.role] || u.role;
   document.getElementById('headerUser').textContent = firstName + ' · ' + roleName;
@@ -264,14 +263,15 @@ function updateUI() {
     ['producer','sales','marketing'].forEach(r => document.getElementById('card-'+r).classList.remove('locked'));
 
     const users = Auth.getUsers();
-    // Используем PAGE_ADMIN_ROLES — объявлена выше в этом файле
-    const staff = Object.values(users).filter(u2 => !PAGE_ADMIN_ROLES.includes(u2.role));
-    document.getElementById('overallPct').textContent = staff.length;
+    // ФИX: Object.entries чтобы иметь и login и объект пользователя
+    const staffEntries = Object.entries(users).filter(([, u2]) => !PAGE_ADMIN_ROLES.includes(u2.role));
+    document.getElementById('overallPct').textContent = staffEntries.length;
 
     ['producer','sales','marketing'].forEach(r => {
-      const group = staff.filter(u2 => u2.role === r);
+      const group = staffEntries.filter(([, u2]) => u2.role === r);
       if (group.length) {
-        const avg = Math.round(group.reduce((s,u2) => s + calcProgress(u2.id, r).pct, 0) / group.length);
+        // ФИX: передаём login (первый элемент пары), а не u2.id
+        const avg = Math.round(group.reduce((s,[login]) => s + calcProgress(login, r).pct, 0) / group.length);
         document.getElementById('prog-'+r).textContent = avg+'%';
         document.getElementById('fill-'+r).style.width = avg+'%';
       } else {
@@ -283,11 +283,12 @@ function updateUI() {
     document.getElementById('hrDashboard').style.display = 'block';
     const tbody = document.getElementById('hrTableBody');
     tbody.innerHTML = '';
-    if (!staff.length) {
+    if (!staffEntries.length) {
       tbody.innerHTML = '<tr><td colspan="5" style="color:#888;text-align:center">Пока нет сотрудников</td></tr>';
     } else {
-      staff.sort((a,b) => a.fio.localeCompare(b.fio)).forEach(emp => {
-        const prog = calcProgress(emp.id, emp.role);
+      // ФИX: итерируем [login, emp] — передаём login в calcProgress
+      staffEntries.sort(([,a],[,b]) => a.fio.localeCompare(b.fio)).forEach(([login, emp]) => {
+        const prog = calcProgress(login, emp.role);
         const lvl  = getXpLevel(prog.xp, emp.role);
         const tr = document.createElement('tr');
         tr.innerHTML = `<td>${emp.fio}${emp.blocked?' <span style="color:#e74c3c;font-size:.75rem">(заблок.)</span>':''}</td><td>${ROLE_NAMES[emp.role]||emp.role}</td><td>${lvl}</td><td><div class="hr-pbar"><div class="hr-pfill" style="width:${prog.pct}%"></div></div></td><td><strong>${prog.pct}%</strong> · ${prog.xp}/${prog.maxXp} XP</td>`;
@@ -302,7 +303,8 @@ function updateUI() {
       const card = document.getElementById('card-'+r);
       if (r === u.role) {
         card.classList.remove('locked');
-        const prog = calcProgress(u.id, r);
+        // ФИX: передаём myLogin вместо u.id
+        const prog = calcProgress(myLogin, r);
         document.getElementById('prog-'+r).textContent = prog.pct+'%';
         document.getElementById('fill-'+r).style.width = prog.pct+'%';
         document.getElementById('overallPct').textContent = prog.pct+'%';
@@ -317,7 +319,7 @@ function updateUI() {
 
 window.onload = function() {
   if (!Auth.requireAuth()) return;
-  updateUI();
+  DB.ready.then(() => updateUI());
 };
 </script>
 </body>

@@ -124,6 +124,7 @@ const ROLE_BADGES = {
   hr:'badge-hr', ceo:'badge-ceo', exec_dir:'badge-exec', ops_dir:'badge-ops'
 };
 
+// ФИX: ROLE_KEYS заполнены для всех трёх ролей сотрудников
 const ROLE_KEYS = {
   producer: {
     maxXp: 331,
@@ -144,11 +145,51 @@ const ROLE_KEYS = {
       return           { label:'🌱 Новичок',   cls:'lvl-novice' };
     }
   },
-  sales: { maxXp: 0, keys: [], getLevel() { return { label:'—', cls:'lvl-novice' }; } },
-  marketing: { maxXp: 0, keys: [], getLevel() { return { label:'—', cls:'lvl-novice' }; } }
+  // ФИX: sales — заполнены все ключи (maxXp=294)
+  sales: {
+    maxXp: 294,
+    keys: [
+      ['sales_l1_p1',10],['sales_l1_p2',10],['sales_l1_p3',10],
+      ['sales_l1_m1',8], ['sales_l1_m2',8], ['sales_l1_m3',8],
+      ['sales_l1_s1',5], ['sales_l1_s2',5], ['sales_l1_s3',5],
+      ['sales_l2_p1',15],['sales_l2_p2',15],['sales_l2_p3',15],['sales_l2_p4',15],
+      ['sales_l2_m1',8], ['sales_l2_m2',8],
+      ['sales_l2_s1',5], ['sales_l2_s2',5],
+      ['sales_l3_p1',25],['sales_l3_p2',25],['sales_l3_p3',25],['sales_l3_p4',25],
+      ['sales_l3_m1',8],
+      ['sales_l3_s1',5], ['sales_l3_s2',5]
+    ],
+    getLevel(xp) {
+      const pct = 294 ? xp / 294 * 100 : 0;
+      if (pct >= 55) return { label:'🏆 Профи',    cls:'lvl-pro' };
+      if (pct >= 20) return { label:'🚀 Продвинутый', cls:'lvl-advanced' };
+      return           { label:'🌱 Новичок',   cls:'lvl-novice' };
+    }
+  },
+  // ФИX: marketing — заполнены все ключи (maxXp=316)
+  marketing: {
+    maxXp: 316,
+    keys: [
+      ['marketing_l1_p1',10],['marketing_l1_p2',10],['marketing_l1_p3',10],['marketing_l1_p4',10],
+      ['marketing_l1_m1',8], ['marketing_l1_m2',8],
+      ['marketing_l1_s1',5], ['marketing_l1_s2',5],['marketing_l1_s3',5],
+      ['marketing_l2_p1',15],['marketing_l2_p2',15],['marketing_l2_p3',15],['marketing_l2_p4',15],['marketing_l2_p5',15],
+      ['marketing_l2_m1',8], ['marketing_l2_m2',8],
+      ['marketing_l2_s1',5], ['marketing_l2_s2',5],
+      ['marketing_l3_p1',25],['marketing_l3_p2',25],['marketing_l3_p3',25],['marketing_l3_p4',25],
+      ['marketing_l3_m1',8],
+      ['marketing_l3_s1',5], ['marketing_l3_s2',5]
+    ],
+    getLevel(xp) {
+      const pct = 316 ? xp / 316 * 100 : 0;
+      if (pct >= 55) return { label:'🏆 Профи',    cls:'lvl-pro' };
+      if (pct >= 20) return { label:'🚀 Продвинутый', cls:'lvl-advanced' };
+      return           { label:'🌱 Новичок',   cls:'lvl-novice' };
+    }
+  }
 };
 
-// Теперь пользуемся login (не id)
+// ФИX: принимаем login (строку), а не объект
 function getUserXp(login, role) {
   const cfg = ROLE_KEYS[role];
   if (!cfg || !cfg.keys.length) return null;
@@ -223,14 +264,15 @@ function renderUsers() {
   const tbody   = document.getElementById('userTableBody');
   const users   = Auth.getUsers();
   const meLogin = Auth.currentLogin();
-  const logins  = Object.keys(users);
-  if (!logins.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Нет пользователей</td></tr>'; return; }
+  // ФИX: Object.entries чтобы иметь и login и объект пользователя
+  const entries = Object.entries(users);
+  if (!entries.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Нет пользователей</td></tr>'; return; }
   tbody.innerHTML = '';
   const allRoles = ['producer','sales','marketing','hr','ceo','exec_dir','ops_dir'];
-  logins.sort((a,b) => users[a].fio.localeCompare(users[b].fio)).forEach(login => {
-    const u = users[login]; const me = login === meLogin;
+  entries.sort(([,a],[,b]) => a.fio.localeCompare(b.fio)).forEach(([login, u]) => {
+    const me = login === meLogin;
     const tr = document.createElement('tr');
-    // Прогресс читается по login
+    // ФИX: передаём login вместо u.id
     const progressHTML = renderProgressCell(login, u.role);
     tr.innerHTML = `
       <td>${u.fio}${u.admin?' <span style="color:#0a4d8c;font-size:.75rem">★ admin</span>':''}${me?' <span style="color:#888;font-size:.75rem">(вы)</span>':''}</td>
