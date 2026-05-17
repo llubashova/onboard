@@ -35,8 +35,6 @@
     .badges-section{margin:24px 0 8px}
     .badges-section-title{font-size:.85rem;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px}
     #dayCounterWrap{margin-bottom:12px}
-
-    /* Стили для admin-карточек маршрутов */
     .admin-card-meta{font-size:.8rem;color:#1a7fd4;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:6px}
     .admin-card-meta .staff-count{background:#e8f3ff;border-radius:20px;padding:2px 9px;font-size:.78rem;color:#0a4d8c}
     .admin-card-empty{font-size:.82rem;color:#aaa;font-style:italic}
@@ -96,7 +94,6 @@
     </div>
   </div>
 
-  <!-- Бейджи (только для сотрудников) -->
   <div class="badges-section" id="badgesSection" style="display:none">
     <div class="badges-section-title">🏅 Мои достижения</div>
     <div class="badges-panel" id="badgesPanel"></div>
@@ -153,6 +150,14 @@
     <a href="feedback.html" class="info-card">
       <div class="info-icon">💬</div>
       <div><h3>Обратная связь</h3><p>Контрольные точки, вопросы, пожелания</p></div>
+    </a>
+    <a href="team.html" class="info-card">
+      <div class="info-icon">👥</div>
+      <div><h3>Команда</h3><p>Кто есть кто и к кому обратиться</p></div>
+    </a>
+    <a href="quiz.html" class="info-card">
+      <div class="info-icon">🧠</div>
+      <div><h3>Квиз</h3><p>Проверь знания о компании и заработай XP</p></div>
     </a>
   </div>
 </div>
@@ -283,15 +288,11 @@ function updateUI() {
     const staffEntries = Object.entries(users).filter(([, u2]) => !PAGE_ADMIN_ROLES.includes(u2.role));
     document.getElementById('overallPct').textContent = staffEntries.length;
 
-    // Карточки маршрутов для админа: показываем кол-во сотрудников + средний прогресс по группе
     ['producer','sales','marketing'].forEach(r => {
       const group = staffEntries.filter(([, u2]) => u2.role === r);
-      const progLabel = document.getElementById('prog-'+r);
-      const progFill  = document.getElementById('fill-'+r);
-      const progWrap  = document.getElementById('progwrap-'+r);
+      const progWrap = document.getElementById('progwrap-'+r);
 
       if (group.length === 0) {
-        // Нет сотрудников в этой роли
         progWrap.innerHTML = '<div class="admin-card-empty">Нет сотрудников</div>';
       } else {
         const avg = Math.round(group.reduce((s,[login]) => s + calcProgress(login, r).pct, 0) / group.length);
@@ -305,7 +306,6 @@ function updateUI() {
       }
     });
 
-    // Таблица HR-дашборда
     document.getElementById('hrDashboard').style.display = 'block';
     const tbody = document.getElementById('hrTableBody');
     tbody.innerHTML = '';
@@ -325,10 +325,8 @@ function updateUI() {
     document.getElementById('overallLabel').textContent = 'общий прогресс';
     document.getElementById('hrDashboard').style.display = 'none';
 
-    // Счётчик дней
     renderDayCounter(document.getElementById('dayCounterWrap'));
 
-    // Бейджи
     document.getElementById('badgesSection').style.display = 'block';
     renderBadgesPanel(document.getElementById('badgesPanel'));
 
@@ -338,7 +336,6 @@ function updateUI() {
       if (r === u.role) {
         card.classList.remove('locked');
         const prog = calcProgress(myLogin, r);
-        // Восстанавливаем стандартный вид progress-wrap для сотрудника
         progWrap.innerHTML = `
           <div class="progress-label"><span>Прогресс</span><span id="prog-${r}">${prog.pct}%</span></div>
           <div class="progress-bar"><div class="progress-fill" id="fill-${r}" style="width:${prog.pct}%"></div></div>`;

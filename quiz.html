@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Квиз — Auditorium Onboard</title>
+  <script>if(!localStorage.getItem('ao_session'))location.replace('login.html');</script>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="game.css">
+  <style>
+    /* ── ШАПКА КВИЗА ── */
+    .quiz-header{display:flex;align-items:center;gap:16px;background:#fff;border-radius:18px;padding:16px 22px;margin-bottom:24px;box-shadow:0 2px 12px rgba(26,127,212,.1)}
+    .quiz-lives{display:flex;gap:5px;font-size:1.4rem}
+    .quiz-xp-bar-wrap{flex:1}
+    .quiz-xp-label{font-size:.75rem;color:#888;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+    .quiz-xp-bar{height:10px;background:#eef2fa;border-radius:6px;overflow:hidden}
+    .quiz-xp-fill{height:100%;background:linear-gradient(90deg,#1a7fd4,#27ae60);border-radius:6px;transition:width .5s cubic-bezier(.34,1.56,.64,1)}
+    .quiz-streak-badge{background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;border-radius:12px;padding:6px 12px;font-weight:700;font-size:.9rem;min-width:56px;text-align:center}
+    /* ── КАРТОЧКИ ВОПРОСОВ ── */
+    .quiz-card-wrap{perspective:900px;margin-bottom:24px}
+    .quiz-card{background:#fff;border-radius:22px;padding:32px 28px;box-shadow:0 4px 24px rgba(26,127,212,.12);min-height:160px;display:flex;flex-direction:column;justify-content:center;transition:transform .35s cubic-bezier(.34,1.56,.64,1);position:relative;overflow:hidden}
+    .quiz-card.shake{animation:shake .4s ease}
+    .quiz-card.bounce{animation:bounce .35s ease}
+    @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-7px)}80%{transform:translateX(7px)}}
+    @keyframes bounce{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
+    .quiz-q-num{font-size:.78rem;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+    .quiz-question{font-size:1.15rem;font-weight:700;color:#0a4d8c;line-height:1.45;margin-bottom:0}
+    .quiz-image{width:100%;max-height:160px;object-fit:cover;border-radius:12px;margin-bottom:16px}
+    /* ── ВАРИАНТЫ ── */
+    .quiz-options{display:grid;gap:10px;margin-top:20px}
+    .quiz-option{background:#f4f8ff;border:2px solid #dde8f5;border-radius:14px;padding:14px 18px;font-size:.95rem;cursor:pointer;text-align:left;font-family:inherit;color:#1a2a4a;font-weight:600;transition:.18s;position:relative;overflow:hidden}
+    .quiz-option:hover:not([disabled]){background:#e8f3ff;border-color:#1a7fd4;transform:translateY(-1px)}
+    .quiz-option:active:not([disabled]){transform:scale(.98)}
+    .quiz-option.correct{background:#e8f9ef;border-color:#27ae60;color:#1a6b3a}
+    .quiz-option.wrong{background:#fdecea;border-color:#e74c3c;color:#9b2c2c}
+    .quiz-option.reveal-correct{background:#e8f9ef;border-color:#27ae60;color:#1a6b3a}
+    .quiz-option::after{content:'';position:absolute;inset:0;background:currentColor;opacity:0;transition:.15s}
+    /* ── ФИДБЭК ── */
+    .quiz-feedback{border-radius:14px;padding:14px 18px;font-size:.9rem;font-weight:600;margin-top:16px;display:none;animation:slideUp .25s ease}
+    @keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .quiz-feedback.correct{background:#e8f9ef;color:#1a6b3a;border:1.5px solid #27ae60;display:block}
+    .quiz-feedback.wrong{background:#fdecea;color:#9b2c2c;border:1.5px solid #e74c3c;display:block}
+    .quiz-feedback .feedback-icon{font-size:1.2rem;margin-right:6px}
+    /* ── NEXT КНОПКА ── */
+    .quiz-next-btn{width:100%;padding:15px;border:none;border-radius:14px;background:linear-gradient(135deg,#0a4d8c,#1a7fd4);color:#fff;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;margin-top:14px;transition:.2s;display:none}
+    .quiz-next-btn:hover{opacity:.9;transform:translateY(-1px)}
+    .quiz-next-btn:active{transform:scale(.98)}
+    .quiz-next-btn.visible{display:block}
+    /* ── ПРОГРЕСС ШАГИ ── */
+    .quiz-steps{display:flex;gap:5px;margin-bottom:20px;flex-wrap:wrap}
+    .quiz-step{height:6px;flex:1;min-width:14px;border-radius:3px;background:#eef2fa;transition:.3s}
+    .quiz-step.done{background:linear-gradient(90deg,#1a7fd4,#27ae60)}
+    .quiz-step.current{background:#1a7fd4;animation:pulse-step 1s ease infinite}
+    .quiz-step.wrong-step{background:#e74c3c}
+    @keyframes pulse-step{0%,100%{opacity:1}50%{opacity:.5}}
+    /* ── ЭКРАНЫ ── */
+    .quiz-screen{display:none}
+    .quiz-screen.active{display:block}
+    /* INTRO */
+    .quiz-intro{text-align:center;background:#fff;border-radius:22px;padding:40px 28px;box-shadow:0 4px 24px rgba(26,127,212,.1)}
+    .quiz-intro-emoji{font-size:3.5rem;margin-bottom:16px}
+    .quiz-intro h2{color:#0a4d8c;font-size:1.4rem;margin-bottom:10px}
+    .quiz-intro p{color:#555;margin-bottom:24px;line-height:1.6}
+    .quiz-intro-rules{background:#f4f8ff;border-radius:14px;padding:16px 20px;text-align:left;margin-bottom:24px}
+    .quiz-intro-rules div{padding:6px 0;border-bottom:1px solid #eef2fa;font-size:.9rem;color:#333}
+    .quiz-intro-rules div:last-child{border:none}
+    .start-btn{width:100%;padding:16px;border:none;border-radius:14px;background:linear-gradient(135deg,#0a4d8c,#1a7fd4);color:#fff;font-size:1.05rem;font-weight:700;cursor:pointer;font-family:inherit;transition:.2s}
+    .start-btn:hover{opacity:.9}
+    /* GAME OVER */
+    .quiz-gameover{text-align:center;background:#fff;border-radius:22px;padding:40px 28px;box-shadow:0 4px 24px rgba(26,127,212,.1)}
+    .quiz-gameover-emoji{font-size:3rem;margin-bottom:12px}
+    .quiz-gameover h2{color:#e74c3c;font-size:1.3rem;margin-bottom:8px}
+    .quiz-gameover p{color:#555;margin-bottom:20px}
+    /* RESULT */
+    .quiz-result{text-align:center;background:#fff;border-radius:22px;padding:40px 28px;box-shadow:0 4px 24px rgba(26,127,212,.1)}
+    .quiz-result-emoji{font-size:3.5rem;margin-bottom:12px}
+    .quiz-result h2{color:#0a4d8c;font-size:1.4rem;margin-bottom:8px}
+    .quiz-result-stats{display:flex;justify-content:center;gap:24px;margin:20px 0}
+    .rstat{text-align:center}
+    .rstat-num{font-size:2rem;font-weight:800;color:#1a7fd4}
+    .rstat-label{font-size:.78rem;color:#888;text-transform:uppercase;letter-spacing:.05em}
+    .result-xp-award{background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;border-radius:16px;padding:14px 20px;margin:16px 0;font-weight:700;font-size:1rem}
+    .restart-btn{width:100%;padding:14px;border:none;border-radius:14px;background:#f0f7ff;color:#0a4d8c;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;margin-top:10px;border:2px solid #c7d7f0;transition:.2s}
+    .restart-btn:hover{background:#e8f3ff}
+    .back-link{display:inline-flex;align-items:center;gap:6px;color:#1a7fd4;text-decoration:none;font-weight:600;font-size:.9rem;margin-bottom:20px}
+    .back-link:hover{text-decoration:underline}
+    /* ── КАТЕГОРИИ ── */
+    .quiz-cats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+    .quiz-cat-btn{padding:7px 14px;border:2px solid #dde8f5;border-radius:20px;background:#f4f8ff;color:#0a4d8c;font-weight:700;font-size:.82rem;cursor:pointer;font-family:inherit;transition:.15s}
+    .quiz-cat-btn:hover,.quiz-cat-btn.active{background:#1a7fd4;border-color:#1a7fd4;color:#fff}
+    /* ── COMBO ── */
+    .combo-toast{position:fixed;top:80px;left:50%;transform:translateX(-50%) scale(.7);background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;border-radius:16px;padding:10px 22px;font-weight:800;font-size:1.1rem;z-index:500;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap}
+    .combo-toast.show{opacity:1;transform:translateX(-50%) scale(1)}
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="logo"><span class="logo-icon">🎓</span> Auditorium Onboard</div>
+    <div class="user-badge"><span id="headerUser">—</span></div>
+  </div>
+</header>
+
+<div class="main-wrap">
+  <a href="index.html" class="back-link">← Главная</a>
+
+  <!-- INTRO -->
+  <div class="quiz-screen active" id="screenIntro">
+    <div class="quiz-intro">
+      <div class="quiz-intro-emoji">🧠</div>
+      <h2>Квиз: Знаешь ли ты компанию?</h2>
+      <p>Проверь, насколько хорошо ты уже знаешь Auditorium CG, команду и процессы.<br>За правильные ответы — реальный XP к твоему маршруту!</p>
+      <div class="quiz-intro-rules">
+        <div>❤️ У тебя <strong>3 жизни</strong> — за каждую ошибку теряешь одну</div>
+        <div>🔥 Серия правильных ответов — <strong>бонус x2 XP</strong></div>
+        <div>⚡ Правильный ответ — <strong>+5–15 XP</strong></div>
+        <div>📚 <strong>10 вопросов</strong> про компанию, процессы и команду</div>
+      </div>
+      <div class="quiz-cats" id="catBtns"></div>
+      <button class="start-btn" onclick="startQuiz()">🚀 Начать квиз!</button>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div class="quiz-screen" id="screenGame">
+    <div class="quiz-header">
+      <div class="quiz-lives" id="livesDisplay"></div>
+      <div class="quiz-xp-bar-wrap">
+        <div class="quiz-xp-label">Заработано XP</div>
+        <div class="quiz-xp-bar"><div class="quiz-xp-fill" id="quizXpFill" style="width:0%"></div></div>
+      </div>
+      <div class="quiz-streak-badge">🔥 <span id="comboCount">0</span></div>
+    </div>
+
+    <div class="quiz-steps" id="quizSteps"></div>
+
+    <div class="quiz-card-wrap">
+      <div class="quiz-card" id="quizCard">
+        <div class="quiz-q-num" id="qNum">Вопрос 1 / 10</div>
+        <div class="quiz-question" id="qText">...</div>
+      </div>
+    </div>
+
+    <div class="quiz-options" id="quizOptions"></div>
+    <div class="quiz-feedback" id="quizFeedback"></div>
+    <button class="quiz-next-btn" id="quizNextBtn" onclick="nextQuestion()">Следующий вопрос →</button>
+  </div>
+
+  <!-- GAME OVER -->
+  <div class="quiz-screen" id="screenGameover">
+    <div class="quiz-gameover">
+      <div class="quiz-gameover-emoji">💔</div>
+      <h2>Жизни закончились!</h2>
+      <p id="gameoverMsg">Не расстраивайся — попробуй ещё раз, ты почти справился!</p>
+      <button class="start-btn" onclick="restartQuiz()">🔄 Попробовать снова</button>
+      <button class="restart-btn" onclick="window.location.href='index.html'">← На главную</button>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="quiz-screen" id="screenResult">
+    <div class="quiz-result">
+      <div class="quiz-result-emoji" id="resultEmoji">🏆</div>
+      <h2 id="resultTitle">Отличный результат!</h2>
+      <div class="quiz-result-stats">
+        <div class="rstat"><div class="rstat-num" id="rCorrect">0</div><div class="rstat-label">Правильно</div></div>
+        <div class="rstat"><div class="rstat-num" id="rAccuracy">0%</div><div class="rstat-label">Точность</div></div>
+        <div class="rstat"><div class="rstat-num" id="rXp">0</div><div class="rstat-label">XP получено</div></div>
+      </div>
+      <div class="result-xp-award" id="resultXpMsg">🎉 +0 XP добавлено к твоему маршруту!</div>
+      <button class="start-btn" onclick="restartQuiz()">🔄 Пройти ещё раз</button>
+      <button class="restart-btn" onclick="window.location.href='index.html'">← На главную</button>
+    </div>
+  </div>
+</div>
+
+<div class="combo-toast" id="comboToast"></div>
+
+<footer><p>ООО «Аудиториум СиДжи» · Система геймификации адаптации · 2026</p></footer>
+
+<script src="db.js"></script>
+<script src="auth.js"></script>
+<script src="game.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════
+//  БАНК ВОПРОСОВ — добавляй сколько угодно!
+//  category: 'company' | 'processes' | 'team' | 'culture'
+// ═══════════════════════════════════════════════════════
+const ALL_QUESTIONS = [
+  {
+    cat: 'company',
+    q: 'Чем занимается Auditorium CG?',
+    options: ['Разработка мобильных приложений','Организация деловых мероприятий и конференций','Онлайн-курсы и EdTech','Рекламное агентство'],
+    correct: 1,
+    xp: 5,
+    explain: 'Auditorium CG — ивент-компания, специализирующаяся на деловых мероприятиях и конференциях.'
+  },
+  {
+    cat: 'company',
+    q: 'Что такое CG в названии компании Auditorium CG?',
+    options: ['Content Group','Conference & Growth','Creative Gathering','Consulting Group'],
+    correct: 1,
+    xp: 8,
+    explain: 'CG расшифровывается как Conference & Growth — конференции и рост.'
+  },
+  {
+    cat: 'processes',
+    q: 'Сколько дней длится официальный период адаптации?',
+    options: ['30 дней','60 дней','90 дней','Полгода'],
+    correct: 2,
+    xp: 5,
+    explain: 'Адаптационный период — 90 дней, разбитых на 3 уровня: Новичок, Продвинутый, Профи.'
+  },
+  {
+    cat: 'processes',
+    q: 'Как называется CRM-система, которую используют менеджеры по продажам?',
+    options: ['Bitrix24','amoCRM','Salesforce','1С:CRM'],
+    correct: 1,
+    xp: 10,
+    explain: 'Для работы с клиентами и сделками используется amoCRM.'
+  },
+  {
+    cat: 'team',
+    q: 'К кому обратиться, если возник вопрос по оформлению документов или условиям работы?',
+    options: ['Операционному директору','Непосредственному руководителю','HR-менеджеру','Генеральному директору'],
+    correct: 2,
+    xp: 8,
+    explain: 'HR-менеджер занимается всеми кадровыми вопросами, адаптацией и условиями труда.'
+  },
+  {
+    cat: 'team',
+    q: 'Кто отвечает за работу со спикерами конференций?',
+    options: ['Маркетолог','Продюсер мероприятий','Менеджер по продажам','Операционный директор'],
+    correct: 1,
+    xp: 8,
+    explain: 'Продюсер ведёт деловую программу и коммуникацию со спикерами.'
+  },
+  {
+    cat: 'culture',
+    q: 'Как в компании принято приветствовать новых коллег?',
+    options: ['Строгий дресс-код и официальное представление','Свободная атмосфера, общение на «ты»','Только переписка по email','Через HR-сообщение'],
+    correct: 1,
+    xp: 5,
+    explain: 'В Auditorium CG принята свободная, дружелюбная атмосфера — все общаются на «ты».'
+  },
+  {
+    cat: 'culture',
+    q: 'Что такое «серия» (streak) в системе адаптации?',
+    options: ['Количество выполненных задач','Количество дней подряд, когда ты заходил в систему','Серия бонусных заданий','Рейтинг среди коллег'],
+    correct: 1,
+    xp: 5,
+    explain: 'Streak — это количество дней подряд, когда ты заходишь в систему. Не теряй огонь 🔥!'
+  },
+  {
+    cat: 'processes',
+    q: 'На каком уровне адаптации сотрудник считается «Профи»?',
+    options: ['После 30 дней','После набора 55% XP','После сдачи экзамена','После одобрения руководителя'],
+    correct: 1,
+    xp: 10,
+    explain: 'Уровень «Профи» открывается при достижении 55% XP от максимума маршрута.'
+  },
+  {
+    cat: 'company',
+    q: 'Какой инструмент используется для email-рассылок и маркетинга?',
+    options: ['GetResponse','Unisender','Mailchimp','SendPulse'],
+    correct: 3,
+    xp: 10,
+    explain: 'Для email-маркетинга в компании используется SendPulse.'
+  },
+  {
+    cat: 'processes',
+    q: 'Как называется контрольная точка, которую нужно пройти между уровнями адаптации?',
+    options: ['Milestone','Checkpoint','Checkpoint-review','Levelup'],
+    correct: 1,
+    xp: 8,
+    explain: 'После каждого уровня есть Checkpoint — точка проверки прогресса с обратной связью.'
+  },
+  {
+    cat: 'team',
+    q: 'К кому обратиться по вопросам технической инфраструктуры и логистики мероприятий?',
+    options: ['HR-менеджеру','Продюсеру','Операционному директору','CEO'],
+    correct: 2,
+    xp: 8,
+    explain: 'Операционный директор отвечает за технику, логистику и операционные процессы.'
+  }
+];
+
+const CAT_LABELS = { company:'🏢 Компания', processes:'⚙️ Процессы', team:'👥 Команда', culture:'🌟 Культура' };
+
+// ═══════════════ СОСТОЯНИЕ КВИЗА ═══════════════
+let state = {
+  questions: [],
+  current: 0,
+  lives: 3,
+  combo: 0,
+  maxCombo: 0,
+  xp: 0,
+  correct: 0,
+  answered: false,
+  selectedCat: 'all'
+};
+
+const MAX_QUIZ_XP = 100; // макс XP за один квиз (ограничение)
+
+// ═══════════════ ИНИЦИАЛИЗАЦИЯ ═══════════════
+function initCategories() {
+  const wrap = document.getElementById('catBtns');
+  const cats = ['all', ...Object.keys(CAT_LABELS)];
+  wrap.innerHTML = cats.map(c => `
+    <button class="quiz-cat-btn ${c==='all'?'active':''}" data-cat="${c}" onclick="selectCat('${c}', this)">
+      ${c==='all'?'🎲 Все':CAT_LABELS[c]}
+    </button>`).join('');
+}
+
+function selectCat(cat, btn) {
+  state.selectedCat = cat;
+  document.querySelectorAll('.quiz-cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function shuffle(arr) { return [...arr].sort(() => Math.random() - .5); }
+
+function startQuiz() {
+  let pool = state.selectedCat === 'all' ? ALL_QUESTIONS : ALL_QUESTIONS.filter(q => q.cat === state.selectedCat);
+  if (pool.length < 5) pool = ALL_QUESTIONS; // fallback
+  state.questions = shuffle(pool).slice(0, 10);
+  state.current = 0;
+  state.lives = 3;
+  state.combo = 0;
+  state.maxCombo = 0;
+  state.xp = 0;
+  state.correct = 0;
+  state.answered = false;
+
+  showScreen('screenGame');
+  renderSteps();
+  renderQuestion();
+}
+
+function restartQuiz() { showScreen('screenIntro'); }
+
+// ═══════════════ РЕНДЕР ═══════════════
+function showScreen(id) {
+  document.querySelectorAll('.quiz-screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function renderLives() {
+  document.getElementById('livesDisplay').innerHTML = '❤️'.repeat(state.lives) + '🖤'.repeat(3 - state.lives);
+}
+
+function renderSteps() {
+  const el = document.getElementById('quizSteps');
+  el.innerHTML = state.questions.map((_,i) => `<div class="quiz-step" id="step-${i}"></div>`).join('');
+}
+
+function updateStep(idx, status) {
+  const el = document.getElementById('step-' + idx);
+  if (!el) return;
+  el.classList.remove('done','current','wrong-step');
+  el.classList.add(status);
+}
+
+function renderXpBar() {
+  const pct = Math.min(state.xp / MAX_QUIZ_XP * 100, 100);
+  document.getElementById('quizXpFill').style.width = pct + '%';
+}
+
+function renderQuestion() {
+  const q = state.questions[state.current];
+  state.answered = false;
+
+  document.getElementById('qNum').textContent = `Вопрос ${state.current+1} / ${state.questions.length}`;
+  document.getElementById('qText').textContent = q.q;
+  document.getElementById('quizFeedback').className = 'quiz-feedback';
+  document.getElementById('quizFeedback').innerHTML = '';
+  document.getElementById('quizNextBtn').classList.remove('visible');
+  document.getElementById('comboCount').textContent = state.combo;
+
+  renderLives();
+  updateStep(state.current, 'current');
+
+  const opts = document.getElementById('quizOptions');
+  opts.innerHTML = q.options.map((o,i) => `
+    <button class="quiz-option" onclick="answer(${i})">${o}</button>
+  `).join('');
+}
+
+// ═══════════════ ЛОГИКА ОТВЕТА ═══════════════
+function answer(idx) {
+  if (state.answered) return;
+  state.answered = true;
+
+  const q = state.questions[state.current];
+  const btns = document.querySelectorAll('.quiz-option');
+  btns.forEach(b => b.disabled = true);
+
+  const card = document.getElementById('quizCard');
+  const feedback = document.getElementById('quizFeedback');
+
+  if (idx === q.correct) {
+    // ✅ Правильно
+    state.combo++;
+    state.correct++;
+    state.maxCombo = Math.max(state.maxCombo, state.combo);
+
+    const comboBonus = state.combo >= 3 ? 2 : 1;
+    const earned = Math.min(q.xp * comboBonus, 20);
+    state.xp += earned;
+
+    btns[idx].classList.add('correct');
+    card.classList.add('bounce');
+    setTimeout(() => card.classList.remove('bounce'), 400);
+
+    feedback.className = 'quiz-feedback correct';
+    feedback.innerHTML = `<span class="feedback-icon">✅</span> Правильно! +${earned} XP${comboBonus>1?' (комбо x'+comboBonus+')':''}. <em>${q.explain}</em>`;
+
+    updateStep(state.current, 'done');
+    renderXpBar();
+    document.getElementById('comboCount').textContent = state.combo;
+
+    // Confetti при серии
+    if (state.combo >= 3) {
+      showComboToast('🔥 Серия x' + state.combo + '! Бонус x2!');
+      Confetti.burst(window.innerWidth/2, 200, 30);
+    }
+    showXpPopup('+' + earned + ' XP', window.innerWidth/2, 200);
+
+  } else {
+    // ❌ Ошибка
+    state.combo = 0;
+    state.lives--;
+
+    btns[idx].classList.add('wrong');
+    btns[q.correct].classList.add('reveal-correct');
+    card.classList.add('shake');
+    setTimeout(() => card.classList.remove('shake'), 400);
+
+    feedback.className = 'quiz-feedback wrong';
+    feedback.innerHTML = `<span class="feedback-icon">❌</span> Неверно. Правильный ответ: <strong>${q.options[q.correct]}</strong>. <em>${q.explain}</em>`;
+
+    updateStep(state.current, 'wrong-step');
+    renderLives();
+    document.getElementById('comboCount').textContent = '0';
+
+    if (state.lives <= 0) {
+      setTimeout(showGameover, 1200);
+      return;
+    }
+  }
+
+  document.getElementById('quizNextBtn').classList.add('visible');
+}
+
+function nextQuestion() {
+  state.current++;
+  if (state.current >= state.questions.length) {
+    showResult();
+  } else {
+    renderQuestion();
+  }
+}
+
+// ═══════════════ РЕЗУЛЬТАТ ═══════════════
+function showResult() {
+  const pct = Math.round(state.correct / state.questions.length * 100);
+  const earned = Math.min(state.xp, MAX_QUIZ_XP);
+
+  document.getElementById('rCorrect').textContent = state.correct + '/' + state.questions.length;
+  document.getElementById('rAccuracy').textContent = pct + '%';
+  document.getElementById('rXp').textContent = earned;
+
+  let emoji = '😊', title = 'Неплохо!';
+  if (pct >= 90) { emoji = '🏆'; title = 'Блестяще! Ты знаешь компанию!'; }
+  else if (pct >= 70) { emoji = '🎉'; title = 'Отличный результат!'; }
+  else if (pct >= 50) { emoji = '👍'; title = 'Хороший старт!'; }
+  else { emoji = '📚'; title = 'Есть над чем поработать!'; }
+
+  document.getElementById('resultEmoji').textContent = emoji;
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultXpMsg').textContent = `🎉 +${earned} XP добавлено к твоему маршруту!`;
+
+  // Записываем XP в прогресс пользователя
+  saveQuizXp(earned);
+
+  showScreen('screenResult');
+  if (pct >= 70) Confetti.burst(window.innerWidth/2, window.innerHeight/3, 80);
+}
+
+function showGameover() {
+  const msgs = [
+    'Не расстраивайся — попробуй ещё раз, ты почти справился!',
+    'Ошибки — это часть обучения. Следующий раз будет лучше!',
+    'Повтори материал и возвращайся — у тебя получится!'
+  ];
+  document.getElementById('gameoverMsg').textContent = msgs[Math.floor(Math.random()*msgs.length)];
+  showScreen('screenGameover');
+}
+
+// ═══════════════ СОХРАНЯЕМ XP ═══════════════
+function saveQuizXp(earned) {
+  if (!earned || earned <= 0) return;
+  const login = Auth.currentLogin ? Auth.currentLogin() : null;
+  if (!login) return;
+  // Сохраняем как специальный ключ квиза (не пересекается с маршрутом)
+  const key = 'quiz_bonus_xp_' + new Date().toISOString().slice(0,10);
+  Auth.setCheckForUser(login, key, earned);
+}
+
+// ═══════════════ COMBO TOAST ═══════════════
+function showComboToast(msg) {
+  const el = document.getElementById('comboToast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+// ═══════════════ INIT ═══════════════
+window.onload = function() {
+  if (!Auth.requireAuth()) return;
+  DB.ready.then(() => {
+    const u = Auth.current();
+    if (u) document.getElementById('headerUser').textContent = u.fio.split(' ')[0];
+    initCategories();
+  });
+};
+</script>
+</body>
+</html>
