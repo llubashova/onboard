@@ -6,6 +6,7 @@
   <title>Auditorium Onboard</title>
   <script>if(!localStorage.getItem('ao_session'))location.replace('login.html');</script>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="game.css">
   <style>
     .account-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center}
     .account-modal-overlay.open{display:flex}
@@ -31,6 +32,9 @@
     .hr-pfill{height:100%;background:linear-gradient(90deg,#1a7fd4,#27ae60);border-radius:4px;transition:.3s}
     .role-card.locked{opacity:.55;pointer-events:none;cursor:not-allowed}
     .role-card.locked .role-btn{background:#ccc;color:#888}
+    .badges-section{margin:24px 0 8px}
+    .badges-section-title{font-size:.85rem;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px}
+    #dayCounterWrap{margin-bottom:12px}
   </style>
 </head>
 <body>
@@ -79,11 +83,18 @@
     <div>
       <h1 id="welcomeTitle">Привет! 👋</h1>
       <p id="welcomeSubtitle">Добро пожаловать в систему адаптации</p>
+      <div id="dayCounterWrap"></div>
     </div>
     <div class="overall-progress">
       <div class="big-num" id="overallPct">0%</div>
       <div class="label" id="overallLabel">общий прогресс</div>
     </div>
+  </div>
+
+  <!-- Бейджи (только для сотрудников) -->
+  <div class="badges-section" id="badgesSection" style="display:none">
+    <div class="badges-section-title">🏅 Мои достижения</div>
+    <div class="badges-panel" id="badgesPanel"></div>
   </div>
 
   <div class="hr-dashboard" id="hrDashboard" style="display:none">
@@ -145,6 +156,7 @@
 
 <script src="db.js"></script>
 <script src="auth.js"></script>
+<script src="game.js"></script>
 <script>
 const PAGE_ADMIN_ROLES = ['hr','ceo','exec_dir','ops_dir'];
 
@@ -202,7 +214,6 @@ const TASK_XP = {
 
 const MAX_XP = { producer:331, sales:294, marketing:316 };
 
-// ФИX: принимаем login (строку), а не объект пользователя
 function calcProgress(userLogin, role) {
   const prefix = role + '_';
   const keys = Object.keys(TASK_XP).filter(k => k.startsWith(prefix));
@@ -250,7 +261,6 @@ function confirmDeleteSelf() {
 
 function updateUI() {
   const u = Auth.current(); if (!u) return;
-  // ФИX: получаем логин текущего пользователя через Auth.currentLogin()
   const myLogin   = Auth.currentLogin();
   const firstName = u.fio.split(' ')[0];
   const roleName  = ROLE_NAMES[u.role] || u.role;
@@ -260,17 +270,17 @@ function updateUI() {
   if (Auth.isAdmin()) {
     document.getElementById('welcomeSubtitle').textContent = 'Роль: ' + roleName + ' · все маршруты доступны';
     document.getElementById('overallLabel').textContent = 'сотрудников';
+    document.getElementById('dayCounterWrap').innerHTML = '';
+    document.getElementById('badgesSection').style.display = 'none';
     ['producer','sales','marketing'].forEach(r => document.getElementById('card-'+r).classList.remove('locked'));
 
     const users = Auth.getUsers();
-    // ФИX: Object.entries чтобы иметь и login и объект пользователя
     const staffEntries = Object.entries(users).filter(([, u2]) => !PAGE_ADMIN_ROLES.includes(u2.role));
     document.getElementById('overallPct').textContent = staffEntries.length;
 
     ['producer','sales','marketing'].forEach(r => {
       const group = staffEntries.filter(([, u2]) => u2.role === r);
       if (group.length) {
-        // ФИX: передаём login (первый элемент пары), а не u2.id
         const avg = Math.round(group.reduce((s,[login]) => s + calcProgress(login, r).pct, 0) / group.length);
         document.getElementById('prog-'+r).textContent = avg+'%';
         document.getElementById('fill-'+r).style.width = avg+'%';
@@ -286,7 +296,6 @@ function updateUI() {
     if (!staffEntries.length) {
       tbody.innerHTML = '<tr><td colspan="5" style="color:#888;text-align:center">Пока нет сотрудников</td></tr>';
     } else {
-      // ФИX: итерируем [login, emp] — передаём login в calcProgress
       staffEntries.sort(([,a],[,b]) => a.fio.localeCompare(b.fio)).forEach(([login, emp]) => {
         const prog = calcProgress(login, emp.role);
         const lvl  = getXpLevel(prog.xp, emp.role);
@@ -299,21 +308,33 @@ function updateUI() {
     document.getElementById('welcomeSubtitle').textContent = 'Твоя роль: '+roleName+' · 90 дней адаптации';
     document.getElementById('overallLabel').textContent = 'общий прогресс';
     document.getElementById('hrDashboard').style.display = 'none';
+
+    // Счётчик дней
+    renderDayCounter(document.getElementById('dayCounterWrap'));
+
+    // Бейджи
+    document.getElementById('badgesSection').style.display = 'block';
+    renderBadgesPanel(document.getElementById('badgesPanel'));
+
     ['producer','sales','marketing'].forEach(r => {
       const card = document.getElementById('card-'+r);
       if (r === u.role) {
         card.classList.remove('locked');
-        // ФИX: передаём myLogin вместо u.id
         const prog = calcProgress(myLogin, r);
         document.getElementById('prog-'+r).textContent = prog.pct+'%';
         document.getElementById('fill-'+r).style.width = prog.pct+'%';
         document.getElementById('overallPct').textContent = prog.pct+'%';
+        // Проверяем бейджи
+        checkBadges(prog.xp, prog.pct);
       } else {
         card.classList.add('locked');
         document.getElementById('prog-'+r).textContent = '—';
         document.getElementById('fill-'+r).style.width = '0%';
       }
     });
+
+    // Welcome экран при первом входе
+    maybeShowWelcome(firstName, roleName);
   }
 }
 

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Маршрут менеджера по продажам | Auditorium Onboard</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="game.css">
   <style>
     .xp-bar-wrap{background:#e8f0fe;border-radius:12px;height:14px;overflow:hidden;margin:10px 0 4px}
     .xp-bar-fill{height:100%;border-radius:12px;background:linear-gradient(90deg,#1a7fd4,#27ae60);transition:width .4s}
@@ -35,14 +36,8 @@
 <div class="levels-wrap">
   <div class="level-card">
     <div class="level-header l1" onclick="toggleLevel('l1')">
-      <div class="level-title-wrap">
-        <span class="badge l1">Уровень 1</span>
-        <div><div class="level-name">«Новичок»</div><div class="level-days">📅 Дни 1–7</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:14px;">
-        <span id="l1-pct" style="font-size:0.9rem;color:#1a7fd4;font-weight:700;">0%</span>
-        <span class="level-chevron" id="chev-l1">▼</span>
-      </div>
+      <div class="level-title-wrap"><span class="badge l1">Уровень 1</span><div><div class="level-name">«Новичок»</div><div class="level-days">📅 Дни 1–7</div></div></div>
+      <div style="display:flex;align-items:center;gap:14px;"><span id="l1-pct" style="font-size:0.9rem;color:#1a7fd4;font-weight:700;">0%</span><span class="level-chevron" id="chev-l1">▼</span></div>
     </div>
     <div class="level-body open" id="body-l1">
       <div class="task-section">
@@ -75,14 +70,8 @@
   </div>
   <div class="level-card">
     <div class="level-header l2" onclick="toggleLevel('l2')">
-      <div class="level-title-wrap">
-        <span class="badge l2">Уровень 2</span>
-        <div><div class="level-name">«Продвинутый»</div><div class="level-days">📅 Дни 8–30</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:14px;">
-        <span id="l2-pct" style="font-size:0.9rem;color:#f39c12;font-weight:700;">0%</span>
-        <span class="level-chevron" id="chev-l2">▼</span>
-      </div>
+      <div class="level-title-wrap"><span class="badge l2">Уровень 2</span><div><div class="level-name">«Продвинутый»</div><div class="level-days">📅 Дни 8–30</div></div></div>
+      <div style="display:flex;align-items:center;gap:14px;"><span id="l2-pct" style="font-size:0.9rem;color:#f39c12;font-weight:700;">0%</span><span class="level-chevron" id="chev-l2">▼</span></div>
     </div>
     <div class="level-body" id="body-l2">
       <div class="task-section">
@@ -114,14 +103,8 @@
   </div>
   <div class="level-card">
     <div class="level-header l3" onclick="toggleLevel('l3')">
-      <div class="level-title-wrap">
-        <span class="badge l3">Уровень 3</span>
-        <div><div class="level-name">«Профи»</div><div class="level-days">📅 Дни 31–90</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:14px;">
-        <span id="l3-pct" style="font-size:0.9rem;color:#27ae60;font-weight:700;">0%</span>
-        <span class="level-chevron" id="chev-l3">▼</span>
-      </div>
+      <div class="level-title-wrap"><span class="badge l3">Уровень 3</span><div><div class="level-name">«Профи»</div><div class="level-days">📅 Дни 31–90</div></div></div>
+      <div style="display:flex;align-items:center;gap:14px;"><span id="l3-pct" style="font-size:0.9rem;color:#27ae60;font-weight:700;">0%</span><span class="level-chevron" id="chev-l3">▼</span></div>
     </div>
     <div class="level-body" id="body-l3">
       <div class="task-section">
@@ -154,20 +137,20 @@
 <footer><p>ООО «Аудиториум СиДжи» · Система геймификации адаптации · 2026</p></footer>
 <script src="db.js"></script>
 <script src="auth.js"></script>
+<script src="game.js"></script>
 <script>
 const ROLE = 'sales';
 const MAX_XP = 294;
+window._MAX_XP = MAX_XP;
 const LEVELS = [
-  { min: 0,   max: 59,  label: '🌱 Новичок' },
-  { min: 60,  max: 175, label: '🚀 Продвинутый' },
-  { min: 176, max: 294, label: '🏆 Профи' }
+  { min:0,  max:58,  label:'🌱 Новичок' },
+  { min:59, max:161, label:'🚀 Продвинутый' },
+  { min:162,max:294, label:'🏆 Профи' }
 ];
-
 function getXpLevel(xp) {
   for (const l of LEVELS) if (xp <= l.max) return l.label;
   return LEVELS[LEVELS.length-1].label;
 }
-
 function toggle(li) {
   const key = li.dataset.key;
   const cb = li.querySelector('input[type="checkbox"]');
@@ -175,44 +158,43 @@ function toggle(li) {
   cb.checked = checked;
   li.classList.toggle('checked', checked);
   Auth.setCheck(key, checked);
+  if (checked) {
+    const pts = parseInt(li.dataset.points || 0);
+    const rect = li.getBoundingClientRect();
+    showXpPopup(pts, rect.left + rect.width/2, rect.top + window.scrollY);
+    Confetti.burst(rect.left + rect.width/2, rect.top, 18);
+  }
   updateProgress();
 }
 function toggleLevel(id) {
-  document.getElementById('body-' + id).classList.toggle('open');
-  document.getElementById('chev-' + id).classList.toggle('open');
+  document.getElementById('body-'+id).classList.toggle('open');
+  document.getElementById('chev-'+id).classList.toggle('open');
 }
 function updateProgress() {
   const allItems = document.querySelectorAll('.checklist li[data-key]');
   let totalXp = 0;
-  allItems.forEach(li => {
-    if (Auth.getCheck(li.dataset.key)) totalXp += parseInt(li.dataset.points || 0);
-  });
+  allItems.forEach(li => { if (Auth.getCheck(li.dataset.key)) totalXp += parseInt(li.dataset.points||0); });
   const pct = Math.round(totalXp / MAX_XP * 100);
-  document.getElementById('xpBarFill').style.width = pct + '%';
-  document.getElementById('xpScore').textContent = totalXp + ' / ' + MAX_XP + ' XP';
-  document.getElementById('xpPct').textContent = pct + '%';
+  document.getElementById('xpBarFill').style.width = pct+'%';
+  document.getElementById('xpScore').textContent = totalXp+' / '+MAX_XP+' XP';
+  document.getElementById('xpPct').textContent = pct+'%';
   document.getElementById('xpLevel').textContent = getXpLevel(totalXp);
-
+  trackLevelUp(totalXp);
+  checkBadges(totalXp, pct);
   ['l1','l2','l3'].forEach(lvl => {
-    const items = document.querySelectorAll('[data-level="' + lvl + '"]');
-    let earned = 0, max = 0;
-    items.forEach(li => {
-      const pts = parseInt(li.dataset.points || 0);
-      max += pts;
-      if (Auth.getCheck(li.dataset.key)) earned += pts;
-    });
-    const lpct = max ? Math.round(earned / max * 100) : 0;
-    const el = document.getElementById(lvl + '-pct');
-    if (el) el.textContent = lpct + '%';
-    const tr = document.getElementById('trophy-' + lvl);
-    if (tr) tr.classList.toggle('visible', lpct === 100);
+    const items = document.querySelectorAll('[data-level="'+lvl+'"]');
+    let earned=0, max=0;
+    items.forEach(li => { const p=parseInt(li.dataset.points||0); max+=p; if(Auth.getCheck(li.dataset.key)) earned+=p; });
+    const lp = max ? Math.round(earned/max*100) : 0;
+    const el = document.getElementById(lvl+'-pct'); if(el) el.textContent=lp+'%';
+    const tr = document.getElementById('trophy-'+lvl); if(tr) tr.classList.toggle('visible', lp===100);
   });
 }
 function loadChecks() {
   document.querySelectorAll('.checklist li[data-key]').forEach(li => {
     const checked = Auth.getCheck(li.dataset.key);
     const cb = li.querySelector('input[type="checkbox"]');
-    if (cb) cb.checked = checked;
+    if(cb) cb.checked = checked;
     li.classList.toggle('checked', checked);
   });
   updateProgress();
@@ -221,9 +203,13 @@ window.onload = function() {
   if (!Auth.requireAuth()) return;
   DB.ready.then(() => {
     const u = Auth.current();
-    const rn = { producer: 'Продюсер', sales: 'Менеджер по продажам', marketing: 'Специалист по маркетингу', hr: 'HR-менеджер' };
-    document.getElementById('headerUser').textContent = u.fio.split(' ')[0] + ' · ' + (rn[u.role] || '');
+    const rn = {producer:'Продюсер',sales:'Менеджер по продажам',marketing:'Специалист по маркетингу',hr:'HR-менеджер'};
+    document.getElementById('headerUser').textContent = u.fio.split(' ')[0]+' · '+(rn[u.role]||'');
     loadChecks();
+    // инициализируем level-трекер без показа попапа
+    const allItems = document.querySelectorAll('.checklist li[data-key]');
+    let xp=0; allItems.forEach(li=>{if(Auth.getCheck(li.dataset.key)) xp+=parseInt(li.dataset.points||0);});
+    initLevelTracker(xp);
   });
 };
 </script>
