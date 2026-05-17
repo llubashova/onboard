@@ -40,38 +40,70 @@ header {
 .header-inner {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 20px 32px;
+  padding: 16px 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
 }
 
 .logo {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 700;
   letter-spacing: 0.5px;
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
-.logo-icon { font-size: 1.6rem; }
+.logo-icon { font-size: 1.5rem; }
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
 
 .user-badge {
   background: rgba(255,255,255,0.15);
   border: 1px solid rgba(255,255,255,0.25);
-  padding: 8px 18px;
+  padding: 7px 16px;
   border-radius: 24px;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
   display: flex;
   align-items: center;
   gap: 8px;
+  white-space: nowrap;
 }
 
-.user-badge:hover { background: rgba(255,255,255,0.25); }
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: white;
+  padding: 7px 14px;
+  border-radius: 24px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.logout-btn:hover {
+  background: rgba(231,76,60,0.75);
+  border-color: rgba(231,76,60,0.5);
+  transform: translateY(-1px);
+}
+
+.logout-btn:active { transform: translateY(0); }
 
 /* ===== МОДАЛЬНОЕ ОКНО ВХОДА ===== */
 .modal-overlay {
@@ -499,7 +531,7 @@ footer {
   animation: pop 0.4s ease;
 }
 
-.trophy-block.show { display: block; }
+.trophy-block.visible { display: block; }
 .trophy-icon { font-size: 2.5rem; margin-bottom: 8px; }
 .trophy-text { font-size: 1rem; font-weight: 600; }
 
@@ -576,11 +608,25 @@ footer {
 
 /* ===== АДАПТИВ ===== */
 @media (max-width: 600px) {
-  .header-inner { flex-direction: column; gap: 12px; text-align: center; }
+  .header-inner {
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 14px 16px;
+    gap: 8px;
+  }
+  .logo { font-size: 1.1rem; }
+  .logo-icon { font-size: 1.3rem; }
+  .header-right { gap: 6px; }
+  .user-badge { font-size: 0.78rem; padding: 6px 10px; }
+  .logout-btn { font-size: 0.78rem; padding: 6px 10px; }
   .welcome-block { flex-direction: column; text-align: center; }
   .main-wrap { padding: 20px 16px; }
   .back-link { margin: 16px 20px 0; }
   .route-header { padding: 28px 20px; }
-  .levels-wrap { padding: 0 16px; }
-  .level-body { padding: 18px 18px; }
+  .route-header h1 { font-size: 1.4rem; }
+  .levels-wrap { padding: 0 12px; }
+  .level-body { padding: 16px 16px; }
+  .level-header { padding: 16px 16px; }
+  .roles-grid { grid-template-columns: 1fr; }
+  .bottom-grid { grid-template-columns: 1fr; }
 }
