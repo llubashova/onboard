@@ -58,7 +58,6 @@
     .lvl-novice{background:#e8f0fe;color:#0a4d8c}
     .lvl-advanced{background:#fff3cd;color:#854d0e}
     .lvl-pro{background:#d1fae5;color:#065f46}
-    /* Фильтры */
     .filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
     .filter-bar select{padding:7px 12px;border:2px solid #e8f0fe;border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;cursor:pointer}
     .filter-bar select:focus{border-color:#1a7fd4}
@@ -120,10 +119,9 @@
   <div class="section-card">
     <h3>👥 Сотрудники и прогресс</h3>
 
-    <!-- Статистика -->
     <div class="stats-row" id="statsRow"></div>
 
-    <!-- Фильтры -->
+    <!-- Фильтры по роли и уровню -->
     <div class="filter-bar">
       <label>Роль:</label>
       <select id="filterRole" onchange="applyFilters()">
@@ -146,7 +144,7 @@
       </select>
     </div>
 
-    <!-- Экспорт -->
+    <!-- Экспорт: Excel читает кириллицу нормально, PDF — транслитом -->
     <div class="export-bar">
       <button class="btn btn-success btn-sm" onclick="exportExcel()">📥 Экспорт Excel</button>
       <button class="btn btn-warn btn-sm" onclick="exportPDF()">📄 Экспорт PDF</button>
@@ -233,6 +231,22 @@ const ROLE_KEYS = {
   }
 };
 
+// ─── ТРАНСЛИТЕРАЦИЯ для PDF (jsPDF не поддерживает кириллицу без кастомных шрифтов) ───
+function translit(str) {
+  if (!str) return '';
+  const map = {
+    'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z',
+    'и':'i','й':'j','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r',
+    'с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'sch',
+    'ъ':"'",'ы':'y','ь':"'",'э':'e','ю':'yu','я':'ya',
+    'А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ё':'Yo','Ж':'Zh','З':'Z',
+    'И':'I','Й':'J','К':'K','Л':'L','М':'M','Н':'N','О':'O','П':'P','Р':'R',
+    'С':'S','Т':'T','У':'U','Ф':'F','Х':'Kh','Ц':'Ts','Ч':'Ch','Ш':'Sh','Щ':'Sch',
+    'Ъ':"'",'Ы':'Y','Ь':"'",'Э':'E','Ю':'Yu','Я':'Ya'
+  };
+  return str.split('').map(c => map[c] !== undefined ? map[c] : c).join('');
+}
+
 function getUserXp(login, role) {
   const cfg = ROLE_KEYS[role];
   if (!cfg || !cfg.keys.length) return null;
@@ -255,7 +269,6 @@ function renderProgressCell(login, role) {
     </div>`;
 }
 
-// ─── ГЛОБАЛЬНЫЙ КЭШ для фильтрации и экспорта ───
 let _allEntries = [];
 
 function buildEntries() {
@@ -267,7 +280,7 @@ function buildEntries() {
 }
 
 function renderStats() {
-  const total = _allEntries.length;
+  const total     = _allEntries.length;
   const employees = _allEntries.filter(e => ROLE_KEYS[e.u.role]).length;
   const pro       = _allEntries.filter(e => e.xpData && e.xpData.level.key === 'pro').length;
   const advanced  = _allEntries.filter(e => e.xpData && e.xpData.level.key === 'advanced').length;
@@ -294,8 +307,8 @@ function applyFilters() {
 }
 
 function renderUserTable(entries) {
-  const tbody   = document.getElementById('userTableBody');
-  const meLogin = Auth.currentLogin();
+  const tbody    = document.getElementById('userTableBody');
+  const meLogin  = Auth.currentLogin();
   const allRoles = ['producer','sales','marketing','hr','ceo','exec_dir','ops_dir'];
   if (!entries.length) {
     tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Нет пользователей по выбранным фильтрам</td></tr>';
@@ -307,14 +320,13 @@ function renderUserTable(entries) {
     .forEach(({ login, u }) => {
       const me = login === meLogin;
       const tr = document.createElement('tr');
-      const progressHTML = renderProgressCell(login, u.role);
       tr.innerHTML = `
         <td>${u.fio}${u.admin?' <span style="color:#0a4d8c;font-size:.75rem">★ admin</span>':''}${me?' <span style="color:#888;font-size:.75rem">(вы)</span>':''}</td>
         <td style="font-family:monospace;font-size:.85rem">${login}</td>
         <td><select class="role-select" onchange="changeRole('${login}',this.value)" ${me?'disabled':''}>
           ${allRoles.map(r=>`<option value="${r}" ${u.role===r?'selected':''}>${ROLE_NAMES[r]}</option>`).join('')}
         </select></td>
-        <td>${progressHTML}</td>
+        <td>${renderProgressCell(login, u.role)}</td>
         <td>${u.blocked ? '<span class="ubadge badge-blocked">Заблокирован</span>' : '<span class="ubadge badge-active">Активен</span>'}</td>
         <td style="display:flex;gap:6px;flex-wrap:wrap">
           ${!me&&!u.blocked?`<button class="btn btn-warn btn-sm" onclick="blockUser('${login}')">Блок</button>`:''}
@@ -332,17 +344,17 @@ function renderUsers() {
   applyFilters();
 }
 
-// ─── ЭКСПОРТ EXCEL ───
+// ─── ЭКСПОРТ EXCEL (кириллица работает нативно) ───
 function exportExcel() {
   const rows = _allEntries.map(({ login, u, xpData }) => ({
-    'ФИО':      u.fio,
-    'Логин':    login,
-    'Роль':     ROLE_NAMES[u.role] || u.role,
-    'XP':       xpData ? xpData.xp : '—',
-    'Max XP':   xpData ? xpData.maxXp : '—',
+    'ФИО':        u.fio,
+    'Логин':      login,
+    'Роль':       ROLE_NAMES[u.role] || u.role,
+    'XP':         xpData ? xpData.xp : '—',
+    'Max XP':     xpData ? xpData.maxXp : '—',
     'Прогресс %': xpData ? Math.round(xpData.xp / xpData.maxXp * 100) + '%' : '—',
-    'Уровень':  xpData ? xpData.level.label.replace(/[^a-zA-Zа-яА-ЯёЁ\s]/gu,'').trim() : '—',
-    'Статус':   u.blocked ? 'Заблокирован' : 'Активен'
+    'Уровень':    xpData ? xpData.level.label.replace(/[^\wа-яА-ЯёЁ\s]/gu,'').trim() : '—',
+    'Статус':     u.blocked ? 'Заблокирован' : 'Активен'
   }));
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
@@ -352,28 +364,30 @@ function exportExcel() {
   showAlert('📥 Excel-файл скачан!');
 }
 
-// ─── ЭКСПОРТ PDF ───
+// ─── ЭКСПОРТ PDF (транслитерация, т.к. jsPDF не поддерживает кириллицу без доп.шрифтов) ───
 function exportPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
 
-  doc.setFontSize(16);
-  doc.text('Auditorium Onboard — Прогресс сотрудников', 14, 18);
+  doc.setFontSize(15);
+  doc.text('Auditorium Onboard - Progress Report', 14, 18);
   doc.setFontSize(9);
-  doc.text('Дата: ' + new Date().toLocaleDateString('ru-RU'), 14, 25);
+  doc.text('Date: ' + new Date().toLocaleDateString('ru-RU'), 14, 25);
+
+  const levelMap = { 'novice':'Novice', 'advanced':'Advanced', 'pro':'Pro' };
 
   const rows = _allEntries.map(({ login, u, xpData }) => [
-    u.fio,
+    translit(u.fio),
     login,
-    ROLE_NAMES[u.role] || u.role,
-    xpData ? xpData.xp + '/' + xpData.maxXp : '—',
-    xpData ? Math.round(xpData.xp / xpData.maxXp * 100) + '%' : '—',
-    xpData ? xpData.level.label.replace(/[^a-zA-Zа-яА-ЯёЁ\s]/gu,'').trim() : '—',
-    u.blocked ? 'Заблокирован' : 'Активен'
+    translit(ROLE_NAMES[u.role] || u.role),
+    xpData ? xpData.xp + '/' + xpData.maxXp : '-',
+    xpData ? Math.round(xpData.xp / xpData.maxXp * 100) + '%' : '-',
+    xpData ? (levelMap[xpData.level.key] || xpData.level.key) : '-',
+    u.blocked ? 'Blocked' : 'Active'
   ]);
 
   doc.autoTable({
-    head: [['ФИО','Логин','Роль','XP','%','Уровень','Статус']],
+    head: [['Name (translit)','Login','Role','XP','%','Level','Status']],
     body: rows,
     startY: 30,
     styles: { font:'helvetica', fontSize:8 },
@@ -383,13 +397,13 @@ function exportPDF() {
 
   const date = new Date().toLocaleDateString('ru-RU').replace(/\./g,'-');
   doc.save(`onboard_progress_${date}.pdf`);
-  showAlert('📄 PDF-файл скачан!');
+  showAlert('📄 PDF скачан! ФИО — транслитом (ограничение jsPDF)');
 }
 
 function showAlert(msg) {
   const el = document.getElementById('alertMsg');
   el.textContent = msg; el.style.display = 'block';
-  setTimeout(() => el.style.display = 'none', 3000);
+  setTimeout(() => el.style.display = 'none', 4000);
 }
 
 function createInvite() {
@@ -405,7 +419,7 @@ function clearUsedInvites() {
   if (!confirm('Удалить все использованные ключи из истории?')) return;
   Auth.clearUsedInvites();
   renderInvites();
-  showAlert('🧹 История использованных ключей очищена');
+  showAlert('🧹 История очищена');
 }
 
 function renderInvites() {
