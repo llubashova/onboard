@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Auditorium Onboard</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <script>if(!localStorage.getItem('ao_session'))location.replace('login.html');</script>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="game.css">
@@ -224,7 +225,6 @@ const TASK_XP = {
 
 const MAX_XP = { producer:331, sales:294, marketing:316 };
 
-// Считает прогресс любого пользователя по логину
 function calcProgress(userLogin, role) {
   const prefix = role + '_';
   const keys = Object.keys(TASK_XP).filter(k => k.startsWith(prefix));
@@ -237,7 +237,6 @@ function calcProgress(userLogin, role) {
   return { xp, maxXp, pct: Math.round(xp / maxXp * 100) };
 }
 
-// ── Личный кабинет ──
 function openAcc() {
   const u = Auth.current(); if (!u) return;
   document.getElementById('accFio').value  = u.fio;
@@ -275,25 +274,19 @@ function confirmDeleteSelf() {
   Auth.deleteSelf();
 }
 
-// ── HR-дашборд: показывает прогресс ВСЕХ сотрудников ──
-// Использует Object.entries чтобы получать login вместе с данными пользователя
 function renderHrDashboard() {
   const tbody = document.getElementById('hrTableBody');
-  const users = Auth.getUsers(); // { login: { fio, role, ... } }
+  const users = Auth.getUsers();
   const EMPLOYEE_ROLES = ['producer', 'sales', 'marketing'];
-
-  // Фильтруем только сотрудников (не администраторов)
   const employees = Object.entries(users).filter(([, u]) => EMPLOYEE_ROLES.includes(u.role));
-
   if (!employees.length) {
     tbody.innerHTML = '<tr><td colspan="5" style="color:#aaa;text-align:center;padding:16px">Нет зарегистрированных сотрудников</td></tr>';
     return;
   }
-
   tbody.innerHTML = employees
     .sort((a, b) => a[1].fio.localeCompare(b[1].fio))
     .map(([login, u]) => {
-      const p = calcProgress(login, u.role); // login — строковый ключ из Object.entries
+      const p = calcProgress(login, u.role);
       const level = getXpLevel(p.xp, u.role);
       return `<tr>
         <td>${u.fio}</td>
@@ -305,23 +298,18 @@ function renderHrDashboard() {
     }).join('');
 }
 
-// ── Карточки ролей на главной ──
 function renderRoleCards() {
   const u = Auth.current();
   const myLogin = Auth.currentLogin();
   const isAdmin = Auth.isAdmin();
   const EMPLOYEE_ROLES = ['producer', 'sales', 'marketing'];
   const users = Auth.getUsers();
-
   EMPLOYEE_ROLES.forEach(role => {
     const card    = document.getElementById('card-' + role);
     const progEl  = document.getElementById('prog-' + role);
     const fillEl  = document.getElementById('fill-' + role);
     if (!card) return;
-
     if (isAdmin) {
-      // Для администраторов: показываем сколько сотрудников на этом маршруте
-      // и средний прогресс по роли
       const staff = Object.entries(users).filter(([, su]) => su.role === role);
       const meta = card.querySelector('.admin-card-meta') || (() => {
         const el = document.createElement('div');
@@ -329,7 +317,6 @@ function renderRoleCards() {
         card.querySelector('.role-desc').insertAdjacentElement('afterend', el);
         return el;
       })();
-
       if (!staff.length) {
         meta.innerHTML = '<span class="admin-card-empty">Нет сотрудников</span>';
         progEl.textContent = '—';
@@ -342,10 +329,8 @@ function renderRoleCards() {
         progEl.textContent = avgPct + '% (ср.)';
         fillEl.style.width = avgPct + '%';
       }
-      // Администраторы могут открывать любой маршрут
       card.classList.remove('locked');
     } else {
-      // Для сотрудников: показываем только свой маршрут, остальные locked
       if (u && u.role === role) {
         const p = calcProgress(myLogin, role);
         progEl.textContent = p.xp + ' XP · ' + p.pct + '%';
@@ -360,14 +345,11 @@ function renderRoleCards() {
   });
 }
 
-// ── Общий прогресс текущего пользователя ──
 function renderOverallProgress() {
   const u = Auth.current();
   const myLogin = Auth.currentLogin();
   const isAdmin = Auth.isAdmin();
-
   if (isAdmin) {
-    // Для HR/CEO показываем общую статистику
     const users = Auth.getUsers();
     const EMPLOYEE_ROLES = ['producer', 'sales', 'marketing'];
     const employees = Object.entries(users).filter(([, su]) => EMPLOYEE_ROLES.includes(su.role));
@@ -391,7 +373,6 @@ function renderOverallProgress() {
   }
 }
 
-// ── Счётчик дней ──
 function renderDayCounter() {
   const u = Auth.current();
   if (!u || !u.createdAt) return;
@@ -400,21 +381,16 @@ function renderDayCounter() {
     `<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">📅 День адаптации: <strong>${days}</strong></div>`;
 }
 
-// ── Главная функция обновления UI ──
 function updateUI() {
   const u = Auth.current();
   if (!u) return;
-
   document.getElementById('headerUser').textContent = u.fio.split(' ')[0];
   document.getElementById('welcomeTitle').textContent = 'Привет, ' + u.fio.split(' ')[0] + '! 👋';
   document.getElementById('welcomeSubtitle').textContent =
     Auth.isAdmin() ? 'Панель HR — управление адаптацией' : 'Добро пожаловать в систему адаптации';
-
   renderDayCounter();
   renderOverallProgress();
   renderRoleCards();
-
-  // HR-дашборд виден только администраторам
   const hrDash = document.getElementById('hrDashboard');
   if (Auth.isAdmin()) {
     hrDash.style.display = 'block';
@@ -422,8 +398,6 @@ function updateUI() {
   } else {
     hrDash.style.display = 'none';
   }
-
-  // Бейджи — только для сотрудников с маршрутом
   const badgesSection = document.getElementById('badgesSection');
   const badgesPanel   = document.getElementById('badgesPanel');
   if (!Auth.isAdmin() && typeof Game !== 'undefined' && Game.getBadges) {
