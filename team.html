@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Команда — Auditorium Onboard</title>
+  <script>if(!localStorage.getItem('ao_session'))location.replace('login.html');</script>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="game.css">
+  <style>
+    .team-page { max-width: 960px; margin: 0 auto; padding: 28px 20px 60px; }
+    .team-page h1 { font-size: 1.6rem; color: #0a4d8c; margin-bottom: 6px; }
+    .team-page .team-intro { color: #666; font-size: .95rem; margin-bottom: 28px; }
+    .team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+
+    .member-card {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 4px 18px rgba(10,77,140,.08);
+      padding: 24px 20px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: transform .18s, box-shadow .18s;
+      border: 1.5px solid #e8f0fe;
+    }
+    .member-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(10,77,140,.13); }
+
+    .member-avatar {
+      width: 64px; height: 64px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.7rem;
+      flex-shrink: 0;
+      margin-bottom: 4px;
+    }
+
+    .member-name { font-size: 1.05rem; font-weight: 700; color: #1a2a3a; line-height: 1.25; }
+    .member-role-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #f0f7ff; color: #0a4d8c;
+      border-radius: 20px; padding: 3px 12px;
+      font-size: .8rem; font-weight: 600;
+      width: fit-content;
+    }
+    .member-resp { font-size: .87rem; color: #444; line-height: 1.5; }
+    .member-resp strong { color: #0a4d8c; }
+    .member-ask {
+      background: #f6fff9;
+      border-left: 3px solid #27ae60;
+      border-radius: 0 10px 10px 0;
+      padding: 8px 12px;
+      font-size: .84rem;
+      color: #1a5c32;
+      line-height: 1.45;
+    }
+    .member-ask-title { font-weight: 700; margin-bottom: 3px; font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; color: #27ae60; }
+    .member-contacts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+    .member-contact-chip {
+      background: #f0f7ff; border-radius: 20px; padding: 3px 11px;
+      font-size: .78rem; color: #1a7fd4; font-weight: 500;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .section-sep { grid-column: 1 / -1; }
+    .section-sep h2 { font-size: 1.1rem; color: #888; font-weight: 600; padding-bottom: 8px; border-bottom: 2px solid #e8f0fe; margin-top: 12px; }
+
+    .back-btn { display: inline-flex; align-items: center; gap: 6px; color: #1a7fd4; font-weight: 600; font-size: .92rem; text-decoration: none; margin-bottom: 20px; }
+    .back-btn:hover { color: #0a4d8c; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="logo"><span class="logo-icon">🎓</span> Auditorium Onboard</div>
+    <div class="user-badge"><span id="headerUser">—</span></div>
+  </div>
+</header>
+
+<div class="team-page">
+  <a href="index.html" class="back-btn">← Вернуться на главную</a>
+  <h1>👥 Команда Auditorium CG</h1>
+  <p class="team-intro">Познакомься с коллегами — узнай, кто за что отвечает и к кому обратиться с вопросом.</p>
+
+  <div class="team-grid" id="teamGrid">
+    <!-- Руководство -->
+    <div class="section-sep"><h2>🏢 Руководство</h2></div>
+
+    <div class="member-card">
+      <div class="member-avatar" style="background:#fff3e0;">👑</div>
+      <div class="member-name">Генеральный директор</div>
+      <div class="member-role-badge">👑 CEO</div>
+      <div class="member-resp"><strong>Отвечает за:</strong> стратегию компании, ключевые решения, партнёрства</div>
+      <div class="member-ask">
+        <div class="member-ask-title">Обращайся, если...</div>
+        Есть стратегический вопрос, нужно утверждение крупного решения
+      </div>
+    </div>
+
+    <div class="member-card">
+      <div class="member-avatar" style="background:#e8f0fe;">🏢</div>
+      <div class="member-name">Исполнительный директор</div>
+      <div class="member-role-badge">🏢 Исполнительный директор</div>
+      <div class="member-resp"><strong>Отвечает за:</strong> операционное управление, координацию отделов, реализацию стратегии</div>
+      <div class="member-ask">
+        <div class="member-ask-title">Обращайся, если...</div>
+        Нужно согласовать межотдельное взаимодействие или эскалировать проблему
+      </div>
+    </div>
+
+    <div class="member-card">
+      <div class="member-avatar" style="background:#e8f5e9;">⚙️</div>
+      <div class="member-name">Операционный директор</div>
+      <div class="member-role-badge">⚙️ Операционный директор</div>
+      <div class="member-resp"><strong>Отвечает за:</strong> бизнес-процессы, эффективность, логистику, административные вопросы</div>
+      <div class="member-ask">
+        <div class="member-ask-title">Обращайся, если...</div>
+        Есть вопросы по процессам, нужны ресурсы или согласование административного характера
+      </div>
+    </div>
+
+    <!-- HR -->
+    <div class="section-sep"><h2>👩‍💼 HR</h2></div>
+
+    <div class="member-card">
+      <div class="member-avatar" style="background:#fce4ec;">👩‍💼</div>
+      <div class="member-name">HR-менеджер</div>
+      <div class="member-role-badge">👩‍💼 HR</div>
+      <div class="member-resp"><strong>Отвечает за:</strong> подбор персонала, адаптацию новичков, корпоративную культуру, документы</div>
+      <div class="member-ask">
+        <div class="member-ask-title">Обращайся, если...</div>
+        Вопросы по оформлению, отпуску, адаптации; что-то непонятно в первые дни — это точно сюда
+      </div>
+      <div class="member-contacts">
+        <span class="member-contact-chip">💬 Telegram</span>
+        <span class="member-contact-chip">📧 Email</span>
+      </div>
+    </div>
+
+    <!-- Продюсеры -->
+    <div class="section-sep"><h2>🎬 Продюсерский отдел</h2></div>
+
+    <div class="member-card">
+      <div class="member-avatar" style="background:#f3e5f5;">🎬</div>
+      <div class="member-name">Продюсер</div>
+      <div class="member-role-badge">🎬 Продюсер</div>
+      <div class="member-resp"><strong>Отвечает за:</strong> подготовку мероприятий, деловую программу, работу со спикерами и партнёрами</div>
+      <div class="member-ask">
+        <div class="member-ask-title">Обращайся, если...</div>
+        Нужна помощь по организации ивента, вопросы по спикерам, программе, площадкам
+      </div>
+    </div>
+
+    <!-- Продажи -->
+    <div class="section-sep"><h2>📞 Отдел продаж</h2></div>
+
+    <div class="member-card">
+      <div class="member-avatar" style="background:#e0f7fa;">📞</div>
+      <div class="member-name">Менеджер по продажам</div>
+      <div class="member-role-badge">📞 Sales</div>
+      <div class="member-resp"><strong>Отвечает за:</strong> работу с клиентами, CRM, звонки, заключение сделок</div>
+      <div class="member-ask">
+        <div class="member-ask-title">Обращайся, если...</div>
+        Вопросы по клиентской базе, CRM, коммерческим предложениям
+      </div>
+    </div>
+
+    <!-- Маркетинг -->
+    <div class="section-sep"><h2>📣 Маркетинг</h2></div>
+
+    <div class="member-card">
+      <div class="member-avatar" style="background:#fff9c4;">📣</div>
+      <div class="member-name">Специалист по маркетингу</div>
+      <div class="member-role-badge">📣 Marketing</div>
+      <div class="member-resp"><strong>Отвечает за:</strong> Яндекс.Директ, контент-план, email-рассылки, Telegram-канал, аналитику</div>
+      <div class="member-ask">
+        <div class="member-ask-title">Обращайся, если...</div>
+        Нужны материалы, согласование контента, помощь с рекламой или SMM
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer><p>ООО «Аудиториум СиДжи» · Система геймификации адаптации · 2026</p></footer>
+
+<script src="db.js"></script>
+<script src="auth.js"></script>
+<script src="game.js"></script>
+<script>
+window.onload = function() {
+  if (!Auth.requireAuth()) return;
+  DB.ready.then(() => {
+    const u = Auth.current();
+    if (!u) return;
+    const ROLE_NAMES = {
+      producer:'Продюсер', sales:'Менеджер по продажам', marketing:'Специалист по маркетингу',
+      hr:'HR-менеджер', ceo:'Генеральный директор', exec_dir:'Исполнительный директор', ops_dir:'Операционный директор'
+    };
+    document.getElementById('headerUser').textContent = u.fio.split(' ')[0] + ' · ' + (ROLE_NAMES[u.role] || u.role);
+  });
+};
+</script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 /* ============================================================
    game.js — игровые механики Auditorium Onboard
    конфетти · +XP попап · бейджи · level-up экран · welcome
+   streak (🔥 серия дней, Duolingo-style) · XP-счётчик анимация
    ============================================================ */
 
 // ── КОНФЕТТИ ─────────────────────────────────────────────────
@@ -77,6 +78,30 @@ function showXpPopup(pts, x, y) {
 }
 
 
+// ── АНИМИРОВАННЫЙ XP-СЧЁТЧИК (Duolingo-style) ────────────────
+/**
+ * Плавно анимирует числовое значение в элементе.
+ * @param {HTMLElement} el  — целевой элемент
+ * @param {number} from     — начальное значение
+ * @param {number} to       — конечное значение
+ * @param {string} suffix   — суффикс (напр. '%' или ' XP')
+ * @param {number} duration — длительность мс (по умолч. 700)
+ */
+function animateCounter(el, from, to, suffix = '', duration = 700) {
+  if (!el) return;
+  const start = performance.now();
+  function step(now) {
+    const t = Math.min((now - start) / duration, 1);
+    // ease-out cubic
+    const ease = 1 - Math.pow(1 - t, 3);
+    const val = Math.round(from + (to - from) * ease);
+    el.textContent = val + suffix;
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+
 // ── LEVEL-UP ЭКРАН ───────────────────────────────────────────
 function showLevelUp(levelName, emoji) {
   const overlay = document.createElement('div');
@@ -148,6 +173,111 @@ function renderBadgesPanel(container) {
 }
 
 
+// ── 🔥 STREAK (СЕРИЯ ДНЕЙ, DUOLINGO-STYLE) ──────────────────
+/**
+ * Streak хранит:
+ *   ao_streak_count_{login}  — текущая серия (число)
+ *   ao_streak_last_{login}   — дата последней активности (YYYY-MM-DD)
+ *
+ * Логика:
+ *   - При вызове updateStreak() сравниваем сегодняшнюю дату с last_date.
+ *   - Если сегодня === last_date → ничего не меняем (уже засчитано).
+ *   - Если yesterday === last_date → streak++, last_date = today.
+ *   - Иначе (пропуск) → streak сбрасывается до 1, last_date = today.
+ */
+function _streakKey(type) {
+  const login = (typeof Auth !== 'undefined' && Auth.currentLogin) ? Auth.currentLogin() : 'user';
+  return 'ao_streak_' + type + '_' + login;
+}
+
+function _today() { return new Date().toISOString().slice(0, 10); }
+function _yesterday() {
+  const d = new Date(); d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function updateStreak() {
+  const today = _today();
+  const yesterday = _yesterday();
+  const last = localStorage.getItem(_streakKey('last'));
+  let count = parseInt(localStorage.getItem(_streakKey('count')) || '0', 10);
+
+  if (last === today) {
+    // Уже засчитан сегодня
+    return count;
+  } else if (last === yesterday) {
+    count += 1;
+  } else {
+    // Пропуск — сбрасываем
+    count = 1;
+    if (last && last !== yesterday) _showStreakBroken();
+  }
+
+  localStorage.setItem(_streakKey('count'), String(count));
+  localStorage.setItem(_streakKey('last'), today);
+
+  if (count > 1) _showStreakContinued(count);
+  return count;
+}
+
+function getStreak() {
+  const last = localStorage.getItem(_streakKey('last'));
+  const count = parseInt(localStorage.getItem(_streakKey('count')) || '0', 10);
+  // Если последняя активность не сегодня и не вчера — streak сгорел
+  if (!last || (last !== _today() && last !== _yesterday())) return 0;
+  return count;
+}
+
+function _showStreakContinued(count) {
+  const el = document.createElement('div');
+  el.className = 'streak-toast show';
+  el.innerHTML = `
+    <div class="streak-toast-icon">🔥</div>
+    <div>
+      <div class="streak-toast-title">Серия продолжается!</div>
+      <div class="streak-toast-sub">${count} ${_streakDays(count)} подряд — так держать!</div>
+    </div>`;
+  document.body.appendChild(el);
+  setTimeout(() => el.classList.remove('show'), 3200);
+  setTimeout(() => el.remove(), 3800);
+}
+
+function _showStreakBroken() {
+  const el = document.createElement('div');
+  el.className = 'streak-toast streak-broken show';
+  el.innerHTML = `
+    <div class="streak-toast-icon">💔</div>
+    <div>
+      <div class="streak-toast-title">Серия прервалась</div>
+      <div class="streak-toast-sub">Начни новую — заходи каждый день!</div>
+    </div>`;
+  document.body.appendChild(el);
+  setTimeout(() => el.classList.remove('show'), 3200);
+  setTimeout(() => el.remove(), 3800);
+}
+
+function _streakDays(n) {
+  if (n % 10 === 1 && n % 100 !== 11) return 'день';
+  if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return 'дня';
+  return 'дней';
+}
+
+/**
+ * Рендерит виджет streak в контейнер.
+ * @param {HTMLElement} el
+ */
+function renderStreakWidget(el) {
+  if (!el) return;
+  const streak = getStreak();
+  const isEmpty = streak === 0;
+  el.innerHTML = `
+    <div class="streak-widget ${isEmpty ? 'streak-empty' : ''}" title="${isEmpty ? 'Зайди сегодня, чтобы начать серию!' : 'Ты заходишь ' + streak + ' ' + _streakDays(streak) + ' подряд!'}">
+      <span class="streak-fire">${isEmpty ? '🩶' : '🔥'}</span>
+      <span class="streak-count">${isEmpty ? '0' : streak}</span>
+    </div>`;
+}
+
+
 // ── СЧЁТЧИК ДНЕЙ ─────────────────────────────────────────────
 function getDayCounter() {
   const key = 'ao_start_date_' + (Auth && Auth.currentLogin ? Auth.currentLogin() : 'user');
@@ -187,6 +317,7 @@ function maybeShowWelcome(userName, roleName) {
         <div>🗺️ Открой свой маршрут</div>
         <div>✅ Отмечай выполненные задачи</div>
         <div>🏅 Собирай бейджи достижений</div>
+        <div>🔥 Заходи каждый день — не теряй серию!</div>
         <div>🏆 Стань Профи за 90 дней!</div>
       </div>
       <button class="welcome-btn" onclick="this.closest('.welcome-overlay').remove()">🚀 Начать приключение!</button>
