@@ -16,7 +16,8 @@
     .member-card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 12px rgba(10,77,140,.08);border:1px solid #e8f0fe;transition:.2s}
     .member-card:hover{box-shadow:0 6px 24px rgba(10,77,140,.14);transform:translateY(-2px)}
     .member-top{display:flex;align-items:center;gap:14px;margin-bottom:12px}
-    .member-avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0}
+    .member-avatar{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;overflow:hidden}
+    .member-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
     .member-info{flex:1;min-width:0}
     .member-name{font-weight:700;color:#1a1a2e;font-size:1rem;margin:0 0 2px}
     .member-role{font-size:.83rem;color:#666;margin:0}
@@ -54,22 +55,36 @@
 <script src="auth.js"></script>
 <script>
 // ─── СПИСОК КОМАНДЫ — редактируй здесь ───────────────────────────────────────
+//
+// Для каждого сотрудника есть два варианта аватарки:
+//   photo: 'ссылка на фото'  — если указать, отобразится фотография
+//   emoji: '👤'              — если photo не указан, отобразится эмодзи
+//   (photo имеет приоритет над emoji)
+//
+// Примеры ссылок на фото:
+//   photo: 'https://i.imgur.com/XXXXX.jpg'   ← загрузи фото на imgur.com и вставь ссылку
+//   photo: 'https://sun1.storage.yandex.net/...'  ← публичная ссылка с Яндекс.Фотоки
+//   photo: 'photos/lera.jpg'                  ← если фото залита в репозиторий
+//
+// ─────────────────────────────────────────────────────────────────────────────
 const TEAM = [
   {
     name: 'Валерия Любашова',
     role: 'HR-менеджер',
-    emoji: '👩‍💼',
+    emoji: '👩‍💼',          // используется если photo не указан
+    // photo: '',        // ← вставь ссылку на фото чтобы появилась фотография
     group: 'management',
     desc: 'Занимается подбором персонала, адаптацией новых сотрудников и развитием корпоративной культуры.',
     helpWith: ['Вопросы по оформлению', 'Адаптация', 'Корпоративные мероприятия'],
     telegram: '@llubashova',
     color: '#9b59b6'
   },
-  // Добавляй новых сотрудников сюда по аналогии ↓
+  // Добавляй новых сотрудников сюда ↓
   // {
   //   name: 'Иван Иванов',
   //   role: 'Менеджер по продажам',
-  //   emoji: '📞',
+  //   photo: 'https://i.imgur.com/XXXXX.jpg', // ← фото
+  //   emoji: '📞',                            // ← запасной эмодзи если фото не загрузится
   //   group: 'sales',
   //   desc: 'Работает с клиентами, ведёт CRM, закрывает сделки.',
   //   helpWith: ['CRM', 'Продажи', 'Клиентская база'],
@@ -87,6 +102,19 @@ const GROUP_LABELS = {
   marketing:  '📣 Отдел маркетинга',
   other:      '👤 Прочие сотрудники'
 };
+
+function renderAvatar(m) {
+  if (m.photo) {
+    // Фото — если не загрузилось, показываем эмодзи как запасной
+    const fallback = m.emoji || '👤';
+    return `<div class="member-avatar" style="background:${m.color||'#1a7fd4'}22">
+      <img src="${m.photo}" alt="${m.name}" loading="lazy"
+           onerror="this.parentElement.innerHTML='<span style=font-size:1.6rem>${fallback}</span>'">
+    </div>`;
+  }
+  // Эмодзи
+  return `<div class="member-avatar" style="background:${m.color||'#1a7fd4'}22;color:${m.color||'#1a7fd4'}">${m.emoji||'👤'}</div>`;
+}
 
 function renderTeam() {
   const container = document.getElementById('teamContainer');
@@ -111,7 +139,7 @@ function renderTeam() {
       html += `
         <div class="member-card">
           <div class="member-top">
-            <div class="member-avatar" style="background:${m.color||'#1a7fd4'}22;color:${m.color||'#1a7fd4'}">${m.emoji||'👤'}</div>
+            ${renderAvatar(m)}
             <div class="member-info">
               <div class="member-name">${m.name}</div>
               <div class="member-role">${m.role}</div>
