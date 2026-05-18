@@ -1,12 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Команда | Auditorium Onboard</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <script>if(!localStorage.getItem('ao_session'))location.replace('login.html');</script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .team-header{margin-bottom:28px}
+    .team-header h1{font-size:1.6rem;color:#0a4d8c;margin:0 0 6px}
+    .team-header p{color:#666;font-size:.95rem;margin:0}
+    .group-title{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#1a7fd4;margin:28px 0 12px;padding-bottom:6px;border-bottom:2px solid #e8f0fe}
+    .team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:8px}
+    .member-card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 12px rgba(10,77,140,.08);border:1px solid #e8f0fe;transition:.2s}
+    .member-card:hover{box-shadow:0 6px 24px rgba(10,77,140,.14);transform:translateY(-2px)}
+    .member-top{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+    .member-avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0}
+    .member-info{flex:1;min-width:0}
+    .member-name{font-weight:700;color:#1a1a2e;font-size:1rem;margin:0 0 2px}
+    .member-role{font-size:.83rem;color:#666;margin:0}
+    .member-desc{font-size:.87rem;color:#444;line-height:1.5;margin-bottom:12px}
+    .member-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+    .member-tag{background:#f0f7ff;color:#0a4d8c;border-radius:20px;padding:3px 10px;font-size:.78rem;font-weight:500}
+    .member-tg{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;color:#1a7fd4;text-decoration:none;font-weight:600}
+    .member-tg:hover{text-decoration:underline}
+    .back-link{display:inline-flex;align-items:center;gap:6px;color:#1a7fd4;text-decoration:none;font-size:.9rem;font-weight:600;margin-bottom:20px}
+    .back-link:hover{text-decoration:underline}
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="logo"><span class="logo-icon">🎓</span> Auditorium Onboard</div>
+    <div class="user-badge" id="headerUserBadge" style="cursor:pointer">
+      <span id="headerUser">—</span>
+    </div>
+  </div>
+</header>
+
+<div class="main-wrap">
+  <a href="index.html" class="back-link">← Назад на главную</a>
+  <div class="team-header">
+    <h1>👥 Наша команда</h1>
+    <p>Кто есть кто и к кому обратиться по рабочим вопросам</p>
+  </div>
+  <div id="teamContainer"></div>
+</div>
+
+<footer><p>ООО «Аудиториум СиДжи» · Система геймификации адаптации · 2026</p></footer>
+
+<script src="db.js"></script>
+<script src="auth.js"></script>
+<script>
+// ─── СПИСОК КОМАНДЫ — редактируй здесь ───────────────────────────────────────
 const TEAM = [
   {
-    name: 'Валерия Лубашова',   // ← имя
-    role: 'HR-менеджер',         // ← должность
-    emoji: '👩‍💼',               // ← аватарка (любой эмодзи)
-    group: 'management',         // ← отдел (management/production/sales/ops)
-    desc: 'Занимается...',       // ← описание чем занимается
-    helpWith: ['Вопросы по оформлению', ...],  // ← теги "с чем обратиться"
-    telegram: '@llubashova',        // ← телеграм (или '' если нет)
-    color: '#9b59b6'             // ← цвет аватарки
+    name: 'Валерия Любашова',
+    role: 'HR-менеджер',
+    emoji: '👩‍💼',
+    group: 'management',
+    desc: 'Занимается подбором персонала, адаптацией новых сотрудников и развитием корпоративной культуры.',
+    helpWith: ['Вопросы по оформлению', 'Адаптация', 'Корпоративные мероприятия'],
+    telegram: '@llubashova',
+    color: '#9b59b6'
   },
-]
+  // Добавляй новых сотрудников сюда по аналогии ↓
+  // {
+  //   name: 'Иван Иванов',
+  //   role: 'Менеджер по продажам',
+  //   emoji: '📞',
+  //   group: 'sales',
+  //   desc: 'Работает с клиентами, ведёт CRM, закрывает сделки.',
+  //   helpWith: ['CRM', 'Продажи', 'Клиентская база'],
+  //   telegram: '@ivan_sales',
+  //   color: '#e67e22'
+  // },
+];
+// ─────────────────────────────────────────────────────────────────────────────
+
+const GROUP_LABELS = {
+  management: '🏢 Руководство и административный отдел',
+  production: '🎬 Производственный отдел',
+  sales:      '📞 Отдел продаж',
+  ops:        '⚙️ Операционный отдел',
+  marketing:  '📣 Отдел маркетинга',
+  other:      '👤 Прочие сотрудники'
+};
+
+function renderTeam() {
+  const container = document.getElementById('teamContainer');
+  if (!TEAM.length) {
+    container.innerHTML = '<p style="color:#aaa;text-align:center;padding:40px">Список команды пока пуст</p>';
+    return;
+  }
+  const groups = {};
+  TEAM.forEach(m => {
+    const g = m.group || 'other';
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(m);
+  });
+  const ORDER = ['management','production','sales','marketing','ops','other'];
+  let html = '';
+  ORDER.forEach(g => {
+    if (!groups[g]) return;
+    html += `<div class="group-title">${GROUP_LABELS[g] || g}</div><div class="team-grid">`;
+    groups[g].forEach(m => {
+      const tags = (m.helpWith||[]).map(t => `<span class="member-tag">${t}</span>`).join('');
+      const tg = m.telegram ? `<a class="member-tg" href="https://t.me/${m.telegram.replace('@','')}" target="_blank">✈️ ${m.telegram}</a>` : '';
+      html += `
+        <div class="member-card">
+          <div class="member-top">
+            <div class="member-avatar" style="background:${m.color||'#1a7fd4'}22;color:${m.color||'#1a7fd4'}">${m.emoji||'👤'}</div>
+            <div class="member-info">
+              <div class="member-name">${m.name}</div>
+              <div class="member-role">${m.role}</div>
+            </div>
+          </div>
+          ${m.desc ? `<div class="member-desc">${m.desc}</div>` : ''}
+          ${tags ? `<div class="member-tags">${tags}</div>` : ''}
+          ${tg}
+        </div>`;
+    });
+    html += '</div>';
+  });
+  container.innerHTML = html;
+}
+
+window.onload = function() {
+  if (!Auth.requireAuth()) return;
+  DB.ready.then(() => {
+    const u = Auth.current();
+    if (u) document.getElementById('headerUser').textContent = u.fio.split(' ')[0];
+    renderTeam();
+  });
+};
+</script>
+</body>
+</html>
