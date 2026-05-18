@@ -374,11 +374,27 @@ function renderOverallProgress() {
 }
 
 function renderDayCounter() {
+  const wrap = document.getElementById('dayCounterWrap');
+  wrap.innerHTML = '';
   const u = Auth.current();
-  if (!u || !u.createdAt) return;
-  const days = Math.floor((Date.now() - u.createdAt) / 86400000) + 1;
-  document.getElementById('dayCounterWrap').innerHTML =
-    `<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">📅 День адаптации: <strong>${days}</strong></div>`;
+  if (!u) return;
+
+  // createdAt должен быть timestamp в миллисекундах (13 цифр, > 1 января 2020)
+  // Если поле отсутствует, равно 0, или подозрительно маленькое — записываем сейчас
+  const MIN_VALID_TS = 1577836800000; // 1 января 2020 в мс
+  if (!u.createdAt || u.createdAt < MIN_VALID_TS) {
+    // Патчим аккаунт: выставляем createdAt = сейчас
+    const users = Auth.getUsers();
+    const login = Auth.currentLogin();
+    if (users[login]) {
+      users[login].createdAt = Date.now();
+      Auth.saveUsers(users);
+      u.createdAt = users[login].createdAt;
+    }
+  }
+
+  const days = Math.max(1, Math.floor((Date.now() - u.createdAt) / 86400000) + 1);
+  wrap.innerHTML = `<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">📅 День адаптации: <strong>${days}</strong></div>`;
 }
 
 function updateUI() {
