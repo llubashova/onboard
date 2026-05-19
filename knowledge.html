@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>База знаний | Auditorium Onboard</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <script>if(!localStorage.getItem('ao_session'))location.replace('login.html');</script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .kb-wrap{max-width:960px;margin:0 auto;padding:24px 16px}
+    .kb-hero{background:linear-gradient(135deg,#0a4d8c,#1a7fd4);border-radius:18px;padding:28px 32px;margin-bottom:28px;color:#fff}
+    .kb-hero h1{margin:0 0 6px;font-size:1.6rem}
+    .kb-hero p{margin:0;opacity:.85;font-size:.95rem}
+    .kb-search{width:100%;box-sizing:border-box;padding:12px 16px;border:2px solid #e8f0fe;border-radius:12px;font-size:.95rem;font-family:inherit;outline:none;margin-bottom:20px;transition:.2s}
+    .kb-search:focus{border-color:#1a7fd4;box-shadow:0 0 0 3px rgba(26,127,212,.12)}
+    .kb-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
+    .kb-tab{padding:8px 18px;border:2px solid #e8f0fe;border-radius:20px;font-size:.85rem;font-weight:600;cursor:pointer;background:#fff;color:#555;transition:.15s}
+    .kb-tab:hover{border-color:#1a7fd4;color:#1a7fd4}
+    .kb-tab.active{background:#0a4d8c;border-color:#0a4d8c;color:#fff}
+    .kb-section{margin-bottom:32px}
+    .kb-section-title{font-size:1rem;font-weight:700;color:#0a4d8c;margin:0 0 14px;display:flex;align-items:center;gap:8px}
+    .kb-subgroup{margin-bottom:20px}
+    .kb-subgroup-title{font-size:.8rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px;padding-left:4px}
+    .kb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+    .kb-card{background:#fff;border-radius:14px;padding:18px 20px;cursor:pointer;border:2px solid #e8f0fe;transition:.18s;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+    .kb-card:hover{border-color:#1a7fd4;box-shadow:0 6px 20px rgba(26,127,212,.13);transform:translateY(-2px)}
+    .kb-card-icon{font-size:1.5rem;margin-bottom:8px}
+    .kb-card-title{font-size:.92rem;font-weight:700;color:#1a1a1a;margin-bottom:5px;line-height:1.35}
+    .kb-card-meta{font-size:.76rem;color:#aaa;display:flex;gap:8px;flex-wrap:wrap}
+    .kb-card-tag{background:#f0f7ff;color:#0a4d8c;border-radius:10px;padding:1px 8px;font-size:.72rem;font-weight:600}
+    .kb-empty{text-align:center;padding:48px 20px;color:#bbb}
+    .kb-empty-icon{font-size:3rem;margin-bottom:12px}
+
+    /* Modal */
+    .kb-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+    .kb-modal-overlay.open{display:flex}
+    .kb-modal{background:#fff;border-radius:20px;width:100%;max-width:680px;box-shadow:0 20px 60px rgba(0,0,0,.2);margin:auto}
+    .kb-modal-head{padding:24px 28px 16px;border-bottom:1px solid #eef2fb;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+    .kb-modal-title{font-size:1.15rem;font-weight:800;color:#0a4d8c;line-height:1.3;flex:1}
+    .kb-modal-close{background:none;border:none;font-size:1.4rem;cursor:pointer;color:#aaa;padding:0;line-height:1;flex-shrink:0}
+    .kb-modal-close:hover{color:#333}
+    .kb-modal-meta{padding:10px 28px;background:#f7faff;font-size:.78rem;color:#888;display:flex;gap:14px;flex-wrap:wrap}
+    .kb-modal-body{padding:22px 28px 28px;font-size:.95rem;line-height:1.75;color:#333}
+    .kb-modal-body p{margin:0 0 14px}
+    .kb-modal-body h3{color:#0a4d8c;margin:20px 0 8px;font-size:1rem}
+    .kb-modal-body ul{margin:0 0 14px;padding-left:20px}
+    .kb-modal-body li{margin-bottom:5px}
+    .kb-modal-body a{color:#1a7fd4;word-break:break-all}
+    .kb-modal-file{margin:16px 28px 24px;padding:14px 18px;background:#f0f7ff;border-radius:10px;display:flex;align-items:center;gap:12px;font-size:.88rem;color:#0a4d8c;font-weight:600;text-decoration:none;border:1px solid #c7d7f0;transition:.15s}
+    .kb-modal-file:hover{background:#dbeafe}
+
+    .loading-screen{position:fixed;inset:0;background:#f7fafd;display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:16px}
+    .loading-screen p{color:#1a7fd4;font-size:1rem;font-weight:500}
+    .spinner{width:40px;height:40px;border:4px solid #c7d7f0;border-top-color:#1a7fd4;border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+<div class="loading-screen" id="loadingScreen"><div class="spinner"></div><p>Загрузка базы знаний…</p></div>
+
+<div class="kb-modal-overlay" id="kbModal">
+  <div class="kb-modal">
+    <div class="kb-modal-head">
+      <div class="kb-modal-title" id="modalTitle"></div>
+      <button class="kb-modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="kb-modal-meta" id="modalMeta"></div>
+    <div class="kb-modal-body" id="modalBody"></div>
+    <div id="modalFile"></div>
+  </div>
+</div>
+
+<header>
+  <div class="header-inner">
+    <div class="logo"><span class="logo-icon">🎓</span> Auditorium Onboard</div>
+    <div class="user-badge">
+      <a href="index.html" style="color:rgba(255,255,255,.85);font-size:.85rem;text-decoration:none">← Главная</a>
+    </div>
+  </div>
+</header>
+
+<div class="kb-wrap">
+  <div class="kb-hero">
+    <h1>📚 База знаний</h1>
+    <p>Статьи, инструкции, чек-листы и шаблоны для работы</p>
+  </div>
+
+  <input type="text" class="kb-search" id="kbSearch" placeholder="🔍 Поиск по статьям…" oninput="renderKb()">
+
+  <div class="kb-tabs" id="kbTabs"></div>
+
+  <div id="kbContent"></div>
+</div>
+
+<footer><p>ООО «Аудиториум СиДжи» · База знаний · 2026</p></footer>
+
+<script src="db.js"></script>
+<script src="auth.js"></script>
+<script>
+const KB_BIN_ID  = '6a0c10b5ee5a733b12e250c5';
+const KB_API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
+const KB_URL     = `https://api.jsonbin.io/v3/b/${KB_BIN_ID}`;
+
+// Структура категорий и подкатегорий
+const KB_CATEGORIES = [
+  {
+    id: 'company',
+    label: '🏢 О компании',
+    subs: [
+      { id: 'who_we_are', label: 'Кто мы' },
+      { id: 'how_we_work', label: 'Как мы работаем' },
+      { id: 'culture', label: 'Корпоративная культура' },
+      { id: 'contacts', label: 'Контакты и структура' }
+    ]
+  },
+  {
+    id: 'producer',
+    label: '🎬 Продюсеры',
+    subs: [
+      { id: 'research', label: 'Исследования' },
+      { id: 'speakers', label: 'Работа со спикерами' },
+      { id: 'program', label: 'Деловая программа' },
+      { id: 'tools', label: 'Инструменты' }
+    ]
+  },
+  {
+    id: 'sales',
+    label: '📞 Продажи',
+    subs: [
+      { id: 'crm', label: 'CRM' },
+      { id: 'calls', label: 'Звонки и скрипты' },
+      { id: 'deals', label: 'Сделки и клиенты' },
+      { id: 'kpi', label: 'KPI и метрики' }
+    ]
+  },
+  {
+    id: 'marketing',
+    label: '📣 Маркетинг',
+    subs: [
+      { id: 'ads', label: 'Реклама (Яндекс.Директ)' },
+      { id: 'content', label: 'Контент-план' },
+      { id: 'email', label: 'Email и рассылки' },
+      { id: 'social', label: 'TG-канал и SMM' }
+    ]
+  }
+];
+
+let _articles = [];
+let _activeTab = 'all';
+
+async function loadArticles() {
+  try {
+    const r = await fetch(KB_URL, { headers: { 'X-Master-Key': KB_API_KEY, 'X-Bin-Meta': 'false' } });
+    const d = await r.json();
+    _articles = Array.isArray(d.articles) ? d.articles : [];
+  } catch(e) { _articles = []; }
+}
+
+function renderTabs() {
+  const tabs = document.getElementById('kbTabs');
+  const all = [{ id: 'all', label: '✨ Все' }, ...KB_CATEGORIES];
+  tabs.innerHTML = all.map(t =>
+    `<button class="kb-tab${_activeTab===t.id?' active':''}" onclick="setTab('${t.id}')">${t.label}</button>`
+  ).join('');
+}
+
+function setTab(id) {
+  _activeTab = id;
+  renderKb();
+}
+
+function renderKb() {
+  renderTabs();
+  const search = document.getElementById('kbSearch').value.trim().toLowerCase();
+  const content = document.getElementById('kbContent');
+
+  let filtered = _articles.filter(a => {
+    if (_activeTab !== 'all' && a.category !== _activeTab) return false;
+    if (search) {
+      const hay = (a.title + ' ' + (a.content||'') + ' ' + (a.subcategory||'') + ' ' + (a.tags||[]  ).join(' ')).toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  if (!filtered.length) {
+    content.innerHTML = `<div class="kb-empty"><div class="kb-empty-icon">📭</div><div>Статей пока нет${search ? ' по запросу «'+search+'»' : ''}</div></div>`;
+    return;
+  }
+
+  if (_activeTab === 'all') {
+    // Группируем по категориям
+    let html = '';
+    KB_CATEGORIES.forEach(cat => {
+      const catArticles = filtered.filter(a => a.category === cat.id);
+      if (!catArticles.length) return;
+      html += `<div class="kb-section">`;
+      html += `<div class="kb-section-title">${cat.label}</div>`;
+      // Группируем по подкатегориям
+      cat.subs.forEach(sub => {
+        const subArticles = catArticles.filter(a => a.subcategory === sub.id);
+        if (!subArticles.length) return;
+        html += `<div class="kb-subgroup">`;
+        html += `<div class="kb-subgroup-title">${sub.label}</div>`;
+        html += `<div class="kb-grid">${subArticles.map(a => cardHtml(a)).join('')}</div>`;
+        html += `</div>`;
+      });
+      // Статьи без подкатегории
+      const noSub = catArticles.filter(a => !a.subcategory || !cat.subs.find(s => s.id === a.subcategory));
+      if (noSub.length) {
+        html += `<div class="kb-grid">${noSub.map(a => cardHtml(a)).join('')}</div>`;
+      }
+      html += `</div>`;
+    });
+    // Статьи без категории
+    const noCat = filtered.filter(a => !KB_CATEGORIES.find(c => c.id === a.category));
+    if (noCat.length) {
+      html += `<div class="kb-section"><div class="kb-section-title">📌 Прочее</div><div class="kb-grid">${noCat.map(a => cardHtml(a)).join('')}</div></div>`;
+    }
+    content.innerHTML = html;
+  } else {
+    const cat = KB_CATEGORIES.find(c => c.id === _activeTab);
+    let html = `<div class="kb-section">`;
+    if (cat) {
+      cat.subs.forEach(sub => {
+        const subArticles = filtered.filter(a => a.subcategory === sub.id);
+        if (!subArticles.length) return;
+        html += `<div class="kb-subgroup"><div class="kb-subgroup-title">${sub.label}</div><div class="kb-grid">${subArticles.map(a => cardHtml(a)).join('')}</div></div>`;
+      });
+      const noSub = filtered.filter(a => !a.subcategory || !cat.subs.find(s => s.id === a.subcategory));
+      if (noSub.length) html += `<div class="kb-grid">${noSub.map(a => cardHtml(a)).join('')}</div>`;
+    } else {
+      html += `<div class="kb-grid">${filtered.map(a => cardHtml(a)).join('')}</div>`;
+    }
+    html += `</div>`;
+    content.innerHTML = html;
+  }
+}
+
+const ICON_MAP = { company:'🏢', producer:'🎬', sales:'📞', marketing:'📣' };
+
+function cardHtml(a) {
+  const icon = a.icon || ICON_MAP[a.category] || '📄';
+  const date = a.createdAt ? new Date(a.createdAt).toLocaleDateString('ru-RU') : '';
+  const tags = (a.tags||[]).slice(0,3).map(t => `<span class="kb-card-tag">${t}</span>`).join('');
+  return `<div class="kb-card" onclick='openModal(${JSON.stringify(a).replace(/'/g,"&#39;")})'>
+    <div class="kb-card-icon">${icon}</div>
+    <div class="kb-card-title">${escHtml(a.title||'Без названия')}</div>
+    <div class="kb-card-meta">${date ? `<span>${date}</span>` : ''}${a.author?`<span>${escHtml(a.author)}</span>`:''}${tags}</div>
+  </div>`;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function openModal(a) {
+  const cat = KB_CATEGORIES.find(c => c.id === a.category);
+  const sub = cat && a.subcategory ? cat.subs.find(s => s.id === a.subcategory) : null;
+  document.getElementById('modalTitle').textContent = a.title || 'Без названия';
+  const date = a.createdAt ? new Date(a.createdAt).toLocaleDateString('ru-RU') : '';
+  document.getElementById('modalMeta').innerHTML = [
+    cat ? `<span>${cat.label}</span>` : '',
+    sub ? `<span>${sub.label}</span>` : '',
+    a.author ? `<span>👤 ${escHtml(a.author)}</span>` : '',
+    date ? `<span>📅 ${date}</span>` : ''
+  ].filter(Boolean).join('');
+
+  // Рендерим контент с переносами строк
+  const bodyEl = document.getElementById('modalBody');
+  bodyEl.innerHTML = (a.content || '<em>Содержимое не добавлено</em>')
+    .split('\n').map(line => `<p>${escHtml(line) || '&nbsp;'}</p>`).join('');
+
+  const fileEl = document.getElementById('modalFile');
+  if (a.fileUrl) {
+    fileEl.innerHTML = `<a href="${escHtml(a.fileUrl)}" target="_blank" class="kb-modal-file">📎 Открыть прикреплённый файл</a>`;
+  } else {
+    fileEl.innerHTML = '';
+  }
+  document.getElementById('kbModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('kbModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('kbModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+DB.ready.then(async () => {
+  document.getElementById('loadingScreen').style.display = 'none';
+  if (!Auth.requireAuth()) return;
+  await loadArticles();
+  renderKb();
+});
+</script>
+</body>
+</html>

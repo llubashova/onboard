@@ -22,25 +22,20 @@
     .btn-warn{background:#fff3e0;color:#e65100;border:2px solid #ffb74d}
     .btn-success{background:#d1fae5;color:#065f46;border:2px solid #6ee7b7}
     .btn-sm{padding:5px 12px;font-size:.8rem}
-    .invite-table,.user-table{width:100%;border-collapse:collapse;font-size:.87rem}
-    .invite-table th,.user-table th{background:#f0f7ff;color:#0a4d8c;padding:9px 12px;text-align:left;font-weight:700}
-    .invite-table td,.user-table td{padding:9px 12px;border-bottom:1px solid #eef2fb;vertical-align:middle}
+    .btn-primary:hover{opacity:.88} .btn-danger:hover{background:#fee2e2} .btn-warn:hover{background:#ffe0b2}
+    .invite-table,.user-table,.kb-admin-table{width:100%;border-collapse:collapse;font-size:.87rem}
+    .invite-table th,.user-table th,.kb-admin-table th{background:#f0f7ff;color:#0a4d8c;padding:9px 12px;text-align:left;font-weight:700}
+    .invite-table td,.user-table td,.kb-admin-table td{padding:9px 12px;border-bottom:1px solid #eef2fb;vertical-align:middle}
     .code-pill{background:#e8f0fe;color:#0a4d8c;border-radius:6px;padding:3px 10px;font-family:monospace;font-weight:700;letter-spacing:.05em}
     .ubadge{display:inline-block;border-radius:20px;padding:2px 10px;font-size:.78rem;font-weight:700}
-    .badge-used{background:#f3f4f6;color:#9ca3af}
-    .badge-active{background:#d1fae5;color:#065f46}
-    .badge-blocked{background:#fee2e2;color:#991b1b}
-    .badge-hr{background:#dbeafe;color:#1e40af}
-    .badge-prod{background:#fef9c3;color:#854d0e}
-    .badge-sales{background:#f0fdf4;color:#166534}
-    .badge-mkt{background:#fdf4ff;color:#7e22ce}
-    .badge-ceo{background:#fce7f3;color:#9d174d}
-    .badge-exec{background:#ede9fe;color:#5b21b6}
-    .badge-ops{background:#ecfdf5;color:#065f46}
+    .badge-used{background:#f3f4f6;color:#9ca3af} .badge-active{background:#d1fae5;color:#065f46} .badge-blocked{background:#fee2e2;color:#991b1b}
+    .badge-hr{background:#dbeafe;color:#1e40af} .badge-prod{background:#fef9c3;color:#854d0e} .badge-sales{background:#f0fdf4;color:#166534}
+    .badge-mkt{background:#fdf4ff;color:#7e22ce} .badge-ceo{background:#fce7f3;color:#9d174d} .badge-exec{background:#ede9fe;color:#5b21b6} .badge-ops{background:#ecfdf5;color:#065f46}
     .copy-btn{background:#f0f7ff;border:1px solid #c7d7f0;border-radius:6px;padding:3px 8px;font-size:.78rem;cursor:pointer;color:#0a4d8c}
     .empty-row td{color:#aaa;text-align:center;padding:20px}
     .role-select{padding:4px 8px;border:1px solid #dde8f5;border-radius:6px;font-size:.82rem;font-family:inherit}
     .alert{background:#d1fae5;color:#065f46;border-radius:8px;padding:10px 16px;font-size:.88rem;margin-bottom:12px;display:none}
+    .alert.err{background:#fee2e2;color:#991b1b}
     .header-nav{display:flex;align-items:center;gap:16px}
     .header-back{color:rgba(255,255,255,.85);font-size:.88rem;font-weight:500;text-decoration:none;padding:6px 14px;border:1px solid rgba(255,255,255,.3);border-radius:20px;transition:.2s;white-space:nowrap}
     .header-back:hover{background:rgba(255,255,255,.2);color:#fff}
@@ -51,9 +46,7 @@
     .progress-mini-wrap{background:#e8f0fe;border-radius:6px;height:8px;overflow:hidden;width:100px;display:inline-block;vertical-align:middle;margin-right:6px}
     .progress-mini-fill{height:100%;background:linear-gradient(90deg,#1a7fd4,#27ae60);border-radius:6px}
     .xp-level-badge{display:inline-block;border-radius:12px;padding:2px 9px;font-size:.75rem;font-weight:700}
-    .lvl-novice{background:#e8f0fe;color:#0a4d8c}
-    .lvl-advanced{background:#fff3cd;color:#854d0e}
-    .lvl-pro{background:#d1fae5;color:#065f46}
+    .lvl-novice{background:#e8f0fe;color:#0a4d8c} .lvl-advanced{background:#fff3cd;color:#854d0e} .lvl-pro{background:#d1fae5;color:#065f46}
     .filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
     .filter-bar select{padding:7px 12px;border:2px solid #e8f0fe;border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;cursor:pointer}
     .filter-bar label{font-size:.85rem;color:#555;font-weight:600}
@@ -61,6 +54,24 @@
     .stats-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px}
     .stat-chip{background:#f0f7ff;border-radius:10px;padding:8px 16px;font-size:.82rem;color:#0a4d8c;font-weight:600}
     .stat-chip span{font-size:1.2rem;font-weight:800;display:block}
+
+    /* Tabs */
+    .admin-tabs{display:flex;gap:6px;margin-bottom:24px;border-bottom:2px solid #e8f0fe;padding-bottom:0}
+    .admin-tab{padding:10px 20px;border:none;background:none;font-size:.9rem;font-weight:600;color:#888;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:.15s;font-family:inherit}
+    .admin-tab.active{color:#0a4d8c;border-bottom-color:#0a4d8c}
+    .admin-tab:hover{color:#1a7fd4}
+    .tab-panel{display:none} .tab-panel.active{display:block}
+
+    /* KB editor */
+    .kb-form{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+    .kb-form-full{grid-column:1/-1}
+    .kb-form label{font-size:.82rem;font-weight:600;color:#555;display:block;margin-bottom:4px}
+    .kb-form input,.kb-form select,.kb-form textarea{width:100%;box-sizing:border-box;padding:9px 12px;border:2px solid #e8f0fe;border-radius:8px;font-size:.88rem;font-family:inherit;outline:none;transition:.15s}
+    .kb-form input:focus,.kb-form select:focus,.kb-form textarea:focus{border-color:#1a7fd4}
+    .kb-form textarea{resize:vertical;min-height:120px;line-height:1.6}
+    .kb-article-title{font-size:.9rem;font-weight:700;color:#1a1a1a;margin-bottom:2px}
+    .kb-article-sub{font-size:.78rem;color:#888}
+    .kb-cat-badge{display:inline-block;border-radius:10px;padding:2px 9px;font-size:.75rem;font-weight:700;background:#e8f0fe;color:#0a4d8c}
   </style>
 </head>
 <body>
@@ -76,74 +87,155 @@
 </header>
 <div class="admin-wrap">
   <h2>🛠️ Панель администратора</h2>
-  <p style="color:#888;margin:0 0 24px">Управление приглашениями и пользователями</p>
+  <p style="color:#888;margin:0 0 20px">Управление приглашениями, пользователями и базой знаний</p>
   <div class="alert" id="alertMsg"></div>
-  <div class="section-card">
-    <h3>🔑 Коды приглашений</h3>
-    <div class="invite-controls">
-      <select id="newInviteRole">
-        <optgroup label="— Сотрудники —">
+
+  <div class="admin-tabs">
+    <button class="admin-tab active" onclick="switchTab('users')">👥 Сотрудники</button>
+    <button class="admin-tab" onclick="switchTab('invites')">🔑 Приглашения</button>
+    <button class="admin-tab" onclick="switchTab('kb')">📚 База знаний</button>
+  </div>
+
+  <!-- TAB: USERS -->
+  <div class="tab-panel active" id="tab-users">
+    <div class="section-card">
+      <h3>👥 Сотрудники и прогресс</h3>
+      <div class="stats-row" id="statsRow"></div>
+      <div class="filter-bar">
+        <label>Роль:</label>
+        <select id="filterRole" onchange="applyFilters()">
+          <option value="">Все роли</option>
           <option value="producer">🎬 Продюсер</option>
           <option value="sales">📞 Менеджер по продажам</option>
           <option value="marketing">📣 Специалист по маркетингу</option>
-        </optgroup>
-        <optgroup label="— Администраторы —">
           <option value="hr">👩‍💼 HR-менеджер</option>
-          <option value="ceo">👑 Генеральный директор</option>
-          <option value="exec_dir">🏢 Исполнительный директор</option>
-          <option value="ops_dir">⚙️ Операционный директор</option>
-        </optgroup>
-      </select>
-      <input type="text" id="newInviteLabel" placeholder="Пометка (имя кандидата)" style="flex:1;min-width:160px">
-      <button class="btn btn-primary" onclick="createInvite()">+ Создать код</button>
-      <button class="btn btn-danger" onclick="clearUsedInvites()">Очистить историю ключей</button>
+        </select>
+        <label>Уровень:</label>
+        <select id="filterLevel" onchange="applyFilters()">
+          <option value="">Все уровни</option>
+          <option value="novice">🌱 Новичок</option>
+          <option value="advanced">🚀 Продвинутый</option>
+          <option value="pro">🏆 Профи</option>
+          <option value="none">— Нет прогресса</option>
+        </select>
+      </div>
+      <div class="export-bar"><button class="btn btn-success btn-sm" onclick="exportExcel()">📥 Экспорт Excel</button></div>
+      <table class="user-table">
+        <thead><tr><th>ФИО</th><th>Логин</th><th>Роль</th><th>Прогресс</th><th>Статус</th><th>Действия</th></tr></thead>
+        <tbody id="userTableBody"></tbody>
+      </table>
     </div>
-    <table class="invite-table">
-      <thead><tr><th>Код</th><th>Роль</th><th>Пометка</th><th>Статус</th><th></th></tr></thead>
-      <tbody id="inviteTableBody"></tbody>
-    </table>
   </div>
-  <div class="section-card">
-    <h3>👥 Сотрудники и прогресс</h3>
-    <div class="stats-row" id="statsRow"></div>
-    <div class="filter-bar">
-      <label>Роль:</label>
-      <select id="filterRole" onchange="applyFilters()">
-        <option value="">Все роли</option>
-        <option value="producer">🎬 Продюсер</option>
-        <option value="sales">📞 Менеджер по продажам</option>
-        <option value="marketing">📣 Специалист по маркетингу</option>
-        <option value="hr">👩‍💼 HR-менеджер</option>
-      </select>
-      <label>Уровень:</label>
-      <select id="filterLevel" onchange="applyFilters()">
-        <option value="">Все уровни</option>
-        <option value="novice">🌱 Новичок</option>
-        <option value="advanced">🚀 Продвинутый</option>
-        <option value="pro">🏆 Профи</option>
-        <option value="none">— Нет прогресса</option>
-      </select>
+
+  <!-- TAB: INVITES -->
+  <div class="tab-panel" id="tab-invites">
+    <div class="section-card">
+      <h3>🔑 Коды приглашений</h3>
+      <div class="invite-controls">
+        <select id="newInviteRole">
+          <optgroup label="— Сотрудники —">
+            <option value="producer">🎬 Продюсер</option>
+            <option value="sales">📞 Менеджер по продажам</option>
+            <option value="marketing">📣 Специалист по маркетингу</option>
+          </optgroup>
+          <optgroup label="— Администраторы —">
+            <option value="hr">👩‍💼 HR-менеджер</option>
+            <option value="ceo">👑 Генеральный директор</option>
+            <option value="exec_dir">🏢 Исполнительный директор</option>
+            <option value="ops_dir">⚙️ Операционный директор</option>
+          </optgroup>
+        </select>
+        <input type="text" id="newInviteLabel" placeholder="Пометка (имя кандидата)" style="flex:1;min-width:160px">
+        <button class="btn btn-primary" onclick="createInvite()">+ Создать код</button>
+        <button class="btn btn-danger" onclick="clearUsedInvites()">Очистить историю</button>
+      </div>
+      <table class="invite-table">
+        <thead><tr><th>Код</th><th>Роль</th><th>Пометка</th><th>Статус</th><th></th></tr></thead>
+        <tbody id="inviteTableBody"></tbody>
+      </table>
     </div>
-    <div class="export-bar"><button class="btn btn-success btn-sm" onclick="exportExcel()">📥 Экспорт Excel</button></div>
-    <table class="user-table">
-      <thead><tr><th>ФИО</th><th>Логин</th><th>Роль</th><th>Прогресс</th><th>Статус</th><th>Действия</th></tr></thead>
-      <tbody id="userTableBody"></tbody>
-    </table>
   </div>
+
+  <!-- TAB: KNOWLEDGE BASE -->
+  <div class="tab-panel" id="tab-kb">
+    <div class="section-card">
+      <h3>✏️ Добавить статью</h3>
+      <div class="kb-form">
+        <div>
+          <label>Заголовок *</label>
+          <input type="text" id="kbTitle" placeholder="Название статьи">
+        </div>
+        <div>
+          <label>Иконка (эмодзи)</label>
+          <input type="text" id="kbIcon" placeholder="📄" maxlength="4">
+        </div>
+        <div>
+          <label>Категория *</label>
+          <select id="kbCategory" onchange="updateSubcats()">
+            <option value="">— Выбери категорию —</option>
+            <option value="company">🏢 О компании</option>
+            <option value="producer">🎬 Продюсеры</option>
+            <option value="sales">📞 Продажи</option>
+            <option value="marketing">📣 Маркетинг</option>
+          </select>
+        </div>
+        <div>
+          <label>Подраздел</label>
+          <select id="kbSubcategory">
+            <option value="">— Выбери категорию сначала —</option>
+          </select>
+        </div>
+        <div class="kb-form-full">
+          <label>Содержимое статьи *</label>
+          <textarea id="kbContent" placeholder="Напиши текст статьи. Каждая новая строка — новый абзац."></textarea>
+        </div>
+        <div>
+          <label>Теги (через запятую)</label>
+          <input type="text" id="kbTags" placeholder="crm, инструкция, шаблон">
+        </div>
+        <div>
+          <label>Ссылка на файл (Google Drive, PDF…)</label>
+          <input type="text" id="kbFileUrl" placeholder="https://drive.google.com/…">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveArticle()" id="kbSaveBtn">💾 Сохранить статью</button>
+      <button class="btn" style="background:#f5f5f5;color:#555;margin-left:8px" onclick="resetForm()" id="kbCancelBtn" style="display:none">✕ Отмена</button>
+    </div>
+
+    <div class="section-card">
+      <h3>📋 Все статьи <span id="kbCount" style="font-size:.8rem;color:#aaa;font-weight:400"></span></h3>
+      <table class="kb-admin-table">
+        <thead><tr><th>Статья</th><th>Категория</th><th>Автор</th><th>Дата</th><th>Действия</th></tr></thead>
+        <tbody id="kbAdminTable"></tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
+
 <script src="db.js"></script>
 <script src="auth.js"></script>
 <script>
+// ─── Tab switching ───────────────────────────────────────────────
+function switchTab(id) {
+  document.querySelectorAll('.admin-tab').forEach((t,i) => {
+    const ids = ['users','invites','kb'];
+    t.classList.toggle('active', ids[i] === id);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+}
+
+// ─── Users ───────────────────────────────────────────────────────
 const ROLE_NAMES={producer:'Продюсер',sales:'Менеджер по продажам',marketing:'Специалист по маркетингу',hr:'HR-менеджер',ceo:'Генеральный директор',exec_dir:'Исполнительный директор',ops_dir:'Операционный директор'};
 const ROLE_BADGES={producer:'badge-prod',sales:'badge-sales',marketing:'badge-mkt',hr:'badge-hr',ceo:'badge-ceo',exec_dir:'badge-exec',ops_dir:'badge-ops'};
 
-// ROLE_KEYS — точное зеркало sales.html и marketing.html
-// sales: убран несуществующий sales_l1_m3, добавлены sales_l1_p4 и sales_l2_p5
 const ROLE_KEYS={
   producer:{maxXp:331,keys:[['producer_l1_p1',10],['producer_l1_p2',10],['producer_l1_p3',10],['producer_l1_m1',8],['producer_l1_m2',8],['producer_l1_s1',5],['producer_l1_s2',5],['producer_l1_s3',5],['producer_l1_s4',5],['producer_l2_p1',15],['producer_l2_p2',15],['producer_l2_p3',15],['producer_l2_p4',15],['producer_l2_p5',15],['producer_l2_m1',8],['producer_l2_m2',8],['producer_l2_m3',8],['producer_l2_s1',5],['producer_l2_s2',5],['producer_l2_s3',5],['producer_l3_p1',25],['producer_l3_p2',25],['producer_l3_p3',25],['producer_l3_p4',25],['producer_l3_p5',25],['producer_l3_m1',8],['producer_l3_m2',8],['producer_l3_s1',5],['producer_l3_s2',5]],getLevel(xp){if(xp>=180)return{label:'🏆 Профи',cls:'lvl-pro',key:'pro'};if(xp>=66)return{label:'🚀 Продвинутый',cls:'lvl-advanced',key:'advanced'};return{label:'🌱 Новичок',cls:'lvl-novice',key:'novice'};}},
   sales:{maxXp:294,keys:[['sales_l1_p1',10],['sales_l1_p2',10],['sales_l1_p3',10],['sales_l1_p4',10],['sales_l1_m1',8],['sales_l1_m2',8],['sales_l1_s1',5],['sales_l1_s2',5],['sales_l1_s3',5],['sales_l2_p1',15],['sales_l2_p2',15],['sales_l2_p3',15],['sales_l2_p4',15],['sales_l2_p5',15],['sales_l2_m1',8],['sales_l2_m2',8],['sales_l2_s1',5],['sales_l2_s2',5],['sales_l3_p1',25],['sales_l3_p2',25],['sales_l3_p3',25],['sales_l3_p4',25],['sales_l3_m1',8],['sales_l3_s1',5],['sales_l3_s2',5]],getLevel(xp){const p=xp/294*100;if(p>=55)return{label:'🏆 Профи',cls:'lvl-pro',key:'pro'};if(p>=20)return{label:'🚀 Продвинутый',cls:'lvl-advanced',key:'advanced'};return{label:'🌱 Новичок',cls:'lvl-novice',key:'novice'};}},
   marketing:{maxXp:316,keys:[['marketing_l1_p1',10],['marketing_l1_p2',10],['marketing_l1_p3',10],['marketing_l1_p4',10],['marketing_l1_m1',8],['marketing_l1_m2',8],['marketing_l1_s1',5],['marketing_l1_s2',5],['marketing_l1_s3',5],['marketing_l2_p1',15],['marketing_l2_p2',15],['marketing_l2_p3',15],['marketing_l2_p4',15],['marketing_l2_p5',15],['marketing_l2_m1',8],['marketing_l2_m2',8],['marketing_l2_s1',5],['marketing_l2_s2',5],['marketing_l3_p1',25],['marketing_l3_p2',25],['marketing_l3_p3',25],['marketing_l3_p4',25],['marketing_l3_m1',8],['marketing_l3_s1',5],['marketing_l3_s2',5]],getLevel(xp){const p=xp/316*100;if(p>=55)return{label:'🏆 Профи',cls:'lvl-pro',key:'pro'};if(p>=20)return{label:'🚀 Продвинутый',cls:'lvl-advanced',key:'advanced'};return{label:'🌱 Новичок',cls:'lvl-novice',key:'novice'};}}
 };
+
 function getUserXp(login,role){const cfg=ROLE_KEYS[role];if(!cfg||!cfg.keys.length)return null;let xp=0;cfg.keys.forEach(([k,p])=>{if(Auth.getCheckForUser(login,k))xp+=p;});return{xp,maxXp:cfg.maxXp,level:cfg.getLevel(xp)};}
 function renderProgressCell(login,role){const d=getUserXp(login,role);if(!d)return'<span style="color:#ccc;font-size:.8rem">—</span>';const pct=d.maxXp?Math.round(d.xp/d.maxXp*100):0;return`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><div class="progress-mini-wrap"><div class="progress-mini-fill" style="width:${pct}%"></div></div><span style="font-size:.8rem;color:#555;min-width:54px">${d.xp}/${d.maxXp} XP</span><span class="xp-level-badge ${d.level.cls}">${d.level.label}</span></div>`;}
 let _allEntries=[];
@@ -153,7 +245,8 @@ function applyFilters(){const rf=document.getElementById('filterRole').value,lf=
 function renderUserTable(entries){const tbody=document.getElementById('userTableBody'),me=Auth.currentLogin(),allRoles=['producer','sales','marketing','hr','ceo','exec_dir','ops_dir'];if(!entries.length){tbody.innerHTML='<tr class="empty-row"><td colspan="6">Нет пользователей</td></tr>';return;}tbody.innerHTML='';[...entries].sort((a,b)=>a.u.fio.localeCompare(b.u.fio)).forEach(({login,u})=>{const isMe=login===me;const tr=document.createElement('tr');tr.innerHTML=`<td>${u.fio}${u.admin?' <span style="color:#0a4d8c;font-size:.75rem">★ admin</span>':''}${isMe?' <span style="color:#888;font-size:.75rem">(вы)</span>':''}</td><td style="font-family:monospace;font-size:.85rem">${login}</td><td><select class="role-select" onchange="changeRole('${login}',this.value)" ${isMe?'disabled':''}>${allRoles.map(r=>`<option value="${r}" ${u.role===r?'selected':''}>${ROLE_NAMES[r]}</option>`).join('')}</select></td><td>${renderProgressCell(login,u.role)}</td><td>${u.blocked?'<span class="ubadge badge-blocked">Заблокирован</span>':'<span class="ubadge badge-active">Активен</span>'}</td><td style="display:flex;gap:6px;flex-wrap:wrap">${!isMe&&!u.blocked?`<button class="btn btn-warn btn-sm" onclick="blockUser('${login}')">Блок</button>`:''}${!isMe&&u.blocked?`<button class="btn btn-primary btn-sm" onclick="unblockUser('${login}')">Разблок</button>`:''}${!isMe&&!u.admin?`<button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc" onclick="promoteUser('${login}')">→ Admin</button>`:''}${!isMe?`<button class="btn btn-danger btn-sm" onclick="deleteUser('${login}')">Удалить</button>`:''}</td>`;tbody.appendChild(tr);});}
 function renderUsers(){buildEntries();renderStats();applyFilters();}
 function exportExcel(){const rows=_allEntries.map(({login,u,xpData})=>({'ФИО':u.fio,'Логин':login,'Роль':ROLE_NAMES[u.role]||u.role,'XP':xpData?xpData.xp:'—','Max XP':xpData?xpData.maxXp:'—','Прогресс %':xpData?Math.round(xpData.xp/xpData.maxXp*100)+'%':'—','Уровень':xpData?xpData.level.label.replace(/[^\w а-яА-ЯёЁ]/gu,'').trim():'—','Статус':u.blocked?'Заблокирован':'Активен'}));const ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Прогресс');XLSX.writeFile(wb,'onboard_progress_'+new Date().toLocaleDateString('ru-RU').replace(/\./g,'-')+'.xlsx');showAlert('📥 Excel-файл скачан!');}
-function showAlert(msg){const el=document.getElementById('alertMsg');el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',4000);}
+
+// ─── Invites ─────────────────────────────────────────────────────
 function createInvite(){const role=document.getElementById('newInviteRole').value,label=document.getElementById('newInviteLabel').value.trim(),code=Auth.createInvite(role,label);document.getElementById('newInviteLabel').value='';renderInvites();showAlert('✅ Код создан: '+code);}
 function clearUsedInvites(){if(!confirm('Удалить все использованные ключи?'))return;Auth.clearUsedInvites();renderInvites();showAlert('🧹 Очищено');}
 function renderInvites(){const tbody=document.getElementById('inviteTableBody'),inv=Auth.getInvites(),codes=Object.keys(inv);if(!codes.length){tbody.innerHTML='<tr class="empty-row"><td colspan="5">Нет кодов</td></tr>';return;}tbody.innerHTML='';codes.sort((a,b)=>(inv[a].used?1:0)-(inv[b].used?1:0)).forEach(code=>{const c=inv[code],tr=document.createElement('tr');tr.innerHTML=`<td><span class="code-pill">${code}</span><button class="copy-btn" onclick="copyCode('${code}')">копировать</button></td><td><span class="ubadge ${ROLE_BADGES[c.role]||''}">${ROLE_NAMES[c.role]||c.role}</span></td><td>${c.label||'—'}</td><td>${c.used?'<span class="ubadge badge-used">Использован</span>':'<span class="ubadge badge-active">Активен</span>'}</td><td>${c.used?'':`<button class="btn btn-danger btn-sm" onclick="delInvite('${code}')">Удалить</button>`}</td>`;tbody.appendChild(tr);});}
@@ -164,7 +257,174 @@ function blockUser(l){if(!confirm('Заблокировать '+l+'?'))return;Au
 function unblockUser(l){Auth.unblockUser(l);renderUsers();showAlert('🔓 Разблокирован');}
 function promoteUser(l){if(!confirm('Дать '+l+' права администратора?'))return;Auth.promoteToAdmin(l);renderUsers();showAlert('⭐ Повышен до admin');}
 function deleteUser(l){if(!confirm('Удалить '+l+'?'))return;Auth.deleteUser(l);renderUsers();showAlert('🗑️ Удалён');}
-DB.ready.then(()=>{document.getElementById('loadingScreen').style.display='none';if(!Auth.requireAuth())return;if(!Auth.isAdmin()){window.location.href='index.html';return;}const u=Auth.current();document.getElementById('headerUser').textContent=u.fio+' · '+(ROLE_NAMES[u.role]||u.role);renderInvites();renderUsers();});
+
+// ─── Knowledge Base ───────────────────────────────────────────────
+const KB_BIN_ID  = '6a0c10b5ee5a733b12e250c5';
+const KB_API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
+const KB_URL     = `https://api.jsonbin.io/v3/b/${KB_BIN_ID}`;
+
+const KB_SUBCATS = {
+  company:  [{id:'who_we_are',l:'Кто мы'},{id:'how_we_work',l:'Как мы работаем'},{id:'culture',l:'Корп. культура'},{id:'contacts',l:'Контакты и структура'}],
+  producer: [{id:'research',l:'Исследования'},{id:'speakers',l:'Работа со спикерами'},{id:'program',l:'Деловая программа'},{id:'tools',l:'Инструменты'}],
+  sales:    [{id:'crm',l:'CRM'},{id:'calls',l:'Звонки и скрипты'},{id:'deals',l:'Сделки и клиенты'},{id:'kpi',l:'KPI и метрики'}],
+  marketing:[{id:'ads',l:'Реклама (Яндекс.Директ)'},{id:'content',l:'Контент-план'},{id:'email',l:'Email и рассылки'},{id:'social',l:'TG-канал и SMM'}]
+};
+const KB_CAT_LABELS = {company:'🏢 О компании', producer:'🎬 Продюсеры', sales:'📞 Продажи', marketing:'📣 Маркетинг'};
+
+let _kbArticles = [];
+let _kbEditId = null;
+
+function updateSubcats() {
+  const cat = document.getElementById('kbCategory').value;
+  const sel = document.getElementById('kbSubcategory');
+  const subs = KB_SUBCATS[cat] || [];
+  if (!subs.length) {
+    sel.innerHTML = '<option value="">— нет подразделов —</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">— не указывать —</option>' +
+    subs.map(s => `<option value="${s.id}">${s.l}</option>`).join('');
+}
+
+async function loadKbArticles() {
+  try {
+    const r = await fetch(KB_URL, { headers: {'X-Master-Key': KB_API_KEY, 'X-Bin-Meta': 'false'} });
+    const d = await r.json();
+    _kbArticles = Array.isArray(d.articles) ? d.articles : [];
+  } catch(e) { _kbArticles = []; }
+}
+
+async function saveKbToCloud() {
+  await fetch(KB_URL, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json','X-Master-Key': KB_API_KEY},
+    body: JSON.stringify({articles: _kbArticles})
+  });
+}
+
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+async function saveArticle() {
+  const title   = document.getElementById('kbTitle').value.trim();
+  const cat     = document.getElementById('kbCategory').value;
+  const subcat  = document.getElementById('kbSubcategory').value;
+  const content = document.getElementById('kbContent').value.trim();
+  const icon    = document.getElementById('kbIcon').value.trim() || '';
+  const tags    = document.getElementById('kbTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const fileUrl = document.getElementById('kbFileUrl').value.trim();
+
+  if (!title) { showAlert('⚠️ Укажи заголовок', true); return; }
+  if (!cat)   { showAlert('⚠️ Выбери категорию', true); return; }
+  if (!content){ showAlert('⚠️ Добавь содержимое', true); return; }
+
+  const u = Auth.current();
+  const btn = document.getElementById('kbSaveBtn');
+  btn.textContent = '⏳ Сохраняю…'; btn.disabled = true;
+
+  if (_kbEditId !== null) {
+    const idx = _kbArticles.findIndex(a => a.id === _kbEditId);
+    if (idx !== -1) {
+      _kbArticles[idx] = { ..._kbArticles[idx], title, category: cat, subcategory: subcat, content, icon, tags, fileUrl, updatedAt: Date.now() };
+    }
+    _kbEditId = null;
+    document.getElementById('kbCancelBtn').style.display = 'none';
+  } else {
+    _kbArticles.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      title, category: cat, subcategory: subcat, content, icon, tags, fileUrl,
+      author: u ? u.fio : '—',
+      createdAt: Date.now()
+    });
+  }
+
+  await saveKbToCloud();
+  btn.textContent = '💾 Сохранить статью'; btn.disabled = false;
+  showAlert('✅ Статья сохранена!');
+  resetForm();
+  renderKbAdmin();
+}
+
+function resetForm() {
+  ['kbTitle','kbIcon','kbContent','kbTags','kbFileUrl'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('kbCategory').value = '';
+  document.getElementById('kbSubcategory').innerHTML = '<option value="">— Выбери категорию сначала —</option>';
+  _kbEditId = null;
+  document.getElementById('kbCancelBtn').style.display = 'none';
+  document.getElementById('kbSaveBtn').textContent = '💾 Сохранить статью';
+}
+
+function editArticle(id) {
+  const a = _kbArticles.find(x => x.id === id);
+  if (!a) return;
+  _kbEditId = id;
+  document.getElementById('kbTitle').value   = a.title || '';
+  document.getElementById('kbIcon').value    = a.icon || '';
+  document.getElementById('kbContent').value = a.content || '';
+  document.getElementById('kbTags').value    = (a.tags||[]).join(', ');
+  document.getElementById('kbFileUrl').value = a.fileUrl || '';
+  document.getElementById('kbCategory').value = a.category || '';
+  updateSubcats();
+  document.getElementById('kbSubcategory').value = a.subcategory || '';
+  document.getElementById('kbSaveBtn').textContent = '💾 Обновить статью';
+  document.getElementById('kbCancelBtn').style.display = 'inline-block';
+  switchTab('kb');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+async function deleteArticle(id) {
+  if (!confirm('Удалить статью?')) return;
+  _kbArticles = _kbArticles.filter(a => a.id !== id);
+  await saveKbToCloud();
+  showAlert('🗑️ Статья удалена');
+  renderKbAdmin();
+}
+
+function renderKbAdmin() {
+  const tbody = document.getElementById('kbAdminTable');
+  document.getElementById('kbCount').textContent = `(${_kbArticles.length})`;
+  if (!_kbArticles.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Статей пока нет — добавь первую!</td></tr>';
+    return;
+  }
+  tbody.innerHTML = [..._kbArticles].reverse().map(a => {
+    const cat = KB_CAT_LABELS[a.category] || a.category || '—';
+    const subs = KB_SUBCATS[a.category] || [];
+    const sub = subs.find(s => s.id === a.subcategory);
+    const date = a.createdAt ? new Date(a.createdAt).toLocaleDateString('ru-RU') : '—';
+    return `<tr>
+      <td><div class="kb-article-title">${a.icon||'📄'} ${escHtml(a.title)}</div>${sub?`<div class="kb-article-sub">${sub.l}</div>`:''}</td>
+      <td><span class="kb-cat-badge">${cat}</span></td>
+      <td style="font-size:.8rem;color:#888">${escHtml(a.author||'—')}</td>
+      <td style="font-size:.8rem;color:#888;white-space:nowrap">${date}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc" onclick="editArticle('${a.id}')">✏️ Ред.</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteArticle('${a.id}')">Удалить</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── Alert ────────────────────────────────────────────────────────
+function showAlert(msg, isErr=false) {
+  const el = document.getElementById('alertMsg');
+  el.textContent = msg;
+  el.className = 'alert' + (isErr ? ' err' : '');
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 4000);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────
+DB.ready.then(async () => {
+  document.getElementById('loadingScreen').style.display = 'none';
+  if (!Auth.requireAuth()) return;
+  if (!Auth.isAdmin()) { window.location.href = 'index.html'; return; }
+  const u = Auth.current();
+  document.getElementById('headerUser').textContent = u.fio + ' · ' + (ROLE_NAMES[u.role]||u.role);
+  renderInvites();
+  renderUsers();
+  await loadKbArticles();
+  renderKbAdmin();
+});
 </script>
 </body>
 </html>
