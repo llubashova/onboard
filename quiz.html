@@ -113,17 +113,32 @@ let currentIndex = 0;
 let answered     = false;
 let score        = 0;
 
+async function loadQuizzes() {
+  const container = document.getElementById('quizListContainer');
+  try {
+    const r = await fetch('quizzes.json?v=' + Date.now());
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    quizzes = Array.isArray(d.quizzes) ? d.quizzes : [];
+    renderQuizList();
+  } catch (e) {
+    console.error('Quiz load error:', e);
+    container.className = 'state-box';
+    container.innerHTML = '😢 Не удалось загрузить квизы. Попробуй обновить страницу.';
+  }
+}
+
 function renderQuizList() {
-  quizzes = DB.getQuizzes();
   const box = document.getElementById('quizListContainer');
   if (!quizzes.length) {
     box.className = 'state-box';
     box.innerHTML = 'Пока нет квизов. HR добавит их в ближайшее время 🛠️';
     return;
   }
+
   box.className = 'quiz-grid';
   box.innerHTML = quizzes.map((q, idx) => {
-    const cat    = q.category || 'general';
+    const cat = q.category || 'general';
     const qCount = Array.isArray(q.questions) ? q.questions.length : 0;
     return `<div class="quiz-card">
       <div class="quiz-top">
@@ -134,7 +149,7 @@ function renderQuizList() {
         </div>
       </div>
       <div class="quiz-meta">
-        <span class="quiz-badge badge-${cat}">${CAT_LABELS[cat]||cat}</span>
+        <span class="quiz-badge badge-${cat}">${CAT_LABELS[cat] || cat}</span>
       </div>
       <button class="quiz-btn" onclick="startQuiz(${idx})">Начать →</button>
     </div>`;
@@ -142,21 +157,27 @@ function renderQuizList() {
 }
 
 function startQuiz(idx) {
-  currentQuiz  = quizzes[idx];
+  currentQuiz = quizzes[idx];
   if (!currentQuiz || !Array.isArray(currentQuiz.questions) || !currentQuiz.questions.length) {
     alert('В этом квизе пока нет вопросов');
     return;
   }
+
   currentIndex = 0;
-  answered     = false;
-  score        = 0;
-  show('quizRunView'); hide('quizListView'); hide('quizListHead'); hide('quizResultView');
+  answered = false;
+  score = 0;
+
+  show('quizRunView');
+  hide('quizListView');
+  hide('quizListHead');
+  hide('quizResultView');
   renderQuestion();
 }
 
 function renderQuestion() {
   const q = currentQuiz.questions[currentIndex];
   answered = false;
+
   document.getElementById('nextBtn').classList.add('hidden');
   document.getElementById('explanationBox').style.display = 'none';
   document.getElementById('questionProgress').textContent =
@@ -166,16 +187,18 @@ function renderQuestion() {
   const options = Array.isArray(q.options) ? q.options : [];
   const box = document.getElementById('answersBox');
   box.innerHTML = '';
+
   if (!options.length) {
-    box.innerHTML = '<p style="color:#999">Варианты не заданы</p>';
+    box.innerHTML = '<p style="color:#aaa;font-size:.9rem">Варианты ответов не заданы</p>';
     return;
   }
+
   options.forEach((opt, i) => {
     const btn = document.createElement('button');
-    btn.className     = 'answer-btn';
-    btn.textContent   = opt;
+    btn.className = 'answer-btn';
+    btn.textContent = opt;
     btn.dataset.index = i;
-    btn.onclick       = () => selectAnswer(i, q);
+    btn.onclick = () => selectAnswer(i, q);
     box.appendChild(btn);
   });
 }
@@ -183,23 +206,29 @@ function renderQuestion() {
 function selectAnswer(chosenIdx, q) {
   if (answered) return;
   answered = true;
+
   const correctIdx = typeof q.correct === 'number' ? q.correct : 0;
+
   document.querySelectorAll('.answer-btn').forEach(btn => {
     btn.disabled = true;
     const i = Number(btn.dataset.index);
     if (i === correctIdx) btn.classList.add('correct');
     if (i === chosenIdx && chosenIdx !== correctIdx) btn.classList.add('wrong');
   });
+
   if (chosenIdx === correctIdx) score++;
+
   if (q.explanation && q.explanation.trim()) {
     const expl = document.getElementById('explanationBox');
-    expl.textContent   = '💡 ' + q.explanation;
+    expl.textContent = '💡 ' + q.explanation;
     expl.style.display = 'block';
   }
+
   const nextBtn = document.getElementById('nextBtn');
   nextBtn.classList.remove('hidden');
   nextBtn.textContent = currentIndex === currentQuiz.questions.length - 1
-    ? 'Показать результат 🏁' : 'Дальше →';
+    ? 'Показать результат 🏁'
+    : 'Дальше →';
 }
 
 function nextQuestion() {
@@ -212,41 +241,65 @@ function nextQuestion() {
 }
 
 function showResult() {
-  hide('quizRunView'); show('quizResultView');
+  hide('quizRunView');
+  show('quizResultView');
+
   const total = currentQuiz.questions.length;
-  const pct   = Math.round(score / total * 100);
+  const pct = Math.round(score / total * 100);
+
   document.getElementById('resultScore').textContent = `${score} / ${total}`;
+
   let emoji, text;
-  if      (pct===100) { emoji='🏆'; text='Идеально! Ты отлично знаешь материал!'; }
-  else if (pct>=70)   { emoji='🎉'; text='Отличный результат! Материал хорошо усвоен.'; }
-  else if (pct>=40)   { emoji='📚'; text='Неплохо! Советую ещё раз просмотреть базу знаний.'; }
-  else                { emoji='💪'; text='Не расстраивайся — попробуй ещё раз после изучения материалов!'; }
+  if (pct === 100) {
+    emoji = '🏆';
+    text = 'Идеально! Ты отлично знаешь материал!';
+  } else if (pct >= 70) {
+    emoji = '🎉';
+    text = 'Отличный результат! Материал хорошо усвоен.';
+  } else if (pct >= 40) {
+    emoji = '📚';
+    text = 'Неплохо! Советую ещё раз просмотреть базу знаний.';
+  } else {
+    emoji = '💪';
+    text = 'Не расстраивайся — попробуй ещё раз после изучения материалов!';
+  }
+
   document.getElementById('resultEmoji').textContent = emoji;
-  document.getElementById('resultText').textContent  = text;
+  document.getElementById('resultText').textContent = text;
 }
 
 function restartQuiz() {
   if (!currentQuiz) return;
-  currentIndex = 0; answered = false; score = 0;
-  hide('quizResultView'); show('quizRunView');
+  currentIndex = 0;
+  answered = false;
+  score = 0;
+  hide('quizResultView');
+  show('quizRunView');
   renderQuestion();
 }
 
 function backToList() {
-  hide('quizRunView'); hide('quizResultView');
-  show('quizListView'); show('quizListHead');
+  hide('quizRunView');
+  hide('quizResultView');
+  show('quizListView');
+  show('quizListHead');
   currentQuiz = null;
 }
 
-function show(id) { document.getElementById(id).classList.remove('hidden'); }
-function hide(id) { document.getElementById(id).classList.add('hidden'); }
+function show(id) {
+  document.getElementById(id).classList.remove('hidden');
+}
 
-window.onload = function() {
+function hide(id) {
+  document.getElementById(id).classList.add('hidden');
+}
+
+window.onload = function () {
   if (!Auth.requireAuth()) return;
   DB.ready.then(() => {
     const u = Auth.current();
     if (u) document.getElementById('headerUser').textContent = u.fio.split(' ')[0];
-    renderQuizList(); // читаем сразу из localStorage — без дополнительных запросов
+    loadQuizzes();
   });
 };
 </script>
