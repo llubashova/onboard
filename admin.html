@@ -94,6 +94,8 @@
     <button class="admin-tab active" onclick="switchTab('users')">👥 Сотрудники</button>
     <button class="admin-tab" onclick="switchTab('invites')">🔑 Приглашения</button>
     <button class="admin-tab" onclick="switchTab('kb')">📚 База знаний</button>
+    <button class="admin-tab" onclick="switchTab('team')">🧑‍🤝‍🧑 Команда</button>
+    <button class="admin-tab" onclick="switchTab('quiz')">🧩 Квизы</button>
   </div>
 
   <!-- TAB: USERS -->
@@ -219,7 +221,7 @@
 // ─── Tab switching ───────────────────────────────────────────────
 function switchTab(id) {
   document.querySelectorAll('.admin-tab').forEach((t,i) => {
-    const ids = ['users','invites','kb'];
+   const ids = ['users','invites','kb','team','quiz'];
     t.classList.toggle('active', ids[i] === id);
   });
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
