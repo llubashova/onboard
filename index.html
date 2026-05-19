@@ -40,72 +40,6 @@
     .admin-card-meta .staff-count{background:#e8f3ff;border-radius:20px;padding:2px 9px;font-size:.78rem;color:#0a4d8c}
     .admin-card-empty{font-size:.82rem;color:#aaa;font-style:italic}
     .day-chip{display:inline-block;background:#e8f3ff;color:#0a4d8c;border-radius:20px;padding:2px 9px;font-size:.78rem;font-weight:700;white-space:nowrap}
-    .routes-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-  gap:16px;
-  margin-top:16px;
-}
-.route-card{
-  background:#fff;
-  border-radius:18px;
-  padding:20px;
-  box-shadow:0 4px 20px rgba(0,0,0,.06);
-  border:1px solid #eef2fb;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-.route-card-head{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-.route-icon{
-  width:42px;
-  height:42px;
-  border-radius:12px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:1.35rem;
-  color:#fff;
-}
-.route-title{
-  font-size:1.02rem;
-  font-weight:700;
-  color:#0a4d8c;
-  margin:0;
-}
-.route-subtitle{
-  font-size:.9rem;
-  color:#555;
-  line-height:1.5;
-  margin:0;
-}
-.route-meta{
-  font-size:.82rem;
-  color:#888;
-}
-.route-link{
-  display:inline-block;
-  margin-top:auto;
-  align-self:flex-start;
-  background:linear-gradient(135deg,#0a4d8c,#1a7fd4);
-  color:#fff;
-  text-decoration:none;
-  border-radius:10px;
-  padding:10px 14px;
-  font-size:.88rem;
-  font-weight:700;
-}
-.route-empty{
-  color:#888;
-  background:#fff;
-  border-radius:16px;
-  padding:18px;
-  border:1px dashed #c7d7f0;
-}
   </style>
 </head>
 <body>
@@ -175,39 +109,8 @@
     </table>
   </div>
 
-<section class="routes-section">
-  <h2>🗺️ Выбери маршрут</h2>
-  <div id="routesGrid" class="routes-grid"></div>
-</section>
-      <h2>Продюсер</h2>
-      <p class="role-desc">Исследования, деловая программа, работа со спикерами</p>
-      <div class="progress-wrap" id="progwrap-producer">
-        <div class="progress-label"><span>Прогресс</span><span id="prog-producer">—</span></div>
-        <div class="progress-bar"><div class="progress-fill" id="fill-producer" style="width:0%"></div></div>
-      </div>
-      <span class="role-btn">Открыть маршрут →</span>
-    </a>
-    <a href="sales.html" class="role-card" id="card-sales">
-      <div class="role-icon">📞</div>
-      <h2>Менеджер по продажам</h2>
-      <p class="role-desc">CRM, звонки, сделки, работа с клиентами</p>
-      <div class="progress-wrap" id="progwrap-sales">
-        <div class="progress-label"><span>Прогресс</span><span id="prog-sales">—</span></div>
-        <div class="progress-bar"><div class="progress-fill" id="fill-sales" style="width:0%"></div></div>
-      </div>
-      <span class="role-btn">Открыть маршрут →</span>
-    </a>
-    <a href="marketing.html" class="role-card" id="card-marketing">
-      <div class="role-icon">📣</div>
-      <h2>Специалист по маркетингу</h2>
-      <p class="role-desc">Яндекс.Директ, контент-план, email, TG-канал</p>
-      <div class="progress-wrap" id="progwrap-marketing">
-        <div class="progress-label"><span>Прогресс</span><span id="prog-marketing">—</span></div>
-        <div class="progress-bar"><div class="progress-fill" id="fill-marketing" style="width:0%"></div></div>
-      </div>
-      <span class="role-btn">Открыть маршрут →</span>
-    </a>
-  </div>
+  <div class="section-title">🗺️ Выбери маршрут</div>
+  <div class="roles-grid" id="rolesGrid"></div>
 
   <div class="section-title">📌 Дополнительно</div>
   <div class="bottom-grid">
@@ -237,104 +140,68 @@
 <script src="game.js"></script>
 <script>
 const PAGE_ADMIN_ROLES = ['hr','ceo','exec_dir','ops_dir'];
-
 const ROLE_NAMES = {
   producer:'Продюсер', sales:'Менеджер по продажам', marketing:'Специалист по маркетингу',
   hr:'HR-менеджер', ceo:'Генеральный директор', exec_dir:'Исполнительный директор', ops_dir:'Операционный директор'
 };
+const TASK_XP = {
+  producer_l1_p1:10,producer_l1_p2:10,producer_l1_p3:10,producer_l1_m1:8,producer_l1_m2:8,producer_l1_s1:5,producer_l1_s2:5,producer_l1_s3:5,producer_l1_s4:5,
+  producer_l2_p1:15,producer_l2_p2:15,producer_l2_p3:15,producer_l2_p4:15,producer_l2_p5:15,producer_l2_m1:8,producer_l2_m2:8,producer_l2_m3:8,producer_l2_s1:5,producer_l2_s2:5,producer_l2_s3:5,
+  producer_l3_p1:25,producer_l3_p2:25,producer_l3_p3:25,producer_l3_p4:25,producer_l3_p5:25,producer_l3_m1:8,producer_l3_m2:8,producer_l3_s1:5,producer_l3_s2:5,
+  sales_l1_p1:10,sales_l1_p2:10,sales_l1_p3:10,sales_l1_p4:10,sales_l1_m1:8,sales_l1_m2:8,sales_l1_s1:5,sales_l1_s2:5,sales_l1_s3:5,
+  sales_l2_p1:15,sales_l2_p2:15,sales_l2_p3:15,sales_l2_p4:15,sales_l2_p5:15,sales_l2_m1:8,sales_l2_m2:8,sales_l2_s1:5,sales_l2_s2:5,
+  sales_l3_p1:25,sales_l3_p2:25,sales_l3_p3:25,sales_l3_p4:25,sales_l3_m1:8,sales_l3_s1:5,sales_l3_s2:5,
+  marketing_l1_p1:10,marketing_l1_p2:10,marketing_l1_p3:10,marketing_l1_p4:10,marketing_l1_m1:8,marketing_l1_m2:8,marketing_l1_s1:5,marketing_l1_s2:5,marketing_l1_s3:5,
+  marketing_l2_p1:15,marketing_l2_p2:15,marketing_l2_p3:15,marketing_l2_p4:15,marketing_l2_p5:15,marketing_l2_m1:8,marketing_l2_m2:8,marketing_l2_s1:5,marketing_l2_s2:5,
+  marketing_l3_p1:25,marketing_l3_p2:25,marketing_l3_p3:25,marketing_l3_p4:25,marketing_l3_m1:8,marketing_l3_s1:5,marketing_l3_s2:5
+};
+const MAX_XP = { producer:331, sales:294, marketing:316 };
 
-function getXpLevelProducer(xp) {
-  if (xp >= 180) return '🏆 Профи';
-  if (xp >= 66)  return '🚀 Продвинутый';
-  return '🌱 Новичок';
-}
-function getXpLevelGeneric(xp, maxXp) {
+function getXpLevel(xp, role) {
+  const maxXp = MAX_XP[role] || 300;
   const pct = maxXp ? xp / maxXp * 100 : 0;
+  if (role === 'producer') {
+    if (xp >= 180) return '🏆 Профи';
+    if (xp >= 66)  return '🚀 Продвинутый';
+    return '🌱 Новичок';
+  }
   if (pct >= 55) return '🏆 Профи';
   if (pct >= 20) return '🚀 Продвинутый';
   return '🌱 Новичок';
 }
-function getXpLevel(xp, role) {
-  if (role === 'producer') return getXpLevelProducer(xp);
-  const maxXp = MAX_XP[role] || 300;
-  return getXpLevelGeneric(xp, maxXp);
-}
-
-// TASK_XP — точное зеркало sales.html и marketing.html
-// sales: убран несуществующий sales_l1_m3, добавлены sales_l1_p4 и sales_l2_p5
-const TASK_XP = {
-  producer_l1_p1:10, producer_l1_p2:10, producer_l1_p3:10,
-  producer_l1_m1:8,  producer_l1_m2:8,
-  producer_l1_s1:5,  producer_l1_s2:5,  producer_l1_s3:5,  producer_l1_s4:5,
-  producer_l2_p1:15, producer_l2_p2:15, producer_l2_p3:15, producer_l2_p4:15, producer_l2_p5:15,
-  producer_l2_m1:8,  producer_l2_m2:8,  producer_l2_m3:8,
-  producer_l2_s1:5,  producer_l2_s2:5,  producer_l2_s3:5,
-  producer_l3_p1:25, producer_l3_p2:25, producer_l3_p3:25, producer_l3_p4:25, producer_l3_p5:25,
-  producer_l3_m1:8,  producer_l3_m2:8,
-  producer_l3_s1:5,  producer_l3_s2:5,
-
-  // sales — зеркало sales.html (27 задач, 294 XP)
-  sales_l1_p1:10, sales_l1_p2:10, sales_l1_p3:10, sales_l1_p4:10,
-  sales_l1_m1:8,  sales_l1_m2:8,
-  sales_l1_s1:5,  sales_l1_s2:5,  sales_l1_s3:5,
-  sales_l2_p1:15, sales_l2_p2:15, sales_l2_p3:15, sales_l2_p4:15, sales_l2_p5:15,
-  sales_l2_m1:8,  sales_l2_m2:8,
-  sales_l2_s1:5,  sales_l2_s2:5,
-  sales_l3_p1:25, sales_l3_p2:25, sales_l3_p3:25, sales_l3_p4:25,
-  sales_l3_m1:8,
-  sales_l3_s1:5,  sales_l3_s2:5,
-
-  // marketing — зеркало marketing.html (26 задач, 316 XP)
-  marketing_l1_p1:10, marketing_l1_p2:10, marketing_l1_p3:10, marketing_l1_p4:10,
-  marketing_l1_m1:8,  marketing_l1_m2:8,
-  marketing_l1_s1:5,  marketing_l1_s2:5,  marketing_l1_s3:5,
-  marketing_l2_p1:15, marketing_l2_p2:15, marketing_l2_p3:15, marketing_l2_p4:15, marketing_l2_p5:15,
-  marketing_l2_m1:8,  marketing_l2_m2:8,
-  marketing_l2_s1:5,  marketing_l2_s2:5,
-  marketing_l3_p1:25, marketing_l3_p2:25, marketing_l3_p3:25, marketing_l3_p4:25,
-  marketing_l3_m1:8,
-  marketing_l3_s1:5,  marketing_l3_s2:5
-};
-
-// maxXp = точная сумма всех ключей по роли
-const MAX_XP = { producer:331, sales:294, marketing:316 };
 
 function calcProgress(userLogin, role) {
   const prefix = role + '_';
   const keys = Object.keys(TASK_XP).filter(k => k.startsWith(prefix));
   if (!keys.length) return { xp:0, maxXp:0, pct:0 };
   let xp = 0;
-  keys.forEach(k => {
-    if (Auth.getCheckForUser(userLogin, k)) xp += TASK_XP[k];
-  });
+  keys.forEach(k => { if (Auth.getCheckForUser(userLogin, k)) xp += TASK_XP[k]; });
   const maxXp = MAX_XP[role] || keys.reduce((s,k) => s + TASK_XP[k], 0);
   return { xp, maxXp, pct: Math.round(xp / maxXp * 100) };
 }
 
-// Считает день адаптации по createdAt пользователя
 function getDayOnPlatform(userObj) {
-  const MIN_VALID_TS = 1577836800000; // 1 Jan 2020
-  if (!userObj || !userObj.createdAt || userObj.createdAt < MIN_VALID_TS) return null;
+  const MIN = 1577836800000;
+  if (!userObj || !userObj.createdAt || userObj.createdAt < MIN) return null;
   return Math.max(1, Math.floor((Date.now() - userObj.createdAt) / 86400000) + 1);
 }
 
 function openAcc() {
   const u = Auth.current(); if (!u) return;
-  document.getElementById('accFio').value  = u.fio;
+  document.getElementById('accFio').value = u.fio;
   document.getElementById('accPass').value = '';
   document.getElementById('accMsg').textContent = '';
-  const roleSelect = document.getElementById('accRole');
-  if (Auth.isAdmin()) { roleSelect.style.display='block'; roleSelect.value=u.role; }
-  else roleSelect.style.display = 'none';
+  const rs = document.getElementById('accRole');
+  if (Auth.isAdmin()) { rs.style.display='block'; rs.value=u.role; } else rs.style.display='none';
   document.getElementById('accAdminBtn').style.display = Auth.isAdmin() ? 'block' : 'none';
   document.getElementById('accOverlay').classList.add('open');
 }
 function closeAcc() { document.getElementById('accOverlay').classList.remove('open'); }
 
 document.getElementById('accSaveBtn').addEventListener('click', function() {
-  const fio  = document.getElementById('accFio').value.trim();
+  const fio = document.getElementById('accFio').value.trim();
   const pass = document.getElementById('accPass').value;
-  const msg  = document.getElementById('accMsg');
+  const msg = document.getElementById('accMsg');
   if (!fio) { msg.style.color='#e74c3c'; msg.textContent='ФИО не может быть пустым'; return; }
   if (pass && pass.length < 4) { msg.style.color='#e74c3c'; msg.textContent='Пароль минимум 4 символа'; return; }
   Auth.update(fio, pass||null);
@@ -346,9 +213,7 @@ document.getElementById('accSaveBtn').addEventListener('click', function() {
 
 function confirmReset() {
   if (!confirm('Сбросить весь твой прогресс? Это нельзя отменить.')) return;
-  Auth.resetProgress();
-  closeAcc();
-  updateUI();
+  Auth.resetProgress(); closeAcc(); updateUI();
 }
 function confirmDeleteSelf() {
   if (!confirm('Удалить свой аккаунт? Это нельзя отменить!')) return;
@@ -358,100 +223,31 @@ function confirmDeleteSelf() {
 function renderHrDashboard() {
   const tbody = document.getElementById('hrTableBody');
   const users = Auth.getUsers();
-  const EMPLOYEE_ROLES = ['producer', 'sales', 'marketing'];
-  const employees = Object.entries(users).filter(([, u]) => EMPLOYEE_ROLES.includes(u.role));
+  const EMP = ['producer','sales','marketing'];
+  const employees = Object.entries(users).filter(([,u]) => EMP.includes(u.role));
   if (!employees.length) {
     tbody.innerHTML = '<tr><td colspan="6" style="color:#aaa;text-align:center;padding:16px">Нет зарегистрированных сотрудников</td></tr>';
     return;
   }
-  tbody.innerHTML = employees
-    .sort((a, b) => a[1].fio.localeCompare(b[1].fio))
-    .map(([login, u]) => {
-      const p = calcProgress(login, u.role);
-      const level = getXpLevel(p.xp, u.role);
-      const day = getDayOnPlatform(u);
-      const dayCell = day
-        ? `<span class="day-chip">📅 День ${day}</span>`
-        : '<span style="color:#ccc;font-size:.8rem">—</span>';
-      return `<tr>
-        <td><a href="${u.role}.html?view=${login}" style="color:#0a4d8c;font-weight:600;text-decoration:none">${u.fio}</a></td>
-        <td>${ROLE_NAMES[u.role] || u.role}</td>
-        <td>${dayCell}</td>
-        <td>${level}</td>
-        <td><div class="hr-pbar"><div class="hr-pfill" style="width:${p.pct}%"></div></div></td>
-        <td>${p.xp}/${p.maxXp} XP &middot; ${p.pct}%</td>
-      </tr>`;
-    }).join('');
-}
-
-function renderRoleCards() {
-  const u = Auth.current();
-  const myLogin = Auth.currentLogin();
-  const isAdmin = Auth.isAdmin();
-  const EMPLOYEE_ROLES = ['producer', 'sales', 'marketing'];
-  const users = Auth.getUsers();
-  EMPLOYEE_ROLES.forEach(role => {
-    const card    = document.getElementById('card-' + role);
-    const progEl  = document.getElementById('prog-' + role);
-    const fillEl  = document.getElementById('fill-' + role);
-    if (!card) return;
-    if (isAdmin) {
-      const staff = Object.entries(users).filter(([, su]) => su.role === role);
-      const meta = card.querySelector('.admin-card-meta') || (() => {
-        const el = document.createElement('div');
-        el.className = 'admin-card-meta';
-        card.querySelector('.role-desc').insertAdjacentElement('afterend', el);
-        return el;
-      })();
-      if (!staff.length) {
-        meta.innerHTML = '<span class="admin-card-empty">Нет сотрудников</span>';
-        progEl.textContent = '—';
-        fillEl.style.width = '0%';
-      } else {
-        const avgPct = Math.round(
-          staff.reduce((sum, [login]) => sum + calcProgress(login, role).pct, 0) / staff.length
-        );
-        meta.innerHTML = `<span class="staff-count">👤 ${staff.length} чел.</span>`;
-        progEl.textContent = avgPct + '% (ср.)';
-        fillEl.style.width = avgPct + '%';
-      }
-      card.classList.remove('locked');
-    } else {
-      if (u && u.role === role) {
-        const p = calcProgress(myLogin, role);
-        progEl.textContent = p.xp + ' XP · ' + p.pct + '%';
-        fillEl.style.width = p.pct + '%';
-        card.classList.remove('locked');
-      } else {
-        card.classList.add('locked');
-        progEl.textContent = '—';
-        fillEl.style.width = '0%';
-      }
-    }
-  });
+  tbody.innerHTML = employees.sort((a,b)=>a[1].fio.localeCompare(b[1].fio)).map(([login,u])=>{
+    const p = calcProgress(login, u.role);
+    const day = getDayOnPlatform(u);
+    const dayCell = day ? `<span class="day-chip">📅 День ${day}</span>` : '<span style="color:#ccc;font-size:.8rem">—</span>';
+    return `<tr><td><a href="${u.role}.html?view=${login}" style="color:#0a4d8c;font-weight:600;text-decoration:none">${u.fio}</a></td><td>${ROLE_NAMES[u.role]||u.role}</td><td>${dayCell}</td><td>${getXpLevel(p.xp,u.role)}</td><td><div class="hr-pbar"><div class="hr-pfill" style="width:${p.pct}%"></div></div></td><td>${p.xp}/${p.maxXp} XP &middot; ${p.pct}%</td></tr>`;
+  }).join('');
 }
 
 function renderOverallProgress() {
-  const u = Auth.current();
-  const myLogin = Auth.currentLogin();
-  const isAdmin = Auth.isAdmin();
+  const u = Auth.current(), myLogin = Auth.currentLogin(), isAdmin = Auth.isAdmin();
   if (isAdmin) {
-    const users = Auth.getUsers();
-    const EMPLOYEE_ROLES = ['producer', 'sales', 'marketing'];
-    const employees = Object.entries(users).filter(([, su]) => EMPLOYEE_ROLES.includes(su.role));
-    if (!employees.length) {
-      document.getElementById('overallPct').textContent = '—';
-      document.getElementById('overallLabel').textContent = 'нет сотрудников';
-    } else {
-      const avgPct = Math.round(
-        employees.reduce((sum, [login, su]) => sum + calcProgress(login, su.role).pct, 0) / employees.length
-      );
-      document.getElementById('overallPct').textContent = avgPct + '%';
-      document.getElementById('overallLabel').textContent = 'средний прогресс команды';
-    }
+    const emp = Object.entries(Auth.getUsers()).filter(([,su])=>['producer','sales','marketing'].includes(su.role));
+    if (!emp.length) { document.getElementById('overallPct').textContent='—'; document.getElementById('overallLabel').textContent='нет сотрудников'; return; }
+    const avg = Math.round(emp.reduce((s,[l,su])=>s+calcProgress(l,su.role).pct,0)/emp.length);
+    document.getElementById('overallPct').textContent = avg+'%';
+    document.getElementById('overallLabel').textContent = 'средний прогресс команды';
   } else if (u && MAX_XP[u.role]) {
     const p = calcProgress(myLogin, u.role);
-    document.getElementById('overallPct').textContent = p.pct + '%';
+    document.getElementById('overallPct').textContent = p.pct+'%';
     document.getElementById('overallLabel').textContent = 'твой прогресс';
   } else {
     document.getElementById('overallPct').textContent = '—';
@@ -462,153 +258,109 @@ function renderOverallProgress() {
 function renderDayCounter() {
   const wrap = document.getElementById('dayCounterWrap');
   wrap.innerHTML = '';
-  const u = Auth.current();
-  if (!u) return;
-
-  const MIN_VALID_TS = 1577836800000;
-  if (!u.createdAt || u.createdAt < MIN_VALID_TS) {
-    const users = Auth.getUsers();
-    const login = Auth.currentLogin();
-    if (users[login]) {
-      users[login].createdAt = Date.now();
-      Auth.saveUsers(users);
-      u.createdAt = users[login].createdAt;
-    }
+  const u = Auth.current(); if (!u) return;
+  const MIN = 1577836800000;
+  if (!u.createdAt || u.createdAt < MIN) {
+    const users = Auth.getUsers(), login = Auth.currentLogin();
+    if (users[login]) { users[login].createdAt = Date.now(); Auth.saveUsers(users); u.createdAt = users[login].createdAt; }
   }
-
   const days = getDayOnPlatform(u) || 1;
-  if (Auth.isAdmin()) {
-    wrap.innerHTML = `<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">👩‍💼 Режим HR-администратора</div>`;
-  } else {
-    wrap.innerHTML = `<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">📅 День адаптации: <strong>${days}</strong></div>`;
-  }
+  wrap.innerHTML = Auth.isAdmin()
+    ? `<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">👩‍💼 Режим HR-администратора</div>`
+    : `<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">📅 День адаптации: <strong>${days}</strong></div>`;
 }
 
-function updateUI() {
-  const u = Auth.current();
-  if (!u) return;
-  document.getElementById('headerUser').textContent = u.fio.split(' ')[0];
-  document.getElementById('welcomeTitle').textContent = 'Привет, ' + u.fio.split(' ')[0] + '! 👋';
-  document.getElementById('welcomeSubtitle').textContent =
-    Auth.isAdmin() ? 'Панель HR — управление адаптацией' : 'Добро пожаловать в систему адаптации';
-  renderDayCounter();
-  renderOverallProgress();
-  renderRoleCards();
-  const hrDash = document.getElementById('hrDashboard');
-  if (Auth.isAdmin()) {
-    hrDash.style.display = 'block';
-    renderHrDashboard();
-  } else {
-    hrDash.style.display = 'none';
-  }
-  const badgesSection = document.getElementById('badgesSection');
-  const badgesPanel   = document.getElementById('badgesPanel');
-  if (!Auth.isAdmin() && typeof Game !== 'undefined' && Game.getBadges) {
-    const myLogin = Auth.currentLogin();
-    const badges = Game.getBadges ? Game.getBadges(myLogin) : [];
-    if (badges && badges.length) {
-      badgesSection.style.display = 'block';
-      badgesPanel.innerHTML = badges.map(b =>
-        `<div class="badge-item" title="${b.desc || ''}"><span class="badge-icon">${b.icon}</span><span class="badge-name">${b.name}</span></div>`
-      ).join('');
-    } else {
-      badgesSection.style.display = 'none';
-    }
-  } else {
-    badgesSection.style.display = 'none';
-  }
-}
-
-window.onload = function() {
-  if (!Auth.requireAuth()) return;
-  DB.ready.then(() => {
-    updateUI();
-  });
-};
-</script>
-  <script src="db.js"></script>
-<script src="auth.js"></script>
-<script>
+// ── МАРШРУТЫ — рендер в стиле role-card, данные из JSONBin ─────────────
 const TQ_BIN_ID  = '6a0c18b56877513b27974e7e';
 const TQ_API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
 const TQ_URL     = `https://api.jsonbin.io/v3/b/${TQ_BIN_ID}`;
 
-const ROLE_KEYS = {
-  producer:{maxXp:331,keys:[['producer_l1_p1',10],['producer_l1_p2',10],['producer_l1_p3',10],['producer_l1_m1',8],['producer_l1_m2',8],['producer_l1_s1',5],['producer_l1_s2',5],['producer_l1_s3',5],['producer_l1_s4',5],['producer_l2_p1',15],['producer_l2_p2',15],['producer_l2_p3',15],['producer_l2_p4',15],['producer_l2_p5',15],['producer_l2_m1',8],['producer_l2_m2',8],['producer_l2_m3',8],['producer_l2_s1',5],['producer_l2_s2',5],['producer_l2_s3',5],['producer_l3_p1',25],['producer_l3_p2',25],['producer_l3_p3',25],['producer_l3_p4',25],['producer_l3_p5',25],['producer_l3_m1',8],['producer_l3_m2',8],['producer_l3_s1',5],['producer_l3_s2',5]]},
-  sales:{maxXp:294,keys:[['sales_l1_p1',10],['sales_l1_p2',10],['sales_l1_p3',10],['sales_l1_p4',10],['sales_l1_m1',8],['sales_l1_m2',8],['sales_l1_s1',5],['sales_l1_s2',5],['sales_l1_s3',5],['sales_l2_p1',15],['sales_l2_p2',15],['sales_l2_p3',15],['sales_l2_p4',15],['sales_l2_p5',15],['sales_l2_m1',8],['sales_l2_m2',8],['sales_l2_s1',5],['sales_l2_s2',5],['sales_l3_p1',25],['sales_l3_p2',25],['sales_l3_p3',25],['sales_l3_p4',25],['sales_l3_m1',8],['sales_l3_s1',5],['sales_l3_s2',5]]},
-  marketing:{maxXp:316,keys:[['marketing_l1_p1',10],['marketing_l1_p2',10],['marketing_l1_p3',10],['marketing_l1_p4',10],['marketing_l1_m1',8],['marketing_l1_m2',8],['marketing_l1_s1',5],['marketing_l1_s2',5],['marketing_l1_s3',5],['marketing_l2_p1',15],['marketing_l2_p2',15],['marketing_l2_p3',15],['marketing_l2_p4',15],['marketing_l2_p5',15],['marketing_l2_m1',8],['marketing_l2_m2',8],['marketing_l2_s1',5],['marketing_l2_s2',5],['marketing_l3_p1',25],['marketing_l3_p2',25],['marketing_l3_p3',25],['marketing_l3_p4',25],['marketing_l3_m1',8],['marketing_l3_s1',5],['marketing_l3_s2',5]]}
-};
+const FALLBACK_ROUTES = [
+  { role:'producer',  icon:'🎬', title:'Продюсер',               subtitle:'Исследования, деловая программа, работа со спикерами', link:'producer.html',  order:1 },
+  { role:'sales',     icon:'📞', title:'Менеджер по продажам',   subtitle:'CRM, звонки, сделки, работа с клиентами',             link:'sales.html',     order:2 },
+  { role:'marketing', icon:'📣', title:'Специалист по маркетингу', subtitle:'Яндекс.Директ, контент-план, email, TG-канал',        link:'marketing.html', order:3 }
+];
 
-function getRouteProgress(role, login) {
-  const cfg = ROLE_KEYS[role];
-  if (!cfg || !login) return null;
-
-  let xp = 0;
-  cfg.keys.forEach(([key, points]) => {
-    if (localStorage.getItem(`ao_p_${login}_${key}`) === '1') xp += points;
-  });
-
-  const percent = cfg.maxXp ? Math.round((xp / cfg.maxXp) * 100) : 0;
-  return { xp, maxXp: cfg.maxXp, percent };
-}
-
-function escapeHtml(str='') {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+function esc(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 async function renderRoutes() {
-  const grid = document.getElementById('routesGrid');
+  const grid = document.getElementById('rolesGrid');
   if (!grid) return;
-
-  grid.innerHTML = '<div class="route-empty">Загрузка маршрутов…</div>';
-
+  let routes = FALLBACK_ROUTES;
   try {
-    const r = await fetch(TQ_URL, {
-      headers: { 'X-Master-Key': TQ_API_KEY, 'X-Bin-Meta': 'false' }
-    });
+    const r = await fetch(TQ_URL, { headers:{'X-Master-Key':TQ_API_KEY,'X-Bin-Meta':'false'} });
     const d = await r.json();
-    const routes = Array.isArray(d.routes) ? d.routes : [];
-    const login = localStorage.getItem('ao_session') || '';
+    if (Array.isArray(d.routes) && d.routes.length) routes = d.routes;
+  } catch(e) {}
 
-    if (!routes.length) {
-      grid.innerHTML = '<div class="route-empty">Маршруты пока не добавлены в админке.</div>';
-      return;
+  const u = Auth.current(), myLogin = Auth.currentLogin(), isAdmin = Auth.isAdmin(), users = Auth.getUsers();
+  grid.innerHTML = '';
+
+  routes.sort((a,b)=>(Number(a.order)||999)-(Number(b.order)||999)).forEach(route => {
+    const role = route.role || '';
+    const isMyRole = u && u.role === role;
+    const locked = !isAdmin && !isMyRole;
+    const p = calcProgress(myLogin, role);
+
+    let metaHtml = '', progText = '—', progPct = 0;
+    if (isAdmin) {
+      const staff = Object.entries(users).filter(([,su])=>su.role===role);
+      if (staff.length) {
+        const avg = Math.round(staff.reduce((s,[l])=>s+calcProgress(l,role).pct,0)/staff.length);
+        metaHtml = `<div class="admin-card-meta"><span class="staff-count">👤 ${staff.length} чел.</span></div>`;
+        progText = avg+'% (ср.)'; progPct = avg;
+      } else {
+        metaHtml = `<div class="admin-card-meta"><span class="admin-card-empty">Нет сотрудников</span></div>`;
+      }
+    } else if (isMyRole) {
+      progText = p.xp+' XP · '+p.pct+'%'; progPct = p.pct;
     }
 
-    grid.innerHTML = routes
-      .sort((a, b) => (Number(a.order) || 999) - (Number(b.order) || 999))
-      .map(route => {
-        const progress = getRouteProgress(route.role, login);
-        return `
-          <article class="route-card">
-            <div class="route-card-head">
-              <div class="route-icon" style="background:${escapeHtml(route.color || '#0a4d8c')}">
-                ${escapeHtml(route.icon || '🗺️')}
-              </div>
-              <div>
-                <h3 class="route-title">${escapeHtml(route.title || 'Маршрут')}</h3>
-                <div class="route-meta">
-                  ${progress ? `Прогресс: ${progress.percent}% · ${progress.xp}/${progress.maxXp} XP` : 'Прогресс: —'}
-                </div>
-              </div>
-            </div>
-            <p class="route-subtitle">${escapeHtml(route.subtitle || '')}</p>
-            <a class="route-link" href="${escapeHtml(route.link || '#')}">Открыть маршрут</a>
-          </article>
-        `;
-      }).join('');
-  } catch (e) {
-    grid.innerHTML = '<div class="route-empty">Не удалось загрузить маршруты.</div>';
-  }
+    const card = document.createElement('a');
+    card.href = locked ? '#' : esc(route.link||'#');
+    card.className = 'role-card'+(locked?' locked':'');
+    card.innerHTML = `
+      <div class="role-icon">${esc(route.icon||'🗺️')}</div>
+      <h2>${esc(route.title||'Маршрут')}</h2>
+      <p class="role-desc">${esc(route.subtitle||'')}</p>
+      ${metaHtml}
+      <div class="progress-wrap">
+        <div class="progress-label"><span>Прогресс</span><span>${progText}</span></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${progPct}%"></div></div>
+      </div>
+      <span class="role-btn">Открыть маршрут →</span>
+    `;
+    grid.appendChild(card);
+  });
 }
 
-DB.ready.then(() => {
-  renderRoutes();
-});
+function updateUI() {
+  const u = Auth.current(); if (!u) return;
+  document.getElementById('headerUser').textContent = u.fio.split(' ')[0];
+  document.getElementById('welcomeTitle').textContent = 'Привет, '+u.fio.split(' ')[0]+'! 👋';
+  document.getElementById('welcomeSubtitle').textContent = Auth.isAdmin() ? 'Панель HR — управление адаптацией' : 'Добро пожаловать в систему адаптации';
+  renderDayCounter();
+  renderOverallProgress();
+  const hrDash = document.getElementById('hrDashboard');
+  if (Auth.isAdmin()) { hrDash.style.display='block'; renderHrDashboard(); } else hrDash.style.display='none';
+  const badgesSection = document.getElementById('badgesSection');
+  const badgesPanel   = document.getElementById('badgesPanel');
+  if (!Auth.isAdmin() && typeof Game !== 'undefined' && Game.getBadges) {
+    const myLogin = Auth.currentLogin();
+    const badges = Game.getBadges(myLogin);
+    if (badges && badges.length) {
+      badgesSection.style.display='block';
+      badgesPanel.innerHTML = badges.map(b=>`<div class="badge-item" title="${b.desc||''}"><span class="badge-icon">${b.icon}</span><span class="badge-name">${b.name}</span></div>`).join('');
+    } else badgesSection.style.display='none';
+  } else badgesSection.style.display='none';
+}
+
+window.onload = function() {
+  if (!Auth.requireAuth()) return;
+  DB.ready.then(() => { updateUI(); renderRoutes(); });
+};
 </script>
 </body>
 </html>
