@@ -546,6 +546,246 @@ DB.ready.then(async () => {
   await loadKbArticles();
   renderKbAdmin();
 });
+  // ─── TEAM + QUIZ ───────────────────────────────────────────────────
+
+const TQ_BIN_ID  = '6a0c18b56877513b27974e7e';
+const TQ_API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
+const TQ_URL     = `https://api.jsonbin.io/v3/b/${TQ_BIN_ID}`;
+let _tqData = { members: [], quizzes: [] };
+
+async function loadTQ() {
+  try {
+    const r = await fetch(TQ_URL, {
+      headers: { 'X-Master-Key': TQ_API_KEY, 'X-Bin-Meta': 'false' }
+    });
+    const d = await r.json();
+    _tqData = {
+      members: Array.isArray(d.members) ? d.members : [],
+      quizzes: Array.isArray(d.quizzes) ? d.quizzes : []
+    };
+  } catch(e) { _tqData = { members: [], quizzes: [] }; }
+}
+
+async function saveTQ() {
+  await fetch(TQ_URL, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'X-Master-Key': TQ_API_KEY },
+    body: JSON.stringify(_tqData)
+  });
+}
+
+// ── КОМАНДА ────────────────────────────────────────────────────────
+const TM_GROUP_NAMES = {
+  management:'Руководство', production:'Производство',
+  sales:'Продажи', marketing:'Маркетинг', ops:'Операционный', other:'Прочие'
+};
+let _tmEditId = null;
+
+function renderTmTable() {
+  const tbody = document.getElementById('tmTable');
+  document.getElementById('tmCount').textContent = `(${_tqData.members.length})`;
+  if (!_tqData.members.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Список пуст — добавь первого сотрудника!</td></tr>';
+    return;
+  }
+  tbody.innerHTML = _tqData.members.map(m => `<tr>
+    <td>
+      <div class="kb-article-title">${m.emoji||'👤'} ${m.name}</div>
+      <div class="kb-article-sub">${m.role||''}</div>
+    </td>
+    <td><span class="kb-cat-badge">${TM_GROUP_NAMES[m.group]||m.group||'—'}</span></td>
+    <td style="font-size:.82rem;color:#1a7fd4">${m.telegram||'—'}</td>
+    <td style="display:flex;gap:6px">
+      <button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc" onclick="editMember('${m.id}')">✏️ Ред.</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">Удалить</button>
+    </td>
+  </tr>`).join('');
+}
+
+async function saveMember() {
+  const name = document.getElementById('tmName').value.trim();
+  const role = document.getElementById('tmRole').value.trim();
+  if (!name || !role) { showAlert('⚠️ Укажи имя и должность', true); return; }
+  const obj = {
+    id: _tmEditId || (Date.now().toString(36) + Math.random().toString(36).slice(2,5)),
+    name, role,
+    group:    document.getElementById('tmGroup').value,
+    emoji:    document.getElementById('tmEmoji').value.trim() || '👤',
+    photo:    document.getElementById('tmPhoto').value.trim(),
+    color:    document.getElementById('tmColor').value.trim() || '#1a7fd4',
+    desc:     document.getElementById('tmDesc').value.trim(),
+    helpWith: document.getElementById('tmHelp').value.split(',').map(s=>s.trim()).filter(Boolean),
+    telegram: document.getElementById('tmTg').value.trim()
+  };
+  const btn = document.getElementById('tmSaveBtn');
+  btn.textContent = '⏳ Сохраняю…'; btn.disabled = true;
+  await loadTQ();
+  if (_tmEditId) {
+    const idx = _tqData.members.findIndex(m => m.id === _tmEditId);
+    if (idx !== -1) _tqData.members[idx] = obj; else _tqData.members.push(obj);
+  } else {
+    _tqData.members.push(obj);
+  }
+  await saveTQ();
+  btn.textContent = '💾 Сохранить'; btn.disabled = false;
+  showAlert('✅ Сотрудник сохранён!');
+  resetMemberForm();
+  renderTmTable();
+}
+
+function editMember(id) {
+  const m = _tqData.members.find(x => x.id === id); if (!m) return;
+  _tmEditId = id;
+  document.getElementById('tmName').value  = m.name    || '';
+  document.getElementById('tmRole').value  = m.role    || '';
+  document.getElementById('tmGroup').value = m.group   || 'management';
+  document.getElementById('tmEmoji').value = m.emoji   || '';
+  document.getElementById('tmPhoto').value = m.photo   || '';
+  document.getElementById('tmColor').value = m.color   || '';
+  document.getElementById('tmDesc').value  = m.desc    || '';
+  document.getElementById('tmHelp').value  = (m.helpWith||[]).join(', ');
+  document.getElementById('tmTg').value    = m.telegram|| '';
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+async function deleteMember(id) {
+  if (!confirm('Удалить сотрудника?')) return;
+  await loadTQ();
+  _tqData.members = _tqData.members.filter(m => m.id !== id);
+  await saveTQ();
+  showAlert('🗑️ Удалён');
+  renderTmTable();
+}
+
+function resetMemberForm() {
+  ['tmName','tmRole','tmEmoji','tmPhoto','tmColor','tmDesc','tmHelp','tmTg']
+    .forEach(id => document.getElementById(id).value = '');
+  document.getElementById('tmGroup').value = 'management';
+  _tmEditId = null;
+  document.getElementById('tmSaveBtn').textContent = '💾 Сохранить';
+}
+
+// ── КВИЗЫ ─────────────────────────────────────────────────────────
+const QZ_CAT_NAMES = {
+  general:'✨ Общие', producer:'🎬 Продюсеры',
+  sales:'📞 Продажи', marketing:'📣 Маркетинг'
+};
+let _qzEditId = null;
+let _qzQuestions = [];
+
+function addQuestion(q) {
+  _qzQuestions.push(q || { question:'', options:['','','',''], correct:0, explanation:'' });
+  renderQzQuestions();
+}
+
+function renderQzQuestions() {
+  const container = document.getElementById('qzQuestions');
+  if (!container) return;
+  container.innerHTML = _qzQuestions.map((q,i) => `
+    <div style="background:#f7faff;border-radius:10px;padding:14px 16px;margin-bottom:12px;border:1px solid #e8f0fe">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span style="font-weight:700;color:#0a4d8c;font-size:.85rem">Вопрос ${i+1}</span>
+        <button class="btn btn-danger btn-sm" onclick="removeQuestion(${i})">✕</button>
+      </div>
+      <input type="text" placeholder="Текст вопроса *" value="${q.question.replace(/"/g,'&quot;')}"
+        oninput="_qzQuestions[${i}].question=this.value"
+        style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #dde8f5;border-radius:8px;font-size:.87rem;margin-bottom:8px">
+      ${q.options.map((o,j) => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <input type="radio" name="correct_${i}" ${q.correct===j?'checked':''} title="Правильный ответ"
+            onchange="_qzQuestions[${i}].correct=${j}">
+          <input type="text" placeholder="Вариант ${j+1}" value="${o.replace(/"/g,'&quot;')}"
+            oninput="_qzQuestions[${i}].options[${j}]=this.value"
+            style="flex:1;padding:7px 10px;border:1px solid #dde8f5;border-radius:8px;font-size:.85rem">
+        </div>`).join('')}
+      <input type="text" placeholder="Пояснение к ответу (необязательно)" value="${(q.explanation||'').replace(/"/g,'&quot;')}"
+        oninput="_qzQuestions[${i}].explanation=this.value"
+        style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px dashed #dde8f5;border-radius:8px;font-size:.83rem;margin-top:4px;color:#777">
+    </div>`).join('');
+}
+
+function removeQuestion(i) {
+  _qzQuestions.splice(i,1);
+  renderQzQuestions();
+}
+
+async function saveQuiz() {
+  const title = document.getElementById('qzTitle').value.trim();
+  if (!title) { showAlert('⚠️ Укажи название квиза', true); return; }
+  if (!_qzQuestions.length) { showAlert('⚠️ Добавь хотя бы один вопрос', true); return; }
+  const bad = _qzQuestions.findIndex(q => !q.question.trim() || q.options.some(o => !o.trim()));
+  if (bad !== -1) { showAlert(`⚠️ Заполни все поля в вопросе ${bad+1}`, true); return; }
+  const obj = {
+    id: _qzEditId || (Date.now().toString(36) + Math.random().toString(36).slice(2,5)),
+    title,
+    icon:     document.getElementById('qzIcon').value.trim() || '🧩',
+    category: document.getElementById('qzCategory').value,
+    questions: JSON.parse(JSON.stringify(_qzQuestions))
+  };
+  const btn = document.getElementById('qzSaveBtn');
+  btn.textContent = '⏳ Сохраняю…'; btn.disabled = true;
+  await loadTQ();
+  if (_qzEditId) {
+    const idx = _tqData.quizzes.findIndex(q => q.id === _qzEditId);
+    if (idx !== -1) _tqData.quizzes[idx] = obj; else _tqData.quizzes.push(obj);
+  } else {
+    _tqData.quizzes.push(obj);
+  }
+  await saveTQ();
+  btn.textContent = '💾 Сохранить квиз'; btn.disabled = false;
+  showAlert('✅ Квиз сохранён!');
+  resetQuizForm();
+  renderQzTable();
+}
+
+function editQuiz(id) {
+  const q = _tqData.quizzes.find(x => x.id === id); if (!q) return;
+  _qzEditId = id;
+  document.getElementById('qzTitle').value    = q.title    || '';
+  document.getElementById('qzIcon').value     = q.icon     || '';
+  document.getElementById('qzCategory').value = q.category || 'general';
+  _qzQuestions = JSON.parse(JSON.stringify(q.questions||[]));
+  renderQzQuestions();
+  document.getElementById('qzSaveBtn').textContent = '💾 Обновить квиз';
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+async function deleteQuiz(id) {
+  if (!confirm('Удалить квиз?')) return;
+  await loadTQ();
+  _tqData.quizzes = _tqData.quizzes.filter(q => q.id !== id);
+  await saveTQ();
+  showAlert('🗑️ Квиз удалён');
+  renderQzTable();
+}
+
+function resetQuizForm() {
+  document.getElementById('qzTitle').value    = '';
+  document.getElementById('qzIcon').value     = '';
+  document.getElementById('qzCategory').value = 'general';
+  _qzQuestions = [];
+  renderQzQuestions();
+  _qzEditId = null;
+  document.getElementById('qzSaveBtn').textContent = '💾 Сохранить квиз';
+}
+
+function renderQzTable() {
+  const tbody = document.getElementById('qzTable');
+  document.getElementById('qzCount').textContent = `(${_tqData.quizzes.length})`;
+  if (!_tqData.quizzes.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Квизов пока нет — создай первый!</td></tr>';
+    return;
+  }
+  tbody.innerHTML = [..._tqData.quizzes].reverse().map(q => `<tr>
+    <td><div class="kb-article-title">${q.icon||'🧩'} ${q.title}</div></td>
+    <td><span class="kb-cat-badge">${QZ_CAT_NAMES[q.category]||q.category||'—'}</span></td>
+    <td style="font-size:.85rem;color:#555">${(q.questions||[]).length} вопр.</td>
+    <td style="display:flex;gap:6px">
+      <button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc" onclick="editQuiz('${q.id}')">✏️ Ред.</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteQuiz('${q.id}')">Удалить</button>
+    </td>
+  </tr>`).join('');
+}
 </script>
 </body>
 </html>
