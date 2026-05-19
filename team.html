@@ -28,6 +28,9 @@
     .member-tg:hover{text-decoration:underline}
     .back-link{display:inline-flex;align-items:center;gap:6px;color:#1a7fd4;text-decoration:none;font-size:.9rem;font-weight:600;margin-bottom:20px}
     .back-link:hover{text-decoration:underline}
+    .loading-team{text-align:center;padding:40px;color:#aaa;font-size:.95rem}
+    .spinner-sm{display:inline-block;width:20px;height:20px;border:3px solid #c7d7f0;border-top-color:#1a7fd4;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:8px}
+    @keyframes spin{to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
@@ -46,7 +49,7 @@
     <h1>👥 Наша команда</h1>
     <p>Кто есть кто и к кому обратиться по рабочим вопросам</p>
   </div>
-  <div id="teamContainer"></div>
+  <div id="teamContainer"><div class="loading-team"><span class="spinner-sm"></span>Загружаю список команды…</div></div>
 </div>
 
 <footer><p>ООО «Аудиториум СиДжи» · Система геймификации адаптации · 2026</p></footer>
@@ -54,46 +57,24 @@
 <script src="db.js"></script>
 <script src="auth.js"></script>
 <script>
-// ─── СПИСОК КОМАНДЫ — редактируй здесь ───────────────────────────────────────
-//
-// Для каждого сотрудника есть два варианта аватарки:
-//   photo: 'ссылка на фото'  — если указать, отобразится фотография
-//   emoji: '👤'              — если photo не указан, отобразится эмодзи
-//   (photo имеет приоритет над emoji)
-//
-// Примеры ссылок на фото:
-//   photo: 'https://i.imgur.com/XXXXX.jpg'   ← загрузи фото на imgur.com и вставь ссылку
-//   photo: 'https://sun1.storage.yandex.net/...'  ← публичная ссылка с Яндекс.Фотоки
-//   photo: 'photos/lera.jpg'                  ← если фото залита в репозиторий
-//
-// ─────────────────────────────────────────────────────────────────────────────
-const TEAM = [
-  {
-    name: 'Валерия Лубашова',
-    role: 'HR-менеджер',
-    emoji: '👩‍💼',          // используется если photo не указан
-    // photo: '',        // ← вставь ссылку на фото чтобы появилась фотография
-    group: 'management',
-    desc: 'Занимается подбором персонала, адаптацией новых сотрудников и развитием корпоративной культуры.',
-    helpWith: ['Вопросы по оформлению', 'Адаптация', 'Корпоративные мероприятия'],
-    telegram: '@llubashova',
-    color: '#9b59b6'
-  },
-  // Добавляй новых сотрудников сюда ↓
-  // {
-  //   name: 'Иван Иванов',
-  //   role: 'Менеджер по продажам',
-  //   photo: 'https://i.imgur.com/XXXXX.jpg', // ← фото
-  //   emoji: '📞',                            // ← запасной эмодзи если фото не загрузится
-  //   group: 'sales',
-  //   desc: 'Работает с клиентами, ведёт CRM, закрывает сделки.',
-  //   helpWith: ['CRM', 'Продажи', 'Клиентская база'],
-  //   telegram: '@ivan_sales',
-  //   color: '#e67e22'
-  // },
-];
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── JSONbin (тот же бин, что и в admin.html) ─────────────────────
+const TQ_BIN_ID  = '6a0c18b56877513b27974e7e';
+const TQ_API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
+const TQ_URL     = `https://api.jsonbin.io/v3/b/${TQ_BIN_ID}`;
 
+async function loadTeamMembers() {
+  try {
+    const r = await fetch(TQ_URL, {
+      headers: { 'X-Master-Key': TQ_API_KEY, 'X-Bin-Meta': 'false' }
+    });
+    const d = await r.json();
+    return Array.isArray(d.members) ? d.members : [];
+  } catch(e) {
+    return [];
+  }
+}
+
+// ─── Группы ───────────────────────────────────────────────────────
 const GROUP_LABELS = {
   management: '🏢 Руководство и административный отдел',
   production: '🎬 Производственный отдел',
@@ -102,47 +83,45 @@ const GROUP_LABELS = {
   marketing:  '📣 Отдел маркетинга',
   other:      '👤 Прочие сотрудники'
 };
+const GROUP_ORDER = ['management','production','sales','marketing','ops','other'];
 
 function renderAvatar(m) {
   if (m.photo) {
-    // Фото — если не загрузилось, показываем эмодзи как запасной
     const fallback = m.emoji || '👤';
     return `<div class="member-avatar" style="background:${m.color||'#1a7fd4'}22">
       <img src="${m.photo}" alt="${m.name}" loading="lazy"
            onerror="this.parentElement.innerHTML='<span style=font-size:1.6rem>${fallback}</span>'">
     </div>`;
   }
-  // Эмодзи
   return `<div class="member-avatar" style="background:${m.color||'#1a7fd4'}22;color:${m.color||'#1a7fd4'}">${m.emoji||'👤'}</div>`;
 }
 
-function renderTeam() {
+function renderTeam(members) {
   const container = document.getElementById('teamContainer');
-  if (!TEAM.length) {
-    container.innerHTML = '<p style="color:#aaa;text-align:center;padding:40px">Список команды пока пуст</p>';
+  if (!members.length) {
+    container.innerHTML = '<p style="color:#aaa;text-align:center;padding:40px">Список команды пока пуст — HR заполнит его в ближайшее время 😊</p>';
     return;
   }
   const groups = {};
-  TEAM.forEach(m => {
+  members.forEach(m => {
     const g = m.group || 'other';
     if (!groups[g]) groups[g] = [];
     groups[g].push(m);
   });
-  const ORDER = ['management','production','sales','marketing','ops','other'];
   let html = '';
-  ORDER.forEach(g => {
+  GROUP_ORDER.forEach(g => {
     if (!groups[g]) return;
     html += `<div class="group-title">${GROUP_LABELS[g] || g}</div><div class="team-grid">`;
     groups[g].forEach(m => {
       const tags = (m.helpWith||[]).map(t => `<span class="member-tag">${t}</span>`).join('');
-      const tg = m.telegram ? `<a class="member-tg" href="https://t.me/${m.telegram.replace('@','')}" target="_blank">✈️ ${m.telegram}</a>` : '';
+      const tg = m.telegram ? `<a class="member-tg" href="https://t.me/${m.telegram.replace('@','')}" target="_blank" rel="noopener noreferrer">✈️ ${m.telegram}</a>` : '';
       html += `
         <div class="member-card">
           <div class="member-top">
             ${renderAvatar(m)}
             <div class="member-info">
               <div class="member-name">${m.name}</div>
-              <div class="member-role">${m.role}</div>
+              <div class="member-role">${m.role||''}</div>
             </div>
           </div>
           ${m.desc ? `<div class="member-desc">${m.desc}</div>` : ''}
@@ -157,10 +136,11 @@ function renderTeam() {
 
 window.onload = function() {
   if (!Auth.requireAuth()) return;
-  DB.ready.then(() => {
+  DB.ready.then(async () => {
     const u = Auth.current();
     if (u) document.getElementById('headerUser').textContent = u.fio.split(' ')[0];
-    renderTeam();
+    const members = await loadTeamMembers();
+    renderTeam(members);
   });
 };
 </script>
