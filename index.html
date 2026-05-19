@@ -40,6 +40,72 @@
     .admin-card-meta .staff-count{background:#e8f3ff;border-radius:20px;padding:2px 9px;font-size:.78rem;color:#0a4d8c}
     .admin-card-empty{font-size:.82rem;color:#aaa;font-style:italic}
     .day-chip{display:inline-block;background:#e8f3ff;color:#0a4d8c;border-radius:20px;padding:2px 9px;font-size:.78rem;font-weight:700;white-space:nowrap}
+    .routes-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:16px;
+  margin-top:16px;
+}
+.route-card{
+  background:#fff;
+  border-radius:18px;
+  padding:20px;
+  box-shadow:0 4px 20px rgba(0,0,0,.06);
+  border:1px solid #eef2fb;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.route-card-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.route-icon{
+  width:42px;
+  height:42px;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.35rem;
+  color:#fff;
+}
+.route-title{
+  font-size:1.02rem;
+  font-weight:700;
+  color:#0a4d8c;
+  margin:0;
+}
+.route-subtitle{
+  font-size:.9rem;
+  color:#555;
+  line-height:1.5;
+  margin:0;
+}
+.route-meta{
+  font-size:.82rem;
+  color:#888;
+}
+.route-link{
+  display:inline-block;
+  margin-top:auto;
+  align-self:flex-start;
+  background:linear-gradient(135deg,#0a4d8c,#1a7fd4);
+  color:#fff;
+  text-decoration:none;
+  border-radius:10px;
+  padding:10px 14px;
+  font-size:.88rem;
+  font-weight:700;
+}
+.route-empty{
+  color:#888;
+  background:#fff;
+  border-radius:16px;
+  padding:18px;
+  border:1px dashed #c7d7f0;
+}
   </style>
 </head>
 <body>
@@ -109,10 +175,10 @@
     </table>
   </div>
 
-  <div class="section-title">🗺️ Выбери маршрут</div>
-  <div class="roles-grid">
-    <a href="producer.html" class="role-card" id="card-producer">
-      <div class="role-icon">🎬</div>
+<section class="routes-section">
+  <h2>🗺️ Выбери маршрут</h2>
+  <div id="routesGrid" class="routes-grid"></div>
+</section>
       <h2>Продюсер</h2>
       <p class="role-desc">Исследования, деловая программа, работа со спикерами</p>
       <div class="progress-wrap" id="progwrap-producer">
@@ -459,6 +525,90 @@ window.onload = function() {
     updateUI();
   });
 };
+</script>
+  <script src="db.js"></script>
+<script src="auth.js"></script>
+<script>
+const TQ_BIN_ID  = '6a0c18b56877513b27974e7e';
+const TQ_API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
+const TQ_URL     = `https://api.jsonbin.io/v3/b/${TQ_BIN_ID}`;
+
+const ROLE_KEYS = {
+  producer:{maxXp:331,keys:[['producer_l1_p1',10],['producer_l1_p2',10],['producer_l1_p3',10],['producer_l1_m1',8],['producer_l1_m2',8],['producer_l1_s1',5],['producer_l1_s2',5],['producer_l1_s3',5],['producer_l1_s4',5],['producer_l2_p1',15],['producer_l2_p2',15],['producer_l2_p3',15],['producer_l2_p4',15],['producer_l2_p5',15],['producer_l2_m1',8],['producer_l2_m2',8],['producer_l2_m3',8],['producer_l2_s1',5],['producer_l2_s2',5],['producer_l2_s3',5],['producer_l3_p1',25],['producer_l3_p2',25],['producer_l3_p3',25],['producer_l3_p4',25],['producer_l3_p5',25],['producer_l3_m1',8],['producer_l3_m2',8],['producer_l3_s1',5],['producer_l3_s2',5]]},
+  sales:{maxXp:294,keys:[['sales_l1_p1',10],['sales_l1_p2',10],['sales_l1_p3',10],['sales_l1_p4',10],['sales_l1_m1',8],['sales_l1_m2',8],['sales_l1_s1',5],['sales_l1_s2',5],['sales_l1_s3',5],['sales_l2_p1',15],['sales_l2_p2',15],['sales_l2_p3',15],['sales_l2_p4',15],['sales_l2_p5',15],['sales_l2_m1',8],['sales_l2_m2',8],['sales_l2_s1',5],['sales_l2_s2',5],['sales_l3_p1',25],['sales_l3_p2',25],['sales_l3_p3',25],['sales_l3_p4',25],['sales_l3_m1',8],['sales_l3_s1',5],['sales_l3_s2',5]]},
+  marketing:{maxXp:316,keys:[['marketing_l1_p1',10],['marketing_l1_p2',10],['marketing_l1_p3',10],['marketing_l1_p4',10],['marketing_l1_m1',8],['marketing_l1_m2',8],['marketing_l1_s1',5],['marketing_l1_s2',5],['marketing_l1_s3',5],['marketing_l2_p1',15],['marketing_l2_p2',15],['marketing_l2_p3',15],['marketing_l2_p4',15],['marketing_l2_p5',15],['marketing_l2_m1',8],['marketing_l2_m2',8],['marketing_l2_s1',5],['marketing_l2_s2',5],['marketing_l3_p1',25],['marketing_l3_p2',25],['marketing_l3_p3',25],['marketing_l3_p4',25],['marketing_l3_m1',8],['marketing_l3_s1',5],['marketing_l3_s2',5]]}
+};
+
+function getRouteProgress(role, login) {
+  const cfg = ROLE_KEYS[role];
+  if (!cfg || !login) return null;
+
+  let xp = 0;
+  cfg.keys.forEach(([key, points]) => {
+    if (localStorage.getItem(`ao_p_${login}_${key}`) === '1') xp += points;
+  });
+
+  const percent = cfg.maxXp ? Math.round((xp / cfg.maxXp) * 100) : 0;
+  return { xp, maxXp: cfg.maxXp, percent };
+}
+
+function escapeHtml(str='') {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+async function renderRoutes() {
+  const grid = document.getElementById('routesGrid');
+  if (!grid) return;
+
+  grid.innerHTML = '<div class="route-empty">Загрузка маршрутов…</div>';
+
+  try {
+    const r = await fetch(TQ_URL, {
+      headers: { 'X-Master-Key': TQ_API_KEY, 'X-Bin-Meta': 'false' }
+    });
+    const d = await r.json();
+    const routes = Array.isArray(d.routes) ? d.routes : [];
+    const login = localStorage.getItem('ao_session') || '';
+
+    if (!routes.length) {
+      grid.innerHTML = '<div class="route-empty">Маршруты пока не добавлены в админке.</div>';
+      return;
+    }
+
+    grid.innerHTML = routes
+      .sort((a, b) => (Number(a.order) || 999) - (Number(b.order) || 999))
+      .map(route => {
+        const progress = getRouteProgress(route.role, login);
+        return `
+          <article class="route-card">
+            <div class="route-card-head">
+              <div class="route-icon" style="background:${escapeHtml(route.color || '#0a4d8c')}">
+                ${escapeHtml(route.icon || '🗺️')}
+              </div>
+              <div>
+                <h3 class="route-title">${escapeHtml(route.title || 'Маршрут')}</h3>
+                <div class="route-meta">
+                  ${progress ? `Прогресс: ${progress.percent}% · ${progress.xp}/${progress.maxXp} XP` : 'Прогресс: —'}
+                </div>
+              </div>
+            </div>
+            <p class="route-subtitle">${escapeHtml(route.subtitle || '')}</p>
+            <a class="route-link" href="${escapeHtml(route.link || '#')}">Открыть маршрут</a>
+          </article>
+        `;
+      }).join('');
+  } catch (e) {
+    grid.innerHTML = '<div class="route-empty">Не удалось загрузить маршруты.</div>';
+  }
+}
+
+DB.ready.then(() => {
+  renderRoutes();
+});
 </script>
 </body>
 </html>
