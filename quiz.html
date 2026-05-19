@@ -177,46 +177,52 @@ function startQuiz(index) {
   document.getElementById('quizResultView').classList.add('hidden');
   document.getElementById('quizRunView').classList.remove('hidden');
 
-  renderQuestion();
-}
+  function renderQuestion() 
+  {
+  const q = currentQuiz.questions[currentIndex];
+  answered = false;
 
-function renderQuestion() {
-  const q = currentQuiz.questions[currentQuestionIndex];
-  selectedAnswer = null;
   document.getElementById('nextBtn').classList.add('hidden');
-  document.getElementById('questionProgress').textContent = `Вопрос ${currentQuestionIndex + 1} из ${currentQuiz.questions.length}`;
-  document.getElementById('questionText').textContent = q.question || 'Без текста вопроса';
+  document.getElementById('explanationBox').style.display = 'none';
+  document.getElementById('questionProgress').textContent =
+    `Вопрос ${currentIndex + 1} из ${currentQuiz.questions.length}`;
+  document.getElementById('questionText').textContent = q.question || '—';
 
-  const answersBox = document.getElementById('answersBox');
-  answersBox.innerHTML = '';
+  const options = Array.isArray(q.options) ? q.options : [];
+  const box = document.getElementById('answersBox');
+  box.innerHTML = '';
 
-  (q.answers || []).forEach((answer, idx) => {
+  options.forEach((opt, i) => {
     const btn = document.createElement('button');
     btn.className = 'answer-btn';
-    btn.textContent = answer.text || `Ответ ${idx + 1}`;
-    btn.onclick = () => selectAnswer(idx);
-    answersBox.appendChild(btn);
+    btn.textContent = opt;
+    btn.dataset.index = i;
+    btn.onclick = () => selectAnswer(i, q);
+    box.appendChild(btn);
   });
 }
 
-function selectAnswer(index) {
-  if (selectedAnswer !== null) return;
-  selectedAnswer = index;
-
-  const q = currentQuiz.questions[currentQuestionIndex];
-  const buttons = [...document.querySelectorAll('.answer-btn')];
-  buttons.forEach(b => b.disabled = true);
-
-  buttons.forEach((b, i) => {
-    if (i === index) b.classList.add('selected');
-    if (q.answers[i] && q.answers[i].correct) b.classList.add('correct');
-    if (i === index && !(q.answers[i] && q.answers[i].correct)) b.classList.add('wrong');
+function selectAnswer(chosenIdx, q) {
+  if (answered) return;
+  answered = true;
+  const correctIdx = typeof q.correct === 'number' ? q.correct : 0;
+  document.querySelectorAll('.answer-btn').forEach(btn => {
+    btn.disabled = true;
+    const i = Number(btn.dataset.index);
+    if (i === correctIdx) btn.classList.add('correct');
+    if (i === chosenIdx && chosenIdx !== correctIdx) btn.classList.add('wrong');
   });
-
-  if (q.answers[index] && q.answers[index].correct) score++;
-  document.getElementById('nextBtn').classList.remove('hidden');
-  document.getElementById('nextBtn').textContent =
-    currentQuestionIndex === currentQuiz.questions.length - 1 ? 'Показать результат' : 'Дальше';
+  if (chosenIdx === correctIdx) score++;
+  // объяснение
+  if (q.explanation && q.explanation.trim()) {
+    const expl = document.getElementById('explanationBox');
+    expl.textContent = '💡 ' + q.explanation;
+    expl.style.display = 'block';
+  }
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.classList.remove('hidden');
+  nextBtn.textContent = currentIndex === currentQuiz.questions.length - 1
+    ? 'Показать результат 🏁' : 'Дальше →';
 }
 
 function nextQuestion() {
