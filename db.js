@@ -1,6 +1,7 @@
-// db.js — JSONBin bridge v6
-// v6: квизы (quizzes) и ноты сотрудников (notes) перенесены в основной bin
-// Теперь всё загружается одним запросом в режиме ready
+// db.js — JSONBin bridge v7
+// v7: прогресс при restoreProgress мержится (merge), а не перетирается
+// Это исключает потерю прогресса когда несколько пользователей
+// работают с разных устройств/браузеров
 const DB = (() => {
   const BIN_ID  = '6a07317badc21f119aa526dd';
   const API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
@@ -18,16 +19,20 @@ const DB = (() => {
     return progress;
   }
 
-  function restoreProgress(progress) {
-    const keysToDelete = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && k.startsWith('ao_p_')) keysToDelete.push(k);
-    }
-    keysToDelete.forEach(k => localStorage.removeItem(k));
-    if (!progress || typeof progress !== 'object') return;
-    Object.keys(progress).forEach(k => {
-      if (k.startsWith('ao_p_')) localStorage.setItem(k, progress[k]);
+  // v7: мержим облачный прогресс с локальным
+  // Правило: '1' побеждает '0' (выполненное задание не откатывается назад)
+  function restoreProgress(cloudProgress) {
+    if (!cloudProgress || typeof cloudProgress !== 'object') return;
+    Object.keys(cloudProgress).forEach(k => {
+      if (!k.startsWith('ao_p_')) return;
+      const cloudVal = cloudProgress[k];
+      const localVal = localStorage.getItem(k);
+      // Если в облаке задача выполнена ('1') — ставим '1' в любом случае
+      // Если локально уже '1' — оставляем
+      // Иначе — берём облачное значение
+      if (cloudVal === '1' || localVal !== '1') {
+        localStorage.setItem(k, cloudVal);
+      }
     });
   }
 
@@ -51,11 +56,9 @@ const DB = (() => {
       localStorage.setItem('ao_invites', JSON.stringify(cloud.invites || {}));
       restoreProgress(cloud.progress || {});
     }
-    // Квизы — храним в localStorage для мгновенного доступа
     if (Array.isArray(cloud.quizzes)) {
       localStorage.setItem('ao_quizzes', JSON.stringify(cloud.quizzes));
     }
-    // Ноты сотрудников (notes + checklist)
     if (cloud.notes && typeof cloud.notes === 'object') {
       localStorage.setItem('ao_notes', JSON.stringify(cloud.notes));
     }
@@ -101,9 +104,6 @@ const DB = (() => {
     .finally(() => { _syncing = false; });
   }
 
-  // ── Публичное API ───────────────────────────────────
-
-  // Квизы
   function getQuizzes() {
     return JSON.parse(localStorage.getItem('ao_quizzes') || '[]');
   }
@@ -112,7 +112,6 @@ const DB = (() => {
     sync();
   }
 
-  // Ноты: { [login]: { text: string, checklist: [{id, text, done}], mode: string } }
   function getNotes() {
     return JSON.parse(localStorage.getItem('ao_notes') || '{}');
   }
