@@ -194,7 +194,8 @@ function getXpLevel(xp, role) {
   return getXpLevelGeneric(xp, maxXp);
 }
 
-// TASK_XP синхронизирован с admin.html (producer_l2_m3 добавлен, maxXp=339)
+// TASK_XP — точное зеркало sales.html и marketing.html
+// sales: убран несуществующий sales_l1_m3, добавлены sales_l1_p4 и sales_l2_p5
 const TASK_XP = {
   producer_l1_p1:10, producer_l1_p2:10, producer_l1_p3:10,
   producer_l1_m1:8,  producer_l1_m2:8,
@@ -205,15 +206,19 @@ const TASK_XP = {
   producer_l3_p1:25, producer_l3_p2:25, producer_l3_p3:25, producer_l3_p4:25, producer_l3_p5:25,
   producer_l3_m1:8,  producer_l3_m2:8,
   producer_l3_s1:5,  producer_l3_s2:5,
-  sales_l1_p1:10, sales_l1_p2:10, sales_l1_p3:10,
-  sales_l1_m1:8,  sales_l1_m2:8,  sales_l1_m3:8,
+
+  // sales — зеркало sales.html (27 задач, 294 XP)
+  sales_l1_p1:10, sales_l1_p2:10, sales_l1_p3:10, sales_l1_p4:10,
+  sales_l1_m1:8,  sales_l1_m2:8,
   sales_l1_s1:5,  sales_l1_s2:5,  sales_l1_s3:5,
-  sales_l2_p1:15, sales_l2_p2:15, sales_l2_p3:15, sales_l2_p4:15,
+  sales_l2_p1:15, sales_l2_p2:15, sales_l2_p3:15, sales_l2_p4:15, sales_l2_p5:15,
   sales_l2_m1:8,  sales_l2_m2:8,
   sales_l2_s1:5,  sales_l2_s2:5,
   sales_l3_p1:25, sales_l3_p2:25, sales_l3_p3:25, sales_l3_p4:25,
   sales_l3_m1:8,
   sales_l3_s1:5,  sales_l3_s2:5,
+
+  // marketing — зеркало marketing.html (26 задач, 316 XP)
   marketing_l1_p1:10, marketing_l1_p2:10, marketing_l1_p3:10, marketing_l1_p4:10,
   marketing_l1_m1:8,  marketing_l1_m2:8,
   marketing_l1_s1:5,  marketing_l1_s2:5,  marketing_l1_s3:5,
@@ -225,8 +230,8 @@ const TASK_XP = {
   marketing_l3_s1:5,  marketing_l3_s2:5
 };
 
-// maxXp = сумма всех ключей по роли (синхронизировано с admin.html)
-const MAX_XP = { producer:339, sales:294, marketing:316 };
+// maxXp = точная сумма всех ключей по роли
+const MAX_XP = { producer:331, sales:294, marketing:316 };
 
 function calcProgress(userLogin, role) {
   const prefix = role + '_';
@@ -303,7 +308,7 @@ function renderHrDashboard() {
         ? `<span class="day-chip">📅 День ${day}</span>`
         : '<span style="color:#ccc;font-size:.8rem">—</span>';
       return `<tr>
-        <td>${u.fio}</td>
+        <td><a href="${u.role}.html?view=${login}" style="color:#0a4d8c;font-weight:600;text-decoration:none">${u.fio}</a></td>
         <td>${ROLE_NAMES[u.role] || u.role}</td>
         <td>${dayCell}</td>
         <td>${level}</td>
