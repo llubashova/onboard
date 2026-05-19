@@ -11,68 +11,64 @@
     .page-head { margin-bottom: 24px }
     .page-head h1 { font-size: 1.7rem; color: #0a4d8c; margin: 0 0 6px }
     .page-head p { margin: 0; color: #666 }
-    .back-link { display: inline-flex; align-items: center; gap: 6px; color: #1a7fd4; text-decoration: none; font-size: .9rem; font-weight: 600; margin-bottom: 18px }
-    .back-link:hover { text-decoration: underline }
-    .quiz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px }
-    .quiz-card { background: #fff; border-radius: 18px; padding: 20px; box-shadow: 0 4px 20px rgba(10,77,140,.08); border: 1px solid #e8f0fe }
-    .quiz-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px }
-    .quiz-icon { width: 48px; height: 48px; border-radius: 14px; background: #f0f7ff; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0 }
-    .quiz-title { font-size: 1rem; font-weight: 700; color: #1a1a2e; margin: 0 0 4px }
-    .quiz-sub { font-size: .82rem; color: #777 }
-    .quiz-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px }
-    .quiz-badge { display: inline-block; border-radius: 999px; padding: 4px 10px; font-size: .78rem; font-weight: 700 }
-    .badge-general { background: #ede9fe; color: #5b21b6 }
-    .badge-producer { background: #fef3c7; color: #92400e }
-    .badge-sales { background: #dcfce7; color: #166534 }
-    .badge-marketing { background: #fdf4ff; color: #a21caf }
-    .quiz-btn { display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 11px 14px; border: none; border-radius: 12px; background: linear-gradient(135deg,#0a4d8c,#1a7fd4); color: #fff; font-size: .92rem; font-weight: 700; cursor: pointer }
-    .quiz-btn:hover { opacity: .92 }
-    .state-box { background: #fff; border-radius: 18px; padding: 26px; text-align: center; color: #777; box-shadow: 0 4px 20px rgba(10,77,140,.06); border: 1px solid #e8f0fe }
-    .spinner { display: inline-block; width: 22px; height: 22px; border: 3px solid #c7d7f0; border-top-color: #1a7fd4; border-radius: 50%; animation: spin .8s linear infinite; vertical-align: middle; margin-right: 8px }
-    .question-card { background: #fff; border-radius: 18px; padding: 24px; box-shadow: 0 4px 20px rgba(10,77,140,.08); border: 1px solid #e8f0fe }
-    .question-progress { font-size: .82rem; font-weight: 700; color: #1a7fd4; margin-bottom: 10px }
-    .question-text { font-size: 1.05rem; font-weight: 700; color: #1a1a2e; line-height: 1.4; margin-bottom: 18px }
-    .answers { display: grid; gap: 10px }
-    .answer-btn { width: 100%; text-align: left; padding: 14px 16px; border: 2px solid #e8f0fe; border-radius: 12px; background: #fff; cursor: pointer; font: inherit; font-size: .95rem; color: #333; transition: .15s; line-height: 1.4 }
-    .answer-btn:hover:not(:disabled) { border-color: #1a7fd4; background: #f8fbff }
-    .answer-btn.correct { border-color: #22c55e !important; background: #ecfdf5 !important; color: #166534; font-weight: 600 }
-    .answer-btn.wrong { border-color: #ef4444 !important; background: #fef2f2 !important; color: #991b1b }
-    .explanation { background: #f0f7ff; border-radius: 10px; padding: 12px 16px; font-size: .88rem; color: #1a4a7a; margin-top: 14px; line-height: 1.5; display: none }
-    .quiz-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap }
-    .btn { padding: 10px 16px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font: inherit; font-size: .9rem }
-    .btn-primary { background: linear-gradient(135deg,#0a4d8c,#1a7fd4); color: #fff }
-    .btn-secondary { background: #f3f4f6; color: #444; border: 1px solid #e5e7eb }
-    .result-box { background: #fff; border-radius: 18px; padding: 32px; text-align: center; box-shadow: 0 4px 20px rgba(10,77,140,.08); border: 1px solid #e8f0fe }
-    .result-emoji { font-size: 3rem; margin-bottom: 12px }
-    .result-score { font-size: 2.2rem; font-weight: 800; color: #0a4d8c; margin-bottom: 8px }
-    .result-text { color: #555; margin: 0 0 24px; font-size: .95rem }
-    .hidden { display: none }
-    @keyframes spin { to { transform: rotate(360deg) } }
+    .back-link { display:inline-flex;align-items:center;gap:6px;color:#1a7fd4;text-decoration:none;font-size:.9rem;font-weight:600;margin-bottom:18px }
+    .back-link:hover { text-decoration:underline }
+    .quiz-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px }
+    .quiz-card { background:#fff;border-radius:18px;padding:20px;box-shadow:0 4px 20px rgba(10,77,140,.08);border:1px solid #e8f0fe }
+    .quiz-top { display:flex;align-items:flex-start;gap:12px;margin-bottom:12px }
+    .quiz-icon { width:48px;height:48px;border-radius:14px;background:#f0f7ff;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0 }
+    .quiz-title { font-size:1rem;font-weight:700;color:#1a1a2e;margin:0 0 4px }
+    .quiz-sub { font-size:.82rem;color:#777 }
+    .quiz-meta { display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px }
+    .quiz-badge { display:inline-block;border-radius:999px;padding:4px 10px;font-size:.78rem;font-weight:700 }
+    .badge-general { background:#ede9fe;color:#5b21b6 }
+    .badge-producer { background:#fef3c7;color:#92400e }
+    .badge-sales { background:#dcfce7;color:#166534 }
+    .badge-marketing { background:#fdf4ff;color:#a21caf }
+    .quiz-btn { display:inline-flex;align-items:center;justify-content:center;width:100%;padding:11px 14px;border:none;border-radius:12px;background:linear-gradient(135deg,#0a4d8c,#1a7fd4);color:#fff;font-size:.92rem;font-weight:700;cursor:pointer }
+    .quiz-btn:hover { opacity:.92 }
+    .state-box { background:#fff;border-radius:18px;padding:26px;text-align:center;color:#777;box-shadow:0 4px 20px rgba(10,77,140,.06);border:1px solid #e8f0fe }
+    .spinner { display:inline-block;width:22px;height:22px;border:3px solid #c7d7f0;border-top-color:#1a7fd4;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:8px }
+    .question-card { background:#fff;border-radius:18px;padding:24px;box-shadow:0 4px 20px rgba(10,77,140,.08);border:1px solid #e8f0fe }
+    .question-progress { font-size:.82rem;font-weight:700;color:#1a7fd4;margin-bottom:10px }
+    .question-text { font-size:1.05rem;font-weight:700;color:#1a1a2e;line-height:1.4;margin-bottom:18px }
+    .answers { display:grid;gap:10px }
+    .answer-btn { width:100%;text-align:left;padding:14px 16px;border:2px solid #e8f0fe;border-radius:12px;background:#fff;cursor:pointer;font:inherit;font-size:.95rem;color:#333;transition:.15s;line-height:1.4 }
+    .answer-btn:hover:not(:disabled) { border-color:#1a7fd4;background:#f8fbff }
+    .answer-btn.correct { border-color:#22c55e!important;background:#ecfdf5!important;color:#166534;font-weight:600 }
+    .answer-btn.wrong { border-color:#ef4444!important;background:#fef2f2!important;color:#991b1b }
+    .explanation { background:#f0f7ff;border-radius:10px;padding:12px 16px;font-size:.88rem;color:#1a4a7a;margin-top:14px;line-height:1.5;display:none }
+    .quiz-actions { display:flex;gap:10px;margin-top:18px;flex-wrap:wrap }
+    .btn { padding:10px 16px;border:none;border-radius:12px;font-weight:700;cursor:pointer;font:inherit;font-size:.9rem }
+    .btn-primary { background:linear-gradient(135deg,#0a4d8c,#1a7fd4);color:#fff }
+    .btn-secondary { background:#f3f4f6;color:#444;border:1px solid #e5e7eb }
+    .result-box { background:#fff;border-radius:18px;padding:32px;text-align:center;box-shadow:0 4px 20px rgba(10,77,140,.08);border:1px solid #e8f0fe }
+    .result-emoji { font-size:3rem;margin-bottom:12px }
+    .result-score { font-size:2.2rem;font-weight:800;color:#0a4d8c;margin-bottom:8px }
+    .result-text { color:#555;margin:0 0 24px;font-size:.95rem }
+    .hidden { display:none }
+    @keyframes spin { to { transform:rotate(360deg) } }
   </style>
 </head>
 <body>
 <header>
   <div class="header-inner">
     <div class="logo"><span class="logo-icon">🎓</span> Auditorium Onboard</div>
-    <div class="user-badge" id="headerUserBadge" style="cursor:pointer">
-      <span id="headerUser">—</span>
-    </div>
+    <div class="user-badge" id="headerUserBadge"><span id="headerUser">—</span></div>
   </div>
 </header>
 
 <div class="main-wrap">
   <a href="index.html" class="back-link">← Назад на главную</a>
 
-  <!-- СПИСОК КВИЗОВ -->
   <div id="quizListHead" class="page-head">
     <h1>🧩 Квизы</h1>
     <p>Проверь знания по процессам, ролям и внутренним правилам команды</p>
   </div>
   <div id="quizListView">
-    <div id="quizListContainer" class="state-box"><span class="spinner"></span>Загружаю квизы…</div>
+    <div id="quizListContainer" class="state-box"><span class="spinner"></span>Загружаю…</div>
   </div>
 
-  <!-- ПРОХОЖДЕНИЕ -->
   <div id="quizRunView" class="hidden">
     <div class="question-card">
       <div class="question-progress" id="questionProgress"></div>
@@ -86,7 +82,6 @@
     </div>
   </div>
 
-  <!-- РЕЗУЛЬТАТ -->
   <div id="quizResultView" class="hidden">
     <div class="result-box">
       <div class="result-emoji" id="resultEmoji"></div>
@@ -105,10 +100,6 @@
 <script src="db.js"></script>
 <script src="auth.js"></script>
 <script>
-const TQ_BIN_ID  = '6a0c18b56877513b27974e7e';
-const TQ_API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
-const TQ_URL     = `https://api.jsonbin.io/v3/b/${TQ_BIN_ID}`;
-
 const CAT_LABELS = {
   general:   '✨ Общие',
   producer:  '🎬 Продюсеры',
@@ -116,28 +107,17 @@ const CAT_LABELS = {
   marketing: '📣 Маркетинг'
 };
 
-let quizzes        = [];
-let currentQuiz    = null;
-let currentIndex   = 0;
-let answered       = false;
-let score          = 0;
+let quizzes      = [];
+let currentQuiz  = null;
+let currentIndex = 0;
+let answered     = false;
+let score        = 0;
 
-// ── Загрузка ─────────────────────────────────────────────────────
-async function loadQuizzes() {
-  try {
-    const r = await fetch(TQ_URL, { headers: { 'X-Master-Key': TQ_API_KEY, 'X-Bin-Meta': 'false' } });
-    const d = await r.json();
-    quizzes = Array.isArray(d.quizzes) ? d.quizzes : [];
-    renderQuizList();
-  } catch(e) {
-    document.getElementById('quizListContainer').innerHTML = 'Не удалось загрузить квизы 😢';
-  }
-}
-
-// ── Список квизов ─────────────────────────────────────────────────
 function renderQuizList() {
+  quizzes = DB.getQuizzes();
   const box = document.getElementById('quizListContainer');
   if (!quizzes.length) {
+    box.className = 'state-box';
     box.innerHTML = 'Пока нет квизов. HR добавит их в ближайшее время 🛠️';
     return;
   }
@@ -150,18 +130,17 @@ function renderQuizList() {
         <div class="quiz-icon">${q.icon || '🧩'}</div>
         <div>
           <div class="quiz-title">${q.title || 'Без названия'}</div>
-          <div class="quiz-sub">${qCount} вопрос${qCount === 1 ? '' : qCount > 4 ? 'ов' : 'а'}</div>
+          <div class="quiz-sub">${qCount} вопрос${qCount===1?'':qCount>4?'ов':'а'}</div>
         </div>
       </div>
       <div class="quiz-meta">
-        <span class="quiz-badge badge-${cat}">${CAT_LABELS[cat] || cat}</span>
+        <span class="quiz-badge badge-${cat}">${CAT_LABELS[cat]||cat}</span>
       </div>
       <button class="quiz-btn" onclick="startQuiz(${idx})">Начать →</button>
     </div>`;
   }).join('');
 }
 
-// ── Старт квиза ───────────────────────────────────────────────────
 function startQuiz(idx) {
   currentQuiz  = quizzes[idx];
   if (!currentQuiz || !Array.isArray(currentQuiz.questions) || !currentQuiz.questions.length) {
@@ -171,74 +150,58 @@ function startQuiz(idx) {
   currentIndex = 0;
   answered     = false;
   score        = 0;
-  show('quizRunView');
-  hide('quizListView');
-  hide('quizListHead');
-  hide('quizResultView');
+  show('quizRunView'); hide('quizListView'); hide('quizListHead'); hide('quizResultView');
   renderQuestion();
 }
 
-// ── Рендер вопроса ────────────────────────────────────────────────
 function renderQuestion() {
   const q = currentQuiz.questions[currentIndex];
   answered = false;
-
   document.getElementById('nextBtn').classList.add('hidden');
   document.getElementById('explanationBox').style.display = 'none';
   document.getElementById('questionProgress').textContent =
     `Вопрос ${currentIndex + 1} из ${currentQuiz.questions.length}`;
   document.getElementById('questionText').textContent = q.question || '—';
 
-  // Варианты — массив строк q.options, правильный — q.correct (индекс)
   const options = Array.isArray(q.options) ? q.options : [];
   const box = document.getElementById('answersBox');
   box.innerHTML = '';
-
   if (!options.length) {
-    box.innerHTML = '<p style="color:#999">Варианты ответов не заданы</p>';
+    box.innerHTML = '<p style="color:#999">Варианты не заданы</p>';
     return;
   }
-
   options.forEach((opt, i) => {
     const btn = document.createElement('button');
-    btn.className      = 'answer-btn';
-    btn.textContent    = opt;
-    btn.dataset.index  = i;
-    btn.onclick        = () => selectAnswer(i, q);
+    btn.className     = 'answer-btn';
+    btn.textContent   = opt;
+    btn.dataset.index = i;
+    btn.onclick       = () => selectAnswer(i, q);
     box.appendChild(btn);
   });
 }
 
-// ── Выбор ответа ──────────────────────────────────────────────────
 function selectAnswer(chosenIdx, q) {
   if (answered) return;
   answered = true;
-
   const correctIdx = typeof q.correct === 'number' ? q.correct : 0;
-
   document.querySelectorAll('.answer-btn').forEach(btn => {
     btn.disabled = true;
     const i = Number(btn.dataset.index);
     if (i === correctIdx) btn.classList.add('correct');
     if (i === chosenIdx && chosenIdx !== correctIdx) btn.classList.add('wrong');
   });
-
   if (chosenIdx === correctIdx) score++;
-
   if (q.explanation && q.explanation.trim()) {
     const expl = document.getElementById('explanationBox');
     expl.textContent   = '💡 ' + q.explanation;
     expl.style.display = 'block';
   }
-
   const nextBtn = document.getElementById('nextBtn');
   nextBtn.classList.remove('hidden');
   nextBtn.textContent = currentIndex === currentQuiz.questions.length - 1
-    ? 'Показать результат 🏁'
-    : 'Дальше →';
+    ? 'Показать результат 🏁' : 'Дальше →';
 }
 
-// ── Следующий вопрос ──────────────────────────────────────────────
 function nextQuestion() {
   if (currentIndex < currentQuiz.questions.length - 1) {
     currentIndex++;
@@ -248,51 +211,42 @@ function nextQuestion() {
   }
 }
 
-// ── Результат ─────────────────────────────────────────────────────
 function showResult() {
-  hide('quizRunView');
-  show('quizResultView');
+  hide('quizRunView'); show('quizResultView');
   const total = currentQuiz.questions.length;
   const pct   = Math.round(score / total * 100);
   document.getElementById('resultScore').textContent = `${score} / ${total}`;
   let emoji, text;
-  if      (pct === 100) { emoji = '🏆'; text = 'Идеально! Ты отлично знаешь материал!'; }
-  else if (pct >= 70)   { emoji = '🎉'; text = 'Отличный результат! Материал хорошо усвоен.'; }
-  else if (pct >= 40)   { emoji = '📚'; text = 'Неплохо! Советую ещё раз просмотреть базу знаний.'; }
-  else                  { emoji = '💪'; text = 'Не расстраивайся — попробуй ещё раз после изучения материалов!'; }
+  if      (pct===100) { emoji='🏆'; text='Идеально! Ты отлично знаешь материал!'; }
+  else if (pct>=70)   { emoji='🎉'; text='Отличный результат! Материал хорошо усвоен.'; }
+  else if (pct>=40)   { emoji='📚'; text='Неплохо! Советую ещё раз просмотреть базу знаний.'; }
+  else                { emoji='💪'; text='Не расстраивайся — попробуй ещё раз после изучения материалов!'; }
   document.getElementById('resultEmoji').textContent = emoji;
   document.getElementById('resultText').textContent  = text;
 }
 
-// ── Рестарт / назад ───────────────────────────────────────────────
 function restartQuiz() {
   if (!currentQuiz) return;
-  currentIndex = 0;
-  answered     = false;
-  score        = 0;
-  hide('quizResultView');
-  show('quizRunView');
+  currentIndex = 0; answered = false; score = 0;
+  hide('quizResultView'); show('quizRunView');
   renderQuestion();
 }
 
 function backToList() {
-  hide('quizRunView');
-  hide('quizResultView');
-  show('quizListView');
-  show('quizListHead');
+  hide('quizRunView'); hide('quizResultView');
+  show('quizListView'); show('quizListHead');
   currentQuiz = null;
 }
 
 function show(id) { document.getElementById(id).classList.remove('hidden'); }
 function hide(id) { document.getElementById(id).classList.add('hidden'); }
 
-// ── Инит ──────────────────────────────────────────────────────────
 window.onload = function() {
   if (!Auth.requireAuth()) return;
   DB.ready.then(() => {
     const u = Auth.current();
     if (u) document.getElementById('headerUser').textContent = u.fio.split(' ')[0];
-    loadQuizzes();
+    renderQuizList(); // читаем сразу из localStorage — без дополнительных запросов
   });
 };
 </script>
