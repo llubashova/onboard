@@ -39,6 +39,7 @@
     .admin-card-meta{font-size:.8rem;color:#1a7fd4;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:6px}
     .admin-card-meta .staff-count{background:#e8f3ff;border-radius:20px;padding:2px 9px;font-size:.78rem;color:#0a4d8c}
     .admin-card-empty{font-size:.82rem;color:#aaa;font-style:italic}
+    .day-chip{display:inline-block;background:#e8f3ff;color:#0a4d8c;border-radius:20px;padding:2px 9px;font-size:.78rem;font-weight:700;white-space:nowrap}
   </style>
 </head>
 <body>
@@ -103,7 +104,7 @@
   <div class="hr-dashboard" id="hrDashboard" style="display:none">
     <h3>📊 Прогресс сотрудников</h3>
     <table class="hr-table">
-      <thead><tr><th>ФИО</th><th>Роль</th><th>Уровень</th><th>Прогресс</th><th>XP / %</th></tr></thead>
+      <thead><tr><th>ФИО</th><th>Роль</th><th>День адаптации</th><th>Уровень</th><th>Прогресс</th><th>XP / %</th></tr></thead>
       <tbody id="hrTableBody"></tbody>
     </table>
   </div>
@@ -193,6 +194,7 @@ function getXpLevel(xp, role) {
   return getXpLevelGeneric(xp, maxXp);
 }
 
+// TASK_XP синхронизирован с admin.html (producer_l2_m3 добавлен, maxXp=339)
 const TASK_XP = {
   producer_l1_p1:10, producer_l1_p2:10, producer_l1_p3:10,
   producer_l1_m1:8,  producer_l1_m2:8,
@@ -223,7 +225,8 @@ const TASK_XP = {
   marketing_l3_s1:5,  marketing_l3_s2:5
 };
 
-const MAX_XP = { producer:331, sales:294, marketing:316 };
+// maxXp = сумма всех ключей по роли (синхронизировано с admin.html)
+const MAX_XP = { producer:339, sales:294, marketing:316 };
 
 function calcProgress(userLogin, role) {
   const prefix = role + '_';
@@ -235,6 +238,13 @@ function calcProgress(userLogin, role) {
   });
   const maxXp = MAX_XP[role] || keys.reduce((s,k) => s + TASK_XP[k], 0);
   return { xp, maxXp, pct: Math.round(xp / maxXp * 100) };
+}
+
+// Считает день адаптации по createdAt пользователя
+function getDayOnPlatform(userObj) {
+  const MIN_VALID_TS = 1577836800000; // 1 Jan 2020
+  if (!userObj || !userObj.createdAt || userObj.createdAt < MIN_VALID_TS) return null;
+  return Math.max(1, Math.floor((Date.now() - userObj.createdAt) / 86400000) + 1);
 }
 
 function openAcc() {
@@ -280,7 +290,7 @@ function renderHrDashboard() {
   const EMPLOYEE_ROLES = ['producer', 'sales', 'marketing'];
   const employees = Object.entries(users).filter(([, u]) => EMPLOYEE_ROLES.includes(u.role));
   if (!employees.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="color:#aaa;text-align:center;padding:16px">Нет зарегистрированных сотрудников</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="color:#aaa;text-align:center;padding:16px">Нет зарегистрированных сотрудников</td></tr>';
     return;
   }
   tbody.innerHTML = employees
@@ -288,9 +298,14 @@ function renderHrDashboard() {
     .map(([login, u]) => {
       const p = calcProgress(login, u.role);
       const level = getXpLevel(p.xp, u.role);
+      const day = getDayOnPlatform(u);
+      const dayCell = day
+        ? `<span class="day-chip">📅 День ${day}</span>`
+        : '<span style="color:#ccc;font-size:.8rem">—</span>';
       return `<tr>
         <td>${u.fio}</td>
         <td>${ROLE_NAMES[u.role] || u.role}</td>
+        <td>${dayCell}</td>
         <td>${level}</td>
         <td><div class="hr-pbar"><div class="hr-pfill" style="width:${p.pct}%"></div></div></td>
         <td>${p.xp}/${p.maxXp} XP &middot; ${p.pct}%</td>
@@ -379,11 +394,8 @@ function renderDayCounter() {
   const u = Auth.current();
   if (!u) return;
 
-  // createdAt должен быть timestamp в миллисекундах (13 цифр, > 1 января 2020)
-  // Если поле отсутствует, равно 0, или подозрительно маленькое — записываем сейчас
-  const MIN_VALID_TS = 1577836800000; // 1 января 2020 в мс
+  const MIN_VALID_TS = 1577836800000;
   if (!u.createdAt || u.createdAt < MIN_VALID_TS) {
-    // Патчим аккаунт: выставляем createdAt = сейчас
     const users = Auth.getUsers();
     const login = Auth.currentLogin();
     if (users[login]) {
@@ -393,8 +405,12 @@ function renderDayCounter() {
     }
   }
 
-  const days = Math.max(1, Math.floor((Date.now() - u.createdAt) / 86400000) + 1);
-  wrap.innerHTML = `<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">📅 День адаптации: <strong>${days}</strong></div>`;
+  const days = getDayOnPlatform(u) || 1;
+  if (Auth.isAdmin()) {
+    wrap.innerHTML = `<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">👩‍💼 Режим HR-администратора</div>`;
+  } else {
+    wrap.innerHTML = `<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">📅 День адаптации: <strong>${days}</strong></div>`;
+  }
 }
 
 function updateUI() {
