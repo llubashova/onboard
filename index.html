@@ -144,32 +144,49 @@ const ROLE_NAMES = {
   producer:'Продюсер', sales:'Менеджер по продажам', marketing:'Специалист по маркетингу',
   hr:'HR-менеджер', ceo:'Генеральный директор', exec_dir:'Исполнительный директор', ops_dir:'Операционный директор'
 };
+// TASK_XP синхронизирован с реальными чекбоксами на страницах маршрутов
 const TASK_XP = {
-  producer_l1_p1:10,producer_l1_p2:10,producer_l1_p3:10,producer_l1_m1:8,producer_l1_m2:8,producer_l1_s1:5,producer_l1_s2:5,producer_l1_s3:5,producer_l1_s4:5,
-  producer_l2_p1:15,producer_l2_p2:15,producer_l2_p3:15,producer_l2_p4:15,producer_l2_p5:15,producer_l2_m1:8,producer_l2_m2:8,producer_l2_m3:8,producer_l2_s1:5,producer_l2_s2:5,producer_l2_s3:5,
-  producer_l3_p1:25,producer_l3_p2:25,producer_l3_p3:25,producer_l3_p4:25,producer_l3_p5:25,producer_l3_m1:8,producer_l3_m2:8,producer_l3_s1:5,producer_l3_s2:5,
-  sales_l1_p1:10,sales_l1_p2:10,sales_l1_p3:10,sales_l1_p4:10,sales_l1_m1:8,sales_l1_m2:8,sales_l1_s1:5,sales_l1_s2:5,sales_l1_s3:5,
-  sales_l2_p1:15,sales_l2_p2:15,sales_l2_p3:15,sales_l2_p4:15,sales_l2_p5:15,sales_l2_m1:8,sales_l2_m2:8,sales_l2_s1:5,sales_l2_s2:5,
-  sales_l3_p1:25,sales_l3_p2:25,sales_l3_p3:25,sales_l3_p4:25,sales_l3_m1:8,sales_l3_s1:5,sales_l3_s2:5,
-  marketing_l1_p1:10,marketing_l1_p2:10,marketing_l1_p3:10,marketing_l1_p4:10,marketing_l1_m1:8,marketing_l1_m2:8,marketing_l1_s1:5,marketing_l1_s2:5,marketing_l1_s3:5,
-  marketing_l2_p1:15,marketing_l2_p2:15,marketing_l2_p3:15,marketing_l2_p4:15,marketing_l2_p5:15,marketing_l2_m1:8,marketing_l2_m2:8,marketing_l2_s1:5,marketing_l2_s2:5,
-  marketing_l3_p1:25,marketing_l3_p2:25,marketing_l3_p3:25,marketing_l3_p4:25,marketing_l3_m1:8,marketing_l3_s1:5,marketing_l3_s2:5
+  // producer: 9 задач L1=71, 9 задач L2=101, 7 задач L3=118 → итого 290
+  producer_l1_p1:10,producer_l1_p2:10,producer_l1_p3:10,producer_l1_p4:10,
+  producer_l1_m1:8,producer_l1_m2:8,
+  producer_l1_s1:5,producer_l1_s2:5,producer_l1_s3:5,
+  producer_l2_p1:15,producer_l2_p2:15,producer_l2_p3:15,producer_l2_p4:15,producer_l2_p5:15,
+  producer_l2_m1:8,producer_l2_m2:8,
+  producer_l2_s1:5,producer_l2_s2:5,
+  producer_l3_p1:25,producer_l3_p2:25,producer_l3_p3:25,producer_l3_p4:25,
+  producer_l3_m1:8,
+  producer_l3_s1:5,producer_l3_s2:5,
+  // sales: 9 задач L1=71, 9 задач L2=101, 7 задач L3=118 → итого 290
+  sales_l1_p1:10,sales_l1_p2:10,sales_l1_p3:10,sales_l1_p4:10,
+  sales_l1_m1:8,sales_l1_m2:8,
+  sales_l1_s1:5,sales_l1_s2:5,sales_l1_s3:5,
+  sales_l2_p1:15,sales_l2_p2:15,sales_l2_p3:15,sales_l2_p4:15,sales_l2_p5:15,
+  sales_l2_m1:8,sales_l2_m2:8,
+  sales_l2_s1:5,sales_l2_s2:5,
+  sales_l3_p1:25,sales_l3_p2:25,sales_l3_p3:25,sales_l3_p4:25,
+  sales_l3_m1:8,
+  sales_l3_s1:5,sales_l3_s2:5,
+  // marketing: 9 задач L1=71, 9 задач L2=101, 7 задач L3=118 → итого 290
+  marketing_l1_p1:10,marketing_l1_p2:10,marketing_l1_p3:10,marketing_l1_p4:10,
+  marketing_l1_m1:8,marketing_l1_m2:8,
+  marketing_l1_s1:5,marketing_l1_s2:5,marketing_l1_s3:5,
+  marketing_l2_p1:15,marketing_l2_p2:15,marketing_l2_p3:15,marketing_l2_p4:15,marketing_l2_p5:15,
+  marketing_l2_m1:8,marketing_l2_m2:8,
+  marketing_l2_s1:5,marketing_l2_s2:5,
+  marketing_l3_p1:25,marketing_l3_p2:25,marketing_l3_p3:25,marketing_l3_p4:25,
+  marketing_l3_m1:8,
+  marketing_l3_s1:5,marketing_l3_s2:5
 };
-// Исправлено: sales 294→290, marketing 316→290 (соответствует реальному набору задач)
-const MAX_XP = { producer:331, sales:290, marketing:290 };
+// MAX_XP = реальная сумма задач по каждому маршруту
+const MAX_XP = { producer:290, sales:290, marketing:290 };
 
 const EMPLOYEE_ROLES = ['producer','sales','marketing'];
 
 function getXpLevel(xp, role) {
-  const maxXp = MAX_XP[role] || 300;
+  const maxXp = MAX_XP[role] || 290;
   const pct = maxXp ? xp / maxXp * 100 : 0;
-  if (role === 'producer') {
-    if (xp >= 180) return '🏆 Профи';
-    if (xp >= 66)  return '🚀 Продвинутый';
-    return '🌱 Новичок';
-  }
-  if (pct >= 55) return '🏆 Профи';
-  if (pct >= 20) return '🚀 Продвинутый';
+  if (pct >= 60) return '🏆 Профи';
+  if (pct >= 25) return '🚀 Продвинутый';
   return '🌱 Новичок';
 }
 
