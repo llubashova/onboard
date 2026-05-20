@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Восстановление пользователей</title>
+  <style>
+    body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f0f7ff}
+    .box{background:#fff;border-radius:16px;padding:40px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.12);max-width:400px}
+    h2{color:#0a4d8c;margin-bottom:16px}
+    p{color:#555;margin-bottom:24px}
+    button{background:linear-gradient(135deg,#0a4d8c,#1a7fd4);color:#fff;border:none;border-radius:10px;padding:14px 32px;font-size:1rem;font-weight:700;cursor:pointer}
+    button:disabled{background:#ccc;cursor:not-allowed}
+    #status{margin-top:20px;font-size:1rem;font-weight:600;min-height:24px}
+  </style>
+</head>
+<body>
+<div class="box">
+  <h2>🔧 Восстановление</h2>
+  <p>Добавит Петра Петрова и Антона Антонова обратно в систему</p>
+  <button id="btn" onclick="restore()">▶ Восстановить</button>
+  <div id="status"></div>
+</div>
+<script>
+async function restore() {
+  const btn = document.getElementById('btn');
+  const status = document.getElementById('status');
+  btn.disabled = true;
+  status.style.color = '#1a7fd4';
+  status.textContent = '⏳ Загружаю данные...';
+
+  const KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
+  const URL = 'https://api.jsonbin.io/v3/b/6a07317badc21f119aa526dd';
+
+  try {
+    const r = await fetch(URL + '?meta=false', {
+      cache: 'no-cache',
+      headers: {'X-Master-Key': KEY, 'X-Bin-Meta': 'false'}
+    });
+    const d = await r.json();
+    if (!d.users) d.users = {};
+
+    d.users['петр'] = {fio: 'Петр Петров', role: 'producer', pass: 'petr1234', createdAt: Date.now()};
+    d.users['антон'] = {fio: 'Антон Антонов', role: 'producer', pass: 'anton1234', createdAt: Date.now()};
+
+    status.textContent = '⏳ Сохраняю...';
+    const w = await fetch(URL, {
+      method: 'PUT',
+      cache: 'no-cache',
+      headers: {'Content-Type': 'application/json', 'X-Master-Key': KEY},
+      body: JSON.stringify(d)
+    });
+    if (w.ok) {
+      status.style.color = '#27ae60';
+      status.textContent = '✅ Готово! Петр и Антон восстановлены.';
+    } else {
+      throw new Error('Ошибка сохранения: ' + w.status);
+    }
+  } catch(e) {
+    status.style.color = '#e74c3c';
+    status.textContent = '❌ ' + e.message;
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
