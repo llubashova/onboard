@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Fix</title>
+  <style>
+    body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f0f7ff}
+    .box{background:#fff;border-radius:16px;padding:40px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.12);max-width:480px;width:100%}
+    h2{color:#0a4d8c;margin-bottom:8px}
+    button{background:linear-gradient(135deg,#0a4d8c,#1a7fd4);color:#fff;border:none;border-radius:10px;padding:14px 32px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:16px}
+    button:disabled{background:#ccc;cursor:not-allowed}
+    #status{margin-top:16px;font-size:1rem;font-weight:600;min-height:24px}
+    table{width:100%;border-collapse:collapse;margin-top:20px;text-align:left;font-size:.9rem}
+    th{background:#0a4d8c;color:#fff;padding:8px 12px}
+    td{padding:8px 12px;border-bottom:1px solid #eee}
+    input{padding:8px 12px;border:2px solid #e8f0fe;border-radius:8px;font-size:.95rem;width:180px;margin-left:8px}
+  </style>
+</head>
+<body>
+<div class="box">
+  <h2>🔧 Исправление данных</h2>
+  <p style="color:#555;font-size:.9rem">Установит дату регистрации Ивана и покажет/обновит пароли</p>
+
+  <div style="margin:16px 0;text-align:left">
+    <label style="font-size:.9rem;color:#0a4d8c;font-weight:600">Новый пароль для Ивана:</label><br>
+    <input type="text" id="ivanPass" value="ivan1234" style="margin-top:6px;margin-left:0">
+  </div>
+
+  <button id="btn" onclick="doFix()">▶ Применить</button>
+  <div id="status"></div>
+  <div id="result"></div>
+</div>
+<script>
+async function doFix() {
+  const btn = document.getElementById('btn');
+  const status = document.getElementById('status');
+  const result = document.getElementById('result');
+  const ivanPass = document.getElementById('ivanPass').value.trim() || 'ivan1234';
+  btn.disabled = true;
+  status.style.color = '#1a7fd4';
+  status.textContent = '⏳ Загружаю данные...';
+
+  const KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
+  const URL = 'https://api.jsonbin.io/v3/b/6a07317badc21f119aa526dd';
+
+  try {
+    const r = await fetch(URL + '?meta=false', {
+      cache: 'no-cache',
+      headers: {'X-Master-Key': KEY, 'X-Bin-Meta': 'false'}
+    });
+    const d = await r.json();
+    if (!d.users) d.users = {};
+
+    // Ищем Ивана по логину iivanov или любой логин с ролью sales
+    const MIN = 1577836800000;
+    let ivanLogin = null;
+    for (const [login, u] of Object.entries(d.users)) {
+      if (u.role === 'sales' || login === 'iivanov') {
+        ivanLogin = login;
+        if (!u.createdAt || u.createdAt < MIN) {
+          d.users[login].createdAt = Date.now();
+        }
+        d.users[login].pass = ivanPass;
+      }
+    }
+
+    status.textContent = '⏳ Сохраняю...';
+    const w = await fetch(URL, {
+      method: 'PUT', cache: 'no-cache',
+      headers: {'Content-Type': 'application/json', 'X-Master-Key': KEY},
+      body: JSON.stringify(d)
+    });
+
+    if (w.ok) {
+      status.style.color = '#27ae60';
+      status.textContent = '✅ Готово!';
+
+      // Показываем таблицу паролей
+      const rows = Object.entries(d.users)
+        .filter(([,u]) => ['producer','sales','marketing'].includes(u.role))
+        .map(([login,u]) => `<tr><td>${u.fio}</td><td>${login}</td><td><b>${u.pass || '—'}</b></td></tr>`)
+        .join('');
+      result.innerHTML = `<table><thead><tr><th>ФИО</th><th>Логин</th><th>Пароль</th></tr></thead><tbody>${rows}</tbody></table>`;
+    } else {
+      throw new Error('Ошибка сохранения: ' + w.status);
+    }
+  } catch(e) {
+    status.style.color = '#e74c3c';
+    status.textContent = '❌ ' + e.message;
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
