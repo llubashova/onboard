@@ -1,6 +1,5 @@
-// db.js — JSONBin bridge v10
-// v10: правильный парсинг логина из ao_p_* (логин может содержать '_')
-//      при сбросе прогресса — явно удаляем ao_p_* ключи из облака
+// db.js — JSONBin bridge v11
+// v11: fix reset — активно удаляем ao_p_* из localStorage если progressResetAt есть в облаке
 const DB = (() => {
   const BIN_ID  = '6a07317badc21f119aa526dd';
   const API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
@@ -9,19 +8,15 @@ const DB = (() => {
   let _syncing   = false;
   let _syncTimer = null;
 
-  // Известные префиксы ролей — по ним определяем где заканчивается логин в ключе
   const ROLE_PREFIXES = ['producer_', 'sales_', 'marketing_'];
 
-  // Извлекаем логин из ключа вида ao_p_<login>_<role>_...
-  // Логин может содержать '_', поэтому ищем первое вхождение известного префикса роли
   function _loginFromKey(key) {
     if (!key.startsWith('ao_p_')) return null;
-    const body = key.slice(5); // убираем 'ao_p_'
+    const body = key.slice(5);
     for (const prefix of ROLE_PREFIXES) {
       const idx = body.indexOf('_' + prefix);
       if (idx !== -1) return body.slice(0, idx).toLowerCase();
     }
-    // Фоллбэк — берём первый сегмент (для простых логинов без '_')
     return body.split('_')[0].toLowerCase();
   }
 
@@ -34,11 +29,12 @@ const DB = (() => {
     return progress;
   }
 
-  // v10: при merge облака уважаем progressResetAt
-  // Используем _loginFromKey для надёжного парсинга логина
+  // v11: если у пользователя есть progressResetAt — активно чистим его ключи из localStorage
+  // и не восстанавливаем их из облака
   function restoreProgress(cloudProgress, cloudUsers) {
     if (!cloudProgress || typeof cloudProgress !== 'object') return;
 
+    // Собираем resetMap: login → timestamp сброса
     const resetMap = {};
     if (cloudUsers && typeof cloudUsers === 'object') {
       Object.entries(cloudUsers).forEach(([login, u]) => {
@@ -46,14 +42,24 @@ const DB = (() => {
       });
     }
 
+    // 1. Активно удаляем все ключи сброшенных пользователей из localStorage
+    if (Object.keys(resetMap).length > 0) {
+      const keysToDelete = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith('ao_p_')) continue;
+        const login = _loginFromKey(k);
+        if (login && resetMap[login]) keysToDelete.push(k);
+      }
+      keysToDelete.forEach(k => localStorage.removeItem(k));
+    }
+
+    // 2. Восстанавливаем остальное (пропуская сброшенных)
     Object.keys(cloudProgress).forEach(k => {
       if (!k.startsWith('ao_p_')) return;
-      const cloudVal = cloudProgress[k];
       const login = _loginFromKey(k);
-
-      // Если есть метка сброса — пропускаем восстановление
-      if (login && resetMap[login]) return;
-
+      if (login && resetMap[login]) return; // сброшен — не восстанавливаем
+      const cloudVal = cloudProgress[k];
       const localVal = localStorage.getItem(k);
       if (cloudVal === '1' && localVal !== '1') {
         localStorage.setItem(k, cloudVal);
@@ -101,13 +107,12 @@ const DB = (() => {
     const users = JSON.parse(localStorage.getItem('ao_users') || '{}');
     const rawProgress = collectProgress();
 
-    // v10: при сборке payload удаляем ao_p_* ключи сброшенных пользователей
-    // Если у пользователя стоит progressResetAt — его прогресс в облаке должен быть пустым
+    // Если progressResetAt есть — не включаем прогресс в payload
     const progress = {};
     Object.entries(rawProgress).forEach(([k, v]) => {
       const login = _loginFromKey(k);
       const u = login ? users[login] : null;
-      if (u && u.progressResetAt) return; // не включаем в payload
+      if (u && u.progressResetAt) return;
       progress[k] = v;
     });
 
