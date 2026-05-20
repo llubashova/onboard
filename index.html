@@ -31,6 +31,7 @@
     .hr-table tr:hover td{background:#e8f3ff}
     .hr-pbar{height:8px;background:#dde8f5;border-radius:4px;overflow:hidden;min-width:80px}
     .hr-pfill{height:100%;background:linear-gradient(90deg,#1a7fd4,#27ae60);border-radius:4px;transition:.3s}
+    /* Заблокированы только чужие маршруты для обычных сотрудников */
     .role-card.locked{opacity:.55;pointer-events:none;cursor:not-allowed}
     .role-card.locked .role-btn{background:#ccc;color:#888}
     .badges-section{margin:24px 0 8px}
@@ -157,6 +158,8 @@ const TASK_XP = {
 };
 const MAX_XP = { producer:331, sales:294, marketing:316 };
 
+const EMPLOYEE_ROLES = ['producer','sales','marketing'];
+
 function getXpLevel(xp, role) {
   const maxXp = MAX_XP[role] || 300;
   const pct = maxXp ? xp / maxXp * 100 : 0;
@@ -223,8 +226,7 @@ function confirmDeleteSelf() {
 function renderHrDashboard() {
   const tbody = document.getElementById('hrTableBody');
   const users = Auth.getUsers();
-  const EMP = ['producer','sales','marketing'];
-  const employees = Object.entries(users).filter(([,u]) => EMP.includes(u.role));
+  const employees = Object.entries(users).filter(([,u]) => EMPLOYEE_ROLES.includes(u.role));
   if (!employees.length) {
     tbody.innerHTML = '<tr><td colspan="6" style="color:#aaa;text-align:center;padding:16px">Нет зарегистрированных сотрудников</td></tr>';
     return;
@@ -240,7 +242,7 @@ function renderHrDashboard() {
 function renderOverallProgress() {
   const u = Auth.current(), myLogin = Auth.currentLogin(), isAdmin = Auth.isAdmin();
   if (isAdmin) {
-    const emp = Object.entries(Auth.getUsers()).filter(([,su])=>['producer','sales','marketing'].includes(su.role));
+    const emp = Object.entries(Auth.getUsers()).filter(([,su])=>EMPLOYEE_ROLES.includes(su.role));
     if (!emp.length) { document.getElementById('overallPct').textContent='—'; document.getElementById('overallLabel').textContent='нет сотрудников'; return; }
     const avg = Math.round(emp.reduce((s,[l,su])=>s+calcProgress(l,su.role).pct,0)/emp.length);
     document.getElementById('overallPct').textContent = avg+'%';
@@ -270,7 +272,6 @@ function renderDayCounter() {
     : `<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">📅 День адаптации: <strong>${days}</strong></div>`;
 }
 
-// ── МАРШРУТЫ — рендер в стиле role-card, данные из JSONBin ─────────────
 const TQ_BIN_ID  = '6a0c18b56877513b27974e7e';
 const TQ_API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
 const TQ_URL     = `https://api.jsonbin.io/v3/b/${TQ_BIN_ID}`;
@@ -290,7 +291,7 @@ async function renderRoutes() {
   if (!grid) return;
   let routes = FALLBACK_ROUTES;
   try {
-    const r = await fetch(TQ_URL, { headers:{'X-Master-Key':TQ_API_KEY,'X-Bin-Meta':'false'} });
+    const r = await fetch(TQ_URL, { cache:'no-cache', headers:{'X-Master-Key':TQ_API_KEY,'X-Bin-Meta':'false'} });
     const d = await r.json();
     if (Array.isArray(d.routes) && d.routes.length) routes = d.routes;
   } catch(e) {}
@@ -301,8 +302,12 @@ async function renderRoutes() {
   routes.sort((a,b)=>(Number(a.order)||999)-(Number(b.order)||999)).forEach(route => {
     const role = route.role || '';
     const isMyRole = u && u.role === role;
-    const locked = !isAdmin && !isMyRole;
-    const p = calcProgress(myLogin, role);
+    // fix: сотрудники с ролью не из employee-списка (напр. exec_dir зарегистрированный по ошибке)
+    // видят все маршруты в режиме «только чтение» — не блокируем полностью
+    // Блокируем только чужой маршрут для обычных сотрудников
+    const isEmployee = EMPLOYEE_ROLES.includes(u && u.role);
+    const locked = !isAdmin && isEmployee && !isMyRole;
+    const p = isMyRole ? calcProgress(myLogin, role) : { xp:0, maxXp:0, pct:0 };
 
     let metaHtml = '', progText = '—', progPct = 0;
     if (isAdmin) {

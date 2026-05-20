@@ -1,7 +1,7 @@
-// db.js — JSONBin bridge v7
+// db.js — JSONBin bridge v8
 // v7: прогресс при restoreProgress мержится (merge), а не перетирается
-// Это исключает потерю прогресса когда несколько пользователей
-// работают с разных устройств/браузеров
+// v8: добавлен cache:'no-cache' во все fetch-запросы чтобы мобильные
+//     браузеры не показывали устаревшие данные из кэша
 const DB = (() => {
   const BIN_ID  = '6a07317badc21f119aa526dd';
   const API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
@@ -27,9 +27,6 @@ const DB = (() => {
       if (!k.startsWith('ao_p_')) return;
       const cloudVal = cloudProgress[k];
       const localVal = localStorage.getItem(k);
-      // Если в облаке задача выполнена ('1') — ставим '1' в любом случае
-      // Если локально уже '1' — оставляем
-      // Иначе — берём облачное значение
       if (cloudVal === '1' || localVal !== '1') {
         localStorage.setItem(k, cloudVal);
       }
@@ -45,7 +42,9 @@ const DB = (() => {
     return normalized;
   }
 
+  // v8: cache:'no-cache' — принудительно идём в сеть, игнорируем кэш браузера
   const cloudFetch = fetch(URL, {
+    cache: 'no-cache',
     headers: { 'X-Master-Key': API_KEY, 'X-Bin-Meta': 'false' }
   })
   .then(r => r.ok ? r.json() : null)
@@ -87,6 +86,7 @@ const DB = (() => {
     if (_syncTimer) { clearTimeout(_syncTimer); _syncTimer = null; }
     return fetch(URL, {
       method:  'PUT',
+      cache:   'no-cache',
       headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
       body:    JSON.stringify(_buildPayload())
     }).catch(() => {});
@@ -97,6 +97,7 @@ const DB = (() => {
     _syncing = true;
     fetch(URL, {
       method:  'PUT',
+      cache:   'no-cache',
       headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
       body:    JSON.stringify(_buildPayload())
     })
