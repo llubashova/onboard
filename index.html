@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <script>if(!localStorage.getItem('ao_session'))location.replace('login.html');</script>
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="game.css">
+  <link rel="stylesheet" href="game.css?v=3">
   <style>
     .account-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center}
     .account-modal-overlay.open{display:flex}
@@ -138,7 +138,7 @@
 
 <script src="db.js"></script>
 <script src="auth.js"></script>
-<script src="game.js"></script>
+<script src="game.js?v=3"></script>
 <script>
 const PAGE_ADMIN_ROLES = ['hr','ceo','exec_dir','ops_dir'];
 const ROLE_NAMES = {
@@ -178,8 +178,8 @@ const MAX_XP = { producer:290, sales:290, marketing:290 };
 const EMPLOYEE_ROLES = ['producer','sales','marketing'];
 
 const FALLBACK_ROUTES = [
-  { role:'producer',  icon:'🎬', title:'Продюсер',                 subtitle:'Исследования, деловая программа, работа со спикерами', link:'producer.html',  order:1 },
-  { role:'sales',     icon:'📞', title:'Менеджер по продажам',     subtitle:'CRM, звонки, сделки, работа с клиентами',             link:'sales.html',     order:2 },
+  { role:'producer',  icon:'🎬', title:'Продюсер',               subtitle:'Исследования, деловая программа, работа со спикерами', link:'producer.html',  order:1 },
+  { role:'sales',     icon:'📞', title:'Менеджер по продажам',   subtitle:'CRM, звонки, сделки, работа с клиентами',             link:'sales.html',     order:2 },
   { role:'marketing', icon:'📣', title:'Специалист по маркетингу', subtitle:'Яндекс.Директ, контент-план, email, TG-канал',        link:'marketing.html', order:3 }
 ];
 
@@ -261,7 +261,6 @@ function renderHrDashboard() {
     const p = calcProgress(login, u.role);
     const day = getDayOnPlatform(u);
     const dayCell = day ? `<span class="day-chip">📅 День ${day}</span>` : '<span style="color:#ccc;font-size:.8rem">—</span>';
-    // Бейджи сотрудника
     const earnedBadges = Game.getBadges(login);
     const badgesHtml = earnedBadges.length
       ? earnedBadges.map(b=>`<span title="${b.name}">${b.icon}</span>`).join('')
@@ -310,7 +309,6 @@ function renderDayCounter() {
     : `<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">📅 День адаптации: <strong>${days}</strong></div>`;
 }
 
-// ── Рендер маршрутов: МГНОВЕННО из fallback, фоновый fetch обновляет если нужно ──
 function buildRouteCards(routes) {
   const grid = document.getElementById('rolesGrid');
   if (!grid) return;
@@ -322,7 +320,6 @@ function buildRouteCards(routes) {
     const isEmployee = EMPLOYEE_ROLES.includes(u && u.role);
     const locked = !isAdmin && isEmployee && !isMyRole;
     const p = isMyRole ? calcProgress(myLogin, role) : { xp:0, maxXp:0, pct:0 };
-
     let metaHtml = '', progText = '—', progPct = 0;
     if (isAdmin) {
       const staff = Object.entries(users).filter(([,su])=>su.role===role);
@@ -336,7 +333,6 @@ function buildRouteCards(routes) {
     } else if (isMyRole) {
       progText = p.xp+' XP · '+p.pct+'%'; progPct = p.pct;
     }
-
     const card = document.createElement('a');
     card.href = locked ? '#' : esc(route.link||'#');
     card.className = 'role-card'+(locked?' locked':'');
@@ -356,31 +352,23 @@ function buildRouteCards(routes) {
 }
 
 function renderRoutes() {
-  // 1. Рендерим сразу — без ожидания сети
   buildRouteCards(FALLBACK_ROUTES);
-
-  // 2. Тихо подгружаем актуальные маршруты из JSONBin в фоне
   fetch(TQ_URL, { cache:'no-cache', headers:{'X-Master-Key':TQ_API_KEY,'X-Bin-Meta':'false'} })
     .then(r => r.json())
-    .then(d => {
-      if (Array.isArray(d.routes) && d.routes.length) {
-        buildRouteCards(d.routes); // обновляем, если маршруты отличаются
-      }
-    })
-    .catch(() => {}); // молча игнорируем ошибки сети
+    .then(d => { if (Array.isArray(d.routes) && d.routes.length) buildRouteCards(d.routes); })
+    .catch(() => {});
 }
 
 function renderBadges() {
   const u = Auth.current();
   if (!u || Auth.isAdmin()) { document.getElementById('badgesSection').style.display='none'; return; }
   const myLogin = Auth.currentLogin();
-  const earned = Game.getBadges(myLogin);
   const section = document.getElementById('badgesSection');
   const panel   = document.getElementById('badgesPanel');
-  if (!earned.length) { section.style.display='none'; return; }
-  section.style.display = 'block';
-  // Показываем ВСЕ бейджи: заработанные яркие, остальные серые
   const all = Game.getAllBadges(myLogin);
+  const hasEarned = all.some(b => b.earned);
+  if (!hasEarned) { section.style.display='none'; return; }
+  section.style.display = 'block';
   panel.innerHTML = all.map(b => {
     const when = b.earnedAt ? new Date(b.earnedAt).toLocaleDateString('ru-RU') : '';
     return `<div class="badge-chip ${b.earned ? 'earned' : 'locked'}" title="${b.desc}${when ? ' · получен '+when : ''}">
