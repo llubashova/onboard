@@ -31,7 +31,6 @@
     .hr-table tr:hover td{background:#e8f3ff}
     .hr-pbar{height:8px;background:#dde8f5;border-radius:4px;overflow:hidden;min-width:80px}
     .hr-pfill{height:100%;background:linear-gradient(90deg,#1a7fd4,#27ae60);border-radius:4px;transition:.3s}
-    /* Заблокированы только чужие маршруты для обычных сотрудников */
     .role-card.locked{opacity:.55;pointer-events:none;cursor:not-allowed}
     .role-card.locked .role-btn{background:#ccc;color:#888}
     .badges-section{margin:24px 0 8px}
@@ -156,7 +155,8 @@ const TASK_XP = {
   marketing_l2_p1:15,marketing_l2_p2:15,marketing_l2_p3:15,marketing_l2_p4:15,marketing_l2_p5:15,marketing_l2_m1:8,marketing_l2_m2:8,marketing_l2_s1:5,marketing_l2_s2:5,
   marketing_l3_p1:25,marketing_l3_p2:25,marketing_l3_p3:25,marketing_l3_p4:25,marketing_l3_m1:8,marketing_l3_s1:5,marketing_l3_s2:5
 };
-const MAX_XP = { producer:331, sales:294, marketing:316 };
+// Исправлено: sales 294→290, marketing 316→290 (соответствует реальному набору задач)
+const MAX_XP = { producer:331, sales:290, marketing:290 };
 
 const EMPLOYEE_ROLES = ['producer','sales','marketing'];
 
@@ -302,9 +302,6 @@ async function renderRoutes() {
   routes.sort((a,b)=>(Number(a.order)||999)-(Number(b.order)||999)).forEach(route => {
     const role = route.role || '';
     const isMyRole = u && u.role === role;
-    // fix: сотрудники с ролью не из employee-списка (напр. exec_dir зарегистрированный по ошибке)
-    // видят все маршруты в режиме «только чтение» — не блокируем полностью
-    // Блокируем только чужой маршрут для обычных сотрудников
     const isEmployee = EMPLOYEE_ROLES.includes(u && u.role);
     const locked = !isAdmin && isEmployee && !isMyRole;
     const p = isMyRole ? calcProgress(myLogin, role) : { xp:0, maxXp:0, pct:0 };
