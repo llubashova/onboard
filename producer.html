@@ -50,7 +50,7 @@
   <div class="view-banner" id="viewBanner">👁️ Режим просмотра — вы видите маршрут сотрудника (только чтение)</div>
 
   <div class="route-hero">
-    <h1>🎬 Маршрут: Продюсер</h1>
+    <h1>🎥 Маршрут: Продюсер</h1>
     <p>Форумы, мероприятия, команда, партнёры — от новичка до самостоятельного продюсера</p>
   </div>
 
@@ -121,7 +121,7 @@
     <div class="level-body" id="body-l3">
       <div class="task-group-title">📋 Основные задачи (70%)</div>
       <div class="task-item" id="ti-producer_l3_p1"><input type="checkbox" id="producer_l3_p1"><label for="producer_l3_p1">Самостоятельно продюсировать один полноценный форум от брифа до отчёта</label><span class="task-xp">+25 XP</span></div>
-      <div class="task-item" id="ti-producer_l3_p2"><input type="checkbox" id="producer_l3_p2"><label for="producer_l3_p2">Вести переписку и договорённости с партнёрами и спикерами без контроля наставника</label><span class="task-xp">+25 XP</span></div>
+      <div class="task-item" id="ti-producer_l3_p2"><input type="checkbox" id="producer_l3_p2"><label for="producer_l3_p2">Вести переписку и договорённости с партнёрами и спикерами без контроля</label><span class="task-xp">+25 XP</span></div>
       <div class="task-item" id="ti-producer_l3_p3"><input type="checkbox" id="producer_l3_p3"><label for="producer_l3_p3">Провести разбор ошибок и составить улучшенный чек-лист для следующего форума</label><span class="task-xp">+25 XP</span></div>
       <div class="task-item" id="ti-producer_l3_p4"><input type="checkbox" id="producer_l3_p4"><label for="producer_l3_p4">Актуализировать шаблоны и базу знаний Strive по своей роли</label><span class="task-xp">+25 XP</span></div>
       <div class="task-group-title">🤝 Работа с наставником (20%)</div>
@@ -141,6 +141,7 @@
 <script>
 const ROLE = 'producer';
 const MAX_XP_TOTAL = 290;
+const ROLE_NAME = '🎥 Продюсер';
 
 const LEVEL_KEYS = {
   l1: { keys: ['producer_l1_p1','producer_l1_p2','producer_l1_p3','producer_l1_p4','producer_l1_m1','producer_l1_m2','producer_l1_s1','producer_l1_s2','producer_l1_s3'], maxXp: 71 },
@@ -177,11 +178,15 @@ function calcTotalXp() {
   return xp;
 }
 
-function updateXpPanel() {
+function updateXpPanel(animated, prevXp) {
   const xp = calcTotalXp();
   const pct = Math.round(xp / MAX_XP_TOTAL * 100);
   document.getElementById('xpLevelBadge').textContent = getXpLevel(xp);
-  document.getElementById('xpCounter').textContent = xp + ' / ' + MAX_XP_TOTAL + ' XP';
+  if (animated && prevXp !== undefined) {
+    animateCounter(document.getElementById('xpCounter'), prevXp, xp, ' / ' + MAX_XP_TOTAL + ' XP');
+  } else {
+    document.getElementById('xpCounter').textContent = xp + ' / ' + MAX_XP_TOTAL + ' XP';
+  }
   document.getElementById('xpPct').textContent = pct + '%';
   document.getElementById('xpBarFill').style.width = pct + '%';
 }
@@ -206,6 +211,12 @@ function loadChecks() {
   });
   updateXpPanel();
   ['l1','l2','l3'].forEach(updateLevelProgress);
+
+  // Запуск игровых механик при загрузке (только для владельца маршрута)
+  if (!isViewMode) {
+    const u = Auth.current();
+    Game.onPageLoad(calcTotalXp(), MAX_XP_TOTAL, u ? u.fio.split(' ')[0] : 'Сотрудник', ROLE_NAME);
+  }
 }
 
 function toggleLevel(lvl) {
@@ -221,14 +232,21 @@ function setupCheckboxes() {
     const cb = document.getElementById(key);
     if (!cb) return;
     cb.addEventListener('change', function() {
-      Auth.setCheck(key, cb.checked);
-      document.getElementById('ti-' + key).classList.toggle('done', cb.checked);
+      if (!cb.checked) {
+        Auth.setCheck(key, false);
+        document.getElementById('ti-' + key).classList.remove('done');
+        const lvl = key.includes('_l1_') ? 'l1' : key.includes('_l2_') ? 'l2' : 'l3';
+        updateLevelProgress(lvl);
+        updateXpPanel();
+        return;
+      }
+      const prevXp = calcTotalXp();
+      Auth.setCheck(key, true);
+      document.getElementById('ti-' + key).classList.add('done');
       const lvl = key.includes('_l1_') ? 'l1' : key.includes('_l2_') ? 'l2' : 'l3';
       updateLevelProgress(lvl);
-      updateXpPanel();
-      if (cb.checked && typeof Game !== 'undefined') {
-        Game.onTaskComplete(key, TASK_XP[key], calcTotalXp(), MAX_XP_TOTAL, getXpLevel(calcTotalXp()));
-      }
+      updateXpPanel(true, prevXp);
+      Game.onTaskComplete(key, TASK_XP[key], calcTotalXp(), MAX_XP_TOTAL, getXpLevel(calcTotalXp()));
     });
   });
 }
