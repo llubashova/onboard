@@ -188,6 +188,7 @@ const TASK_XP = {
 };
 const MAX_XP = { producer:290, sales:290, marketing:290 };
 const EMPLOYEE_ROLES = ['producer','sales','marketing'];
+const ROLE_PREFIXES = ['producer_', 'sales_', 'marketing_'];
 
 const FALLBACK_ROUTES = [
   { role:'producer',  icon:'🎬', title:'Продюсер',               subtitle:'Исследования, деловая программа, работа со спикерами', link:'producer.html',  order:1 },
@@ -205,6 +206,17 @@ const TQ_URL     = `https://api.jsonbin.io/v3/b/${TQ_BIN_ID}`;
 
 function esc(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Извлекаем логин из ao_p_<login>_<role>_... (логин может содержать '_')
+function _loginFromKey(key) {
+  if (!key.startsWith('ao_p_')) return null;
+  const body = key.slice(5);
+  for (const prefix of ROLE_PREFIXES) {
+    const idx = body.indexOf('_' + prefix);
+    if (idx !== -1) return body.slice(0, idx).toLowerCase();
+  }
+  return body.split('_')[0].toLowerCase();
 }
 
 function getXpLevel(xp, role) {
@@ -231,7 +243,8 @@ function getDayOnPlatform(userObj) {
   return Math.max(1, Math.floor((Date.now() - userObj.createdAt) / 86400000) + 1);
 }
 
-// ── Перезагрузка данных из облака (для HR-дашборда) ──────────
+// ── Перезагрузка из облака для HR-дашборда ───────────────────
+// Правильно парсит логин из ao_p_* ключей и уважает progressResetAt
 function reloadFromCloud() {
   return fetch(BIN_URL, {
     cache: 'no-cache',
@@ -240,22 +253,34 @@ function reloadFromCloud() {
   .then(r => r.ok ? r.json() : null)
   .then(cloud => {
     if (!cloud) return;
+
+    // 1. Загружаем users из облака
+    let users = JSON.parse(localStorage.getItem('ao_users') || '{}');
     if (cloud.users && Object.keys(cloud.users).length > 0) {
-      // Нормализуем логины
       const norm = {};
       Object.entries(cloud.users).forEach(([l,u]) => { norm[l.toLowerCase()] = u; });
       localStorage.setItem('ao_users', JSON.stringify(norm));
+      users = norm; // используем свежие данные сразу
     }
-    // Восстанавливаем прогресс — с учётом progressResetAt
+
+    // 2. Сначала УДАЛЯЕМ из localStorage ao_p_* ключи пользователей со сбросом
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith('ao_p_')) continue;
+      const login = _loginFromKey(k);
+      const u = login ? users[login] : null;
+      if (u && u.progressResetAt) {
+        localStorage.removeItem(k);
+      }
+    }
+
+    // 3. Восстанавливаем progress из облака — пропускаем сброшенных
     if (cloud.progress && typeof cloud.progress === 'object') {
-      const users = JSON.parse(localStorage.getItem('ao_users') || '{}');
       Object.keys(cloud.progress).forEach(k => {
         if (!k.startsWith('ao_p_')) return;
-        const parts = k.slice(5).split('_');
-        const login = parts[0];
-        const u = users[login];
-        // Если у пользователя есть метка сброса — НЕ восстанавливаем
-        if (u && u.progressResetAt) return;
+        const login = _loginFromKey(k);
+        const u = login ? users[login] : null;
+        if (u && u.progressResetAt) return; // пропускаем
         localStorage.setItem(k, cloud.progress[k]);
       });
     }
@@ -306,7 +331,6 @@ function confirmReset() {
   if (!confirm('Сбросить весь твой прогресс? Это нельзя отменить.')) return;
   closeAcc();
   Auth.resetProgress();
-  // Ждём синк и перезагружаем страницу чтобы все данные точно обнулились
   setTimeout(() => window.location.reload(), 1500);
 }
 function confirmDeleteSelf() {
@@ -327,9 +351,6 @@ function renderHrDashboard() {
     const day = getDayOnPlatform(u);
     const dayCell = day ? `<span class="day-chip">📅 День ${day}</span>` : '<span style="color:#ccc;font-size:.8rem">—</span>';
     const earnedBadges = Game.getBadges(login);
-    const badgesHtml = earnedBadges.length
-      ? earnedBadges.map(b=>`<span title="${b.name}">${b.icon}</span>`).join('')
-      : '<span style="color:#ccc;font-size:.8rem">—</span>';
     return `<tr>
       <td><a href="${u.role}.html?view=${login}" style="color:#0a4d8c;font-weight:600;text-decoration:none">${u.fio}</a></td>
       <td>${ROLE_NAMES[u.role]||u.role}</td>
@@ -461,7 +482,6 @@ window.onload = function() {
   DB.ready.then(() => {
     updateUI();
     renderRoutes();
-    // Автообновление дашборда каждые 30 секунд (только для HR)
     if (Auth.isAdmin()) {
       setInterval(() => {
         reloadFromCloud().then(() => {

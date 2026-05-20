@@ -1,6 +1,6 @@
-// db.js — JSONBin bridge v9
-// v9: restoreProgress учитывает progressResetAt — не восстанавливает
-//     прогресс из облака если пользователь сбросил его после последней синхронизации
+// db.js — JSONBin bridge v10
+// v10: правильный парсинг логина из ao_p_* (логин может содержать '_')
+//      при сбросе прогресса — явно удаляем ao_p_* ключи из облака
 const DB = (() => {
   const BIN_ID  = '6a07317badc21f119aa526dd';
   const API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
@@ -8,6 +8,22 @@ const DB = (() => {
 
   let _syncing   = false;
   let _syncTimer = null;
+
+  // Известные префиксы ролей — по ним определяем где заканчивается логин в ключе
+  const ROLE_PREFIXES = ['producer_', 'sales_', 'marketing_'];
+
+  // Извлекаем логин из ключа вида ao_p_<login>_<role>_...
+  // Логин может содержать '_', поэтому ищем первое вхождение известного префикса роли
+  function _loginFromKey(key) {
+    if (!key.startsWith('ao_p_')) return null;
+    const body = key.slice(5); // убираем 'ao_p_'
+    for (const prefix of ROLE_PREFIXES) {
+      const idx = body.indexOf('_' + prefix);
+      if (idx !== -1) return body.slice(0, idx).toLowerCase();
+    }
+    // Фоллбэк — берём первый сегмент (для простых логинов без '_')
+    return body.split('_')[0].toLowerCase();
+  }
 
   function collectProgress() {
     const progress = {};
@@ -18,12 +34,11 @@ const DB = (() => {
     return progress;
   }
 
-  // v9: при merge облака уважаем progressResetAt
-  // Если пользователь сбросил прогресс — не восстанавливаем старые '1' из облака
+  // v10: при merge облака уважаем progressResetAt
+  // Используем _loginFromKey для надёжного парсинга логина
   function restoreProgress(cloudProgress, cloudUsers) {
     if (!cloudProgress || typeof cloudProgress !== 'object') return;
 
-    // Собираем resetAt по логинам из облачных users
     const resetMap = {};
     if (cloudUsers && typeof cloudUsers === 'object') {
       Object.entries(cloudUsers).forEach(([login, u]) => {
@@ -34,20 +49,11 @@ const DB = (() => {
     Object.keys(cloudProgress).forEach(k => {
       if (!k.startsWith('ao_p_')) return;
       const cloudVal = cloudProgress[k];
+      const login = _loginFromKey(k);
 
-      // Извлекаем логин из ключа ao_p_<login>_<task>
-      const parts = k.slice(5).split('_'); // убираем 'ao_p_'
-      const login = parts[0];
-      const resetAt = resetMap[login];
+      // Если есть метка сброса — пропускаем восстановление
+      if (login && resetMap[login]) return;
 
-      // Если есть метка сброса — пропускаем восстановление этого ключа
-      // (локальный сброс был после последней синхронизации с облаком)
-      if (resetAt) {
-        // Не восстанавливаем: пользователь явно сбросил прогресс
-        return;
-      }
-
-      // Стандартная логика: '1' из облака применяем если локально нет '1'
       const localVal = localStorage.getItem(k);
       if (cloudVal === '1' && localVal !== '1') {
         localStorage.setItem(k, cloudVal);
@@ -77,7 +83,6 @@ const DB = (() => {
       const normalizedUsers = normalizeUsers(cloud.users);
       localStorage.setItem('ao_users',   JSON.stringify(normalizedUsers));
       localStorage.setItem('ao_invites', JSON.stringify(cloud.invites || {}));
-      // Передаём users в restoreProgress чтобы учесть progressResetAt
       restoreProgress(cloud.progress || {}, normalizedUsers);
     }
     if (Array.isArray(cloud.quizzes)) {
@@ -93,10 +98,23 @@ const DB = (() => {
   const ready   = Promise.race([cloudFetch, timeout]);
 
   function _buildPayload() {
+    const users = JSON.parse(localStorage.getItem('ao_users') || '{}');
+    const rawProgress = collectProgress();
+
+    // v10: при сборке payload удаляем ao_p_* ключи сброшенных пользователей
+    // Если у пользователя стоит progressResetAt — его прогресс в облаке должен быть пустым
+    const progress = {};
+    Object.entries(rawProgress).forEach(([k, v]) => {
+      const login = _loginFromKey(k);
+      const u = login ? users[login] : null;
+      if (u && u.progressResetAt) return; // не включаем в payload
+      progress[k] = v;
+    });
+
     return {
-      users:    JSON.parse(localStorage.getItem('ao_users')   || '{}'),
+      users,
       invites:  JSON.parse(localStorage.getItem('ao_invites') || '{}'),
-      progress: collectProgress(),
+      progress,
       quizzes:  JSON.parse(localStorage.getItem('ao_quizzes') || '[]'),
       notes:    JSON.parse(localStorage.getItem('ao_notes')   || '{}')
     };
