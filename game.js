@@ -4,7 +4,7 @@
    streak (🔥 серия дней, Duolingo-style) · XP-счётчик анимация
    ============================================================ */
 
-// ── КОНФЕТТИ ─────────────────────────────────────────────
+// ── КОНФЕТТИ ─────────────────────────────────────────────────
 const Confetti = (() => {
   const COLORS = ['#1a7fd4','#27ae60','#f39c12','#e74c3c','#9b59b6','#00cec9'];
   let canvas, ctx, particles = [], raf;
@@ -66,7 +66,7 @@ const Confetti = (() => {
 })();
 
 
-// ── +XP ПОПАП ────────────────────────────────────────────
+// ── +XP ПОПАП ────────────────────────────────────────────────
 function showXpPopup(pts, x, y) {
   const el = document.createElement('div');
   el.className = 'xp-popup';
@@ -78,7 +78,7 @@ function showXpPopup(pts, x, y) {
 }
 
 
-// ── АНИМИРОВАННЫЙ XP-СЧЁТЧИК (Duolingo-style) ──────────────────
+// ── АНИМИРОВАННЫЙ XP-СЧЁТЧИК (Duolingo-style) ────────────────
 function animateCounter(el, from, to, suffix = '', duration = 700) {
   if (!el) return;
   const start = performance.now();
@@ -93,7 +93,7 @@ function animateCounter(el, from, to, suffix = '', duration = 700) {
 }
 
 
-// ── LEVEL-UP ЭКРАН ─────────────────────────────────────────────
+// ── LEVEL-UP ЭКРАН ───────────────────────────────────────────
 function showLevelUp(levelName, emoji) {
   const overlay = document.createElement('div');
   overlay.className = 'levelup-overlay';
@@ -113,33 +113,56 @@ function showLevelUp(levelName, emoji) {
 }
 
 
-// ── БЕЙДЖИ ─────────────────────────────────────────────────
+// ── БЕЙДЖИ ───────────────────────────────────────────────────
 const BADGES = [
-  { id:'first_step',  icon:'🚀', name:'Первый шаг',      desc:'Выполни первую задачу',           check:(xp,pct)=> xp >= 5  },
-  { id:'day1_hero',   icon:'⭐', name:'Герой первого дня', desc:'Набери 30+ XP',                  check:(xp,pct)=> xp >= 30 },
-  { id:'halfway',     icon:'🔥', name:'На полпути',       desc:'Пройди 50% маршрута',             check:(xp,pct)=> pct >= 50 },
-  { id:'advanced',    icon:'🚀', name:'Продвинутый',      desc:'Перейди на уровень Продвинутый',  check:(xp,pct)=> pct >= 20 },
-  { id:'almost_pro',  icon:'💎', name:'Почти профи',      desc:'Пройди 80% маршрута',             check:(xp,pct)=> pct >= 80 },
-  { id:'full_pro',    icon:'🏆', name:'Профи!',           desc:'Пройди маршрут на 100%',          check:(xp,pct)=> pct >= 100 }
+  { id:'first_step',  icon:'🚀', name:'Первый шаг',       desc:'Выполни первую задачу',            check:(xp,pct)=> xp >= 5   },
+  { id:'day1_hero',   icon:'⭐', name:'Герой первого дня', desc:'Набери 30+ XP',                   check:(xp,pct)=> xp >= 30  },
+  { id:'halfway',     icon:'🔥', name:'На полпути',        desc:'Пройди 50% маршрута',              check:(xp,pct)=> pct >= 50 },
+  { id:'advanced',    icon:'🚀', name:'Продвинутый',       desc:'Перейди на уровень Продвинутый',   check:(xp,pct)=> pct >= 24 },
+  { id:'almost_pro',  icon:'💎', name:'Почти профи',       desc:'Пройди 80% маршрута',              check:(xp,pct)=> pct >= 80 },
+  { id:'full_pro',    icon:'🏆', name:'Профи!',            desc:'Пройди маршрут на 100%',           check:(xp,pct)=> pct >= 100 }
 ];
 
-function getBadgeState() {
-  const raw = localStorage.getItem('ao_badges');
+// ── Хранение бейджей в облаке (через users[login].badges) ────
+function _getBadgeState(login) {
+  // Приоритет — данные из Auth (облако через DB)
+  if (typeof Auth !== 'undefined') {
+    const users = Auth.getUsers();
+    const userLogin = login || Auth.currentLogin();
+    if (users[userLogin] && users[userLogin].badges) {
+      return users[userLogin].badges; // { first_step: true, ... }
+    }
+  }
+  // Фоллбэк — localStorage (для обратной совместимости)
+  const raw = localStorage.getItem('ao_badges_' + (login || (typeof Auth !== 'undefined' ? Auth.currentLogin() : 'user')));
   return raw ? JSON.parse(raw) : {};
 }
-function saveBadgeState(state) {
-  localStorage.setItem('ao_badges', JSON.stringify(state));
+
+function _saveBadgeState(state, login) {
+  if (typeof Auth !== 'undefined') {
+    const users = Auth.getUsers();
+    const userLogin = login || Auth.currentLogin();
+    if (users[userLogin]) {
+      users[userLogin].badges = state;
+      Auth.saveUsers(users);
+      return;
+    }
+  }
+  // Фоллбэк
+  localStorage.setItem('ao_badges_' + (login || 'user'), JSON.stringify(state));
 }
 
 function checkBadges(xp, pct) {
-  const state = getBadgeState();
+  const state = _getBadgeState();
+  let changed = false;
   BADGES.forEach(b => {
     if (!state[b.id] && b.check(xp, pct)) {
-      state[b.id] = true;
-      saveBadgeState(state);
+      state[b.id] = { earned: true, earnedAt: Date.now() };
+      changed = true;
       showBadgeToast(b);
     }
   });
+  if (changed) _saveBadgeState(state);
 }
 
 function showBadgeToast(badge) {
@@ -152,18 +175,24 @@ function showBadgeToast(badge) {
   setTimeout(() => el.remove(), 3500);
 }
 
-function renderBadgesPanel(container) {
+// рендер панели бейджей (вызывается на index.html)
+function renderBadgesPanel(container, login) {
   if (!container) return;
-  const state = getBadgeState();
-  container.innerHTML = BADGES.map(b => `
-    <div class="badge-chip ${state[b.id] ? 'earned' : 'locked'}" title="${b.desc}">
+  const state = _getBadgeState(login);
+  container.innerHTML = BADGES.map(b => {
+    const earned = state[b.id] && state[b.id].earned;
+    const when = earned && state[b.id].earnedAt ? new Date(state[b.id].earnedAt).toLocaleDateString('ru-RU') : '';
+    return `
+    <div class="badge-chip ${earned ? 'earned' : 'locked'}" title="${b.desc}${when ? ' · ' + when : ''}">
       <span class="badge-chip-icon">${b.icon}</span>
       <span class="badge-chip-label">${b.name}</span>
-    </div>`).join('');
+      ${earned && when ? `<span class="badge-chip-date">${when}</span>` : ''}
+    </div>`;
+  }).join('');
 }
 
 
-// ── 🔥 STREAK (Duolingo-style) ─────────────────────────────────
+// ── 🔥 STREAK (Duolingo-style) ───────────────────────────────
 function _streakKey(type) {
   const login = (typeof Auth !== 'undefined' && Auth.currentLogin) ? Auth.currentLogin() : 'user';
   return 'ao_streak_' + type + '_' + login;
@@ -244,7 +273,7 @@ function renderStreakWidget(el) {
   const isEmpty = streak === 0;
   el.innerHTML = `
     <div class="streak-widget ${isEmpty ? 'streak-empty' : ''}" title="${isEmpty ? 'Зайди сегодня, чтобы начать серию!' : 'Ты заходишь ' + streak + ' ' + _streakDays(streak) + ' подряд!'}">
-      <span class="streak-fire">${isEmpty ? '🧡' : '🔥'}</span>
+      <span class="streak-fire">${isEmpty ? '🩶' : '🔥'}</span>
       <span class="streak-count">${isEmpty ? '0' : streak}</span>
     </div>`;
 }
@@ -300,7 +329,7 @@ function maybeShowWelcome(userName, roleName) {
 }
 
 
-// ── LEVEL-UP ТРЕКЕР (для страниц ролей) ────────────────────────
+// ── LEVEL-UP ТРЕКЕР ──────────────────────────────────────────
 let _lastLevel = null;
 function trackLevelUp(xp, maxXp) {
   const pct = Math.round(xp / (maxXp || 331) * 100);
@@ -320,19 +349,13 @@ function initLevelTracker(xp, maxXp) {
 
 // ─────────────────────────────────────────────────────────────
 // 🎮 ОБЪЕКТ Game — единая точка входа для страниц ролей
-// Вызывается при отметке чекбокса на страницах ролей
 // ─────────────────────────────────────────────────────────────
 const Game = {
   /**
    * Вызывать при отметке любой задачи
-   * @param {string} taskKey    — id задачи
-   * @param {number} xpEarned   — XP за эту задачу
-   * @param {number} totalXp    — текущий общий XP
-   * @param {number} maxXp      — максимальный XP маршрута
-   * @param {string} levelName  — название текущего уровня (e.g. '🌱 Новичок')
    */
   onTaskComplete(taskKey, xpEarned, totalXp, maxXp, levelName) {
-    // 1. +XP попап в месте клика
+    // 1. +XP попап
     const cb = document.getElementById(taskKey);
     if (cb) {
       const rect = cb.getBoundingClientRect();
@@ -341,12 +364,12 @@ const Game = {
       showXpPopup(xpEarned);
     }
 
-    // 2. Конфетти при первой задаче или крупных
+    // 2. Конфетти при первой задаче или крупных XP
     if (totalXp <= xpEarned || xpEarned >= 20) {
       Confetti.burst(window.innerWidth / 2, window.innerHeight / 3, 30);
     }
 
-    // 3. Проверка бейджей
+    // 3. Проверка бейджей (сохраняет в облако)
     const pct = Math.round(totalXp / maxXp * 100);
     checkBadges(totalXp, pct);
 
@@ -356,14 +379,35 @@ const Game = {
 
   /**
    * Вызывать при загрузке страницы роли (после loadChecks)
-   * @param {number} totalXp
-   * @param {number} maxXp
-   * @param {string} userName
-   * @param {string} roleName
    */
   onPageLoad(totalXp, maxXp, userName, roleName) {
     initLevelTracker(totalXp, maxXp);
     updateStreak();
     maybeShowWelcome(userName, roleName);
+  },
+
+  /**
+   * Получить список заработанных бейджей пользователя
+   * Используется в index.html для отображения в профиле
+   * @param {string} login — логин пользователя (или текущий)
+   * @returns {Array} массив объектов бейджей с полем earnedAt
+   */
+  getBadges(login) {
+    const state = _getBadgeState(login);
+    return BADGES
+      .filter(b => state[b.id] && state[b.id].earned)
+      .map(b => ({ ...b, earnedAt: state[b.id].earnedAt || null }));
+  },
+
+  /**
+   * Получить ВСЕ бейджи (заработанные и нет) — для панели достижений
+   */
+  getAllBadges(login) {
+    const state = _getBadgeState(login);
+    return BADGES.map(b => ({
+      ...b,
+      earned: !!(state[b.id] && state[b.id].earned),
+      earnedAt: state[b.id] ? state[b.id].earnedAt : null
+    }));
   }
 };

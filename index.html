@@ -35,6 +35,7 @@
     .role-card.locked .role-btn{background:#ccc;color:#888}
     .badges-section{margin:24px 0 8px}
     .badges-section-title{font-size:.85rem;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px}
+    .badge-chip-date{font-size:.7rem;color:#aaa;display:block;margin-top:2px}
     #dayCounterWrap{margin-bottom:12px}
     .admin-card-meta{font-size:.8rem;color:#1a7fd4;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:6px}
     .admin-card-meta .staff-count{background:#e8f3ff;border-radius:20px;padding:2px 9px;font-size:.78rem;color:#0a4d8c}
@@ -144,9 +145,7 @@ const ROLE_NAMES = {
   producer:'Продюсер', sales:'Менеджер по продажам', marketing:'Специалист по маркетингу',
   hr:'HR-менеджер', ceo:'Генеральный директор', exec_dir:'Исполнительный директор', ops_dir:'Операционный директор'
 };
-// TASK_XP синхронизирован с реальными чекбоксами на страницах маршрутов
 const TASK_XP = {
-  // producer: 9 задач L1=71, 9 задач L2=101, 7 задач L3=118 → итого 290
   producer_l1_p1:10,producer_l1_p2:10,producer_l1_p3:10,producer_l1_p4:10,
   producer_l1_m1:8,producer_l1_m2:8,
   producer_l1_s1:5,producer_l1_s2:5,producer_l1_s3:5,
@@ -156,7 +155,6 @@ const TASK_XP = {
   producer_l3_p1:25,producer_l3_p2:25,producer_l3_p3:25,producer_l3_p4:25,
   producer_l3_m1:8,
   producer_l3_s1:5,producer_l3_s2:5,
-  // sales: 9 задач L1=71, 9 задач L2=101, 7 задач L3=118 → итого 290
   sales_l1_p1:10,sales_l1_p2:10,sales_l1_p3:10,sales_l1_p4:10,
   sales_l1_m1:8,sales_l1_m2:8,
   sales_l1_s1:5,sales_l1_s2:5,sales_l1_s3:5,
@@ -166,7 +164,6 @@ const TASK_XP = {
   sales_l3_p1:25,sales_l3_p2:25,sales_l3_p3:25,sales_l3_p4:25,
   sales_l3_m1:8,
   sales_l3_s1:5,sales_l3_s2:5,
-  // marketing: 9 задач L1=71, 9 задач L2=101, 7 задач L3=118 → итого 290
   marketing_l1_p1:10,marketing_l1_p2:10,marketing_l1_p3:10,marketing_l1_p4:10,
   marketing_l1_m1:8,marketing_l1_m2:8,
   marketing_l1_s1:5,marketing_l1_s2:5,marketing_l1_s3:5,
@@ -177,10 +174,22 @@ const TASK_XP = {
   marketing_l3_m1:8,
   marketing_l3_s1:5,marketing_l3_s2:5
 };
-// MAX_XP = реальная сумма задач по каждому маршруту
 const MAX_XP = { producer:290, sales:290, marketing:290 };
-
 const EMPLOYEE_ROLES = ['producer','sales','marketing'];
+
+const FALLBACK_ROUTES = [
+  { role:'producer',  icon:'🎬', title:'Продюсер',                 subtitle:'Исследования, деловая программа, работа со спикерами', link:'producer.html',  order:1 },
+  { role:'sales',     icon:'📞', title:'Менеджер по продажам',     subtitle:'CRM, звонки, сделки, работа с клиентами',             link:'sales.html',     order:2 },
+  { role:'marketing', icon:'📣', title:'Специалист по маркетингу', subtitle:'Яндекс.Директ, контент-план, email, TG-канал',        link:'marketing.html', order:3 }
+];
+
+const TQ_BIN_ID  = '6a0c18b56877513b27974e7e';
+const TQ_API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
+const TQ_URL     = `https://api.jsonbin.io/v3/b/${TQ_BIN_ID}`;
+
+function esc(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
 function getXpLevel(xp, role) {
   const maxXp = MAX_XP[role] || 290;
@@ -252,7 +261,19 @@ function renderHrDashboard() {
     const p = calcProgress(login, u.role);
     const day = getDayOnPlatform(u);
     const dayCell = day ? `<span class="day-chip">📅 День ${day}</span>` : '<span style="color:#ccc;font-size:.8rem">—</span>';
-    return `<tr><td><a href="${u.role}.html?view=${login}" style="color:#0a4d8c;font-weight:600;text-decoration:none">${u.fio}</a></td><td>${ROLE_NAMES[u.role]||u.role}</td><td>${dayCell}</td><td>${getXpLevel(p.xp,u.role)}</td><td><div class="hr-pbar"><div class="hr-pfill" style="width:${p.pct}%"></div></div></td><td>${p.xp}/${p.maxXp} XP &middot; ${p.pct}%</td></tr>`;
+    // Бейджи сотрудника
+    const earnedBadges = Game.getBadges(login);
+    const badgesHtml = earnedBadges.length
+      ? earnedBadges.map(b=>`<span title="${b.name}">${b.icon}</span>`).join('')
+      : '<span style="color:#ccc;font-size:.8rem">—</span>';
+    return `<tr>
+      <td><a href="${u.role}.html?view=${login}" style="color:#0a4d8c;font-weight:600;text-decoration:none">${u.fio}</a></td>
+      <td>${ROLE_NAMES[u.role]||u.role}</td>
+      <td>${dayCell}</td>
+      <td>${getXpLevel(p.xp,u.role)}</td>
+      <td><div class="hr-pbar"><div class="hr-pfill" style="width:${p.pct}%"></div></div></td>
+      <td>${p.xp}/${p.maxXp} XP · ${p.pct}%</td>
+    </tr>`;
   }).join('');
 }
 
@@ -289,33 +310,12 @@ function renderDayCounter() {
     : `<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">📅 День адаптации: <strong>${days}</strong></div>`;
 }
 
-const TQ_BIN_ID  = '6a0c18b56877513b27974e7e';
-const TQ_API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
-const TQ_URL     = `https://api.jsonbin.io/v3/b/${TQ_BIN_ID}`;
-
-const FALLBACK_ROUTES = [
-  { role:'producer',  icon:'🎬', title:'Продюсер',               subtitle:'Исследования, деловая программа, работа со спикерами', link:'producer.html',  order:1 },
-  { role:'sales',     icon:'📞', title:'Менеджер по продажам',   subtitle:'CRM, звонки, сделки, работа с клиентами',             link:'sales.html',     order:2 },
-  { role:'marketing', icon:'📣', title:'Специалист по маркетингу', subtitle:'Яндекс.Директ, контент-план, email, TG-канал',        link:'marketing.html', order:3 }
-];
-
-function esc(str) {
-  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-async function renderRoutes() {
+// ── Рендер маршрутов: МГНОВЕННО из fallback, фоновый fetch обновляет если нужно ──
+function buildRouteCards(routes) {
   const grid = document.getElementById('rolesGrid');
   if (!grid) return;
-  let routes = FALLBACK_ROUTES;
-  try {
-    const r = await fetch(TQ_URL, { cache:'no-cache', headers:{'X-Master-Key':TQ_API_KEY,'X-Bin-Meta':'false'} });
-    const d = await r.json();
-    if (Array.isArray(d.routes) && d.routes.length) routes = d.routes;
-  } catch(e) {}
-
   const u = Auth.current(), myLogin = Auth.currentLogin(), isAdmin = Auth.isAdmin(), users = Auth.getUsers();
   grid.innerHTML = '';
-
   routes.sort((a,b)=>(Number(a.order)||999)-(Number(b.order)||999)).forEach(route => {
     const role = route.role || '';
     const isMyRole = u && u.role === role;
@@ -355,6 +355,42 @@ async function renderRoutes() {
   });
 }
 
+function renderRoutes() {
+  // 1. Рендерим сразу — без ожидания сети
+  buildRouteCards(FALLBACK_ROUTES);
+
+  // 2. Тихо подгружаем актуальные маршруты из JSONBin в фоне
+  fetch(TQ_URL, { cache:'no-cache', headers:{'X-Master-Key':TQ_API_KEY,'X-Bin-Meta':'false'} })
+    .then(r => r.json())
+    .then(d => {
+      if (Array.isArray(d.routes) && d.routes.length) {
+        buildRouteCards(d.routes); // обновляем, если маршруты отличаются
+      }
+    })
+    .catch(() => {}); // молча игнорируем ошибки сети
+}
+
+function renderBadges() {
+  const u = Auth.current();
+  if (!u || Auth.isAdmin()) { document.getElementById('badgesSection').style.display='none'; return; }
+  const myLogin = Auth.currentLogin();
+  const earned = Game.getBadges(myLogin);
+  const section = document.getElementById('badgesSection');
+  const panel   = document.getElementById('badgesPanel');
+  if (!earned.length) { section.style.display='none'; return; }
+  section.style.display = 'block';
+  // Показываем ВСЕ бейджи: заработанные яркие, остальные серые
+  const all = Game.getAllBadges(myLogin);
+  panel.innerHTML = all.map(b => {
+    const when = b.earnedAt ? new Date(b.earnedAt).toLocaleDateString('ru-RU') : '';
+    return `<div class="badge-chip ${b.earned ? 'earned' : 'locked'}" title="${b.desc}${when ? ' · получен '+when : ''}">
+      <span class="badge-chip-icon">${b.icon}</span>
+      <span class="badge-chip-label">${b.name}</span>
+      ${b.earned && when ? `<span class="badge-chip-date">${when}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
 function updateUI() {
   const u = Auth.current(); if (!u) return;
   document.getElementById('headerUser').textContent = u.fio.split(' ')[0];
@@ -362,18 +398,9 @@ function updateUI() {
   document.getElementById('welcomeSubtitle').textContent = Auth.isAdmin() ? 'Панель HR — управление адаптацией' : 'Добро пожаловать в систему адаптации';
   renderDayCounter();
   renderOverallProgress();
+  renderBadges();
   const hrDash = document.getElementById('hrDashboard');
   if (Auth.isAdmin()) { hrDash.style.display='block'; renderHrDashboard(); } else hrDash.style.display='none';
-  const badgesSection = document.getElementById('badgesSection');
-  const badgesPanel   = document.getElementById('badgesPanel');
-  if (!Auth.isAdmin() && typeof Game !== 'undefined' && Game.getBadges) {
-    const myLogin = Auth.currentLogin();
-    const badges = Game.getBadges(myLogin);
-    if (badges && badges.length) {
-      badgesSection.style.display='block';
-      badgesPanel.innerHTML = badges.map(b=>`<div class="badge-item" title="${b.desc||''}"><span class="badge-icon">${b.icon}</span><span class="badge-name">${b.name}</span></div>`).join('');
-    } else badgesSection.style.display='none';
-  } else badgesSection.style.display='none';
 }
 
 window.onload = function() {
