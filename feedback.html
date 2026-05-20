@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Обратная связь — Auditorium Onboard</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <script>if(!localStorage.getItem('ao_session'))location.replace('login.html');</script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .fb-wrap{max-width:760px;margin:0 auto;padding:28px 16px 48px}
+    .fb-wrap h1{color:#0a4d8c;font-size:1.45rem;margin:0 0 6px}
+    .fb-wrap .subtitle{color:#666;font-size:.92rem;margin:0 0 28px;line-height:1.55}
+    .fb-card{background:#fff;border-radius:18px;padding:28px 28px 24px;box-shadow:0 4px 20px rgba(0,0,0,.07);margin-bottom:28px}
+    .fb-card h2{color:#0a4d8c;font-size:1.05rem;margin:0 0 18px;border-bottom:2px solid #e8f0fe;padding-bottom:10px}
+    .fb-field{margin-bottom:16px}
+    .fb-field label{display:block;font-size:.83rem;font-weight:700;color:#555;margin-bottom:5px}
+    .fb-field input,.fb-field select,.fb-field textarea{width:100%;box-sizing:border-box;padding:11px 14px;border:2px solid #e8f0fe;border-radius:10px;font-size:.92rem;font-family:inherit;outline:none;transition:.15s}
+    .fb-field input:focus,.fb-field select:focus,.fb-field textarea:focus{border-color:#1a7fd4}
+    .fb-field textarea{resize:vertical;min-height:110px;line-height:1.6}
+    .fb-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    @media(max-width:540px){.fb-row{grid-template-columns:1fr}}
+    .fb-anon{display:flex;align-items:center;gap:9px;font-size:.88rem;color:#555;margin-bottom:20px;cursor:pointer;user-select:none}
+    .fb-anon input[type=checkbox]{width:17px;height:17px;accent-color:#1a7fd4;cursor:pointer;flex-shrink:0}
+    .fb-btn{background:linear-gradient(135deg,#0a4d8c,#1a7fd4);color:#fff;border:none;border-radius:12px;padding:13px 32px;font-size:.97rem;font-weight:700;cursor:pointer;transition:.15s;width:100%}
+    .fb-btn:hover{opacity:.88}
+    .fb-btn:disabled{opacity:.5;cursor:not-allowed}
+    .fb-msg{font-size:.87rem;text-align:center;min-height:20px;margin-top:12px;font-weight:600}
+    .fb-msg.ok{color:#27ae60} .fb-msg.err{color:#e74c3c}
+    .hr-panel-title{font-size:1.1rem;color:#0a4d8c;font-weight:800;margin:0 0 16px;display:flex;align-items:center;gap:8px}
+    .filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+    .filter-bar select{padding:7px 12px;border:2px solid #e8f0fe;border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;cursor:pointer}
+    .filter-bar label{font-size:.85rem;color:#555;font-weight:600}
+    .fb-stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+    .fb-stat{background:#f0f7ff;border-radius:10px;padding:8px 16px;font-size:.82rem;color:#0a4d8c;font-weight:600}
+    .fb-stat span{font-size:1.15rem;font-weight:800;display:block}
+    .fb-table{width:100%;border-collapse:collapse;font-size:.87rem}
+    .fb-table th{background:#0a4d8c;color:#fff;padding:9px 12px;text-align:left;font-weight:600}
+    .fb-table td{padding:9px 12px;border-bottom:1px solid #e8f0fe;vertical-align:middle}
+    .fb-table tr:hover td{background:#f5f9ff}
+    .empty-row td{color:#aaa;text-align:center;padding:24px}
+    .type-badge{display:inline-block;border-radius:12px;padding:2px 10px;font-size:.77rem;font-weight:700}
+    .type-question{background:#e0f2fe;color:#0369a1}
+    .type-problem{background:#fee2e2;color:#991b1b}
+    .type-idea{background:#fef9c3;color:#854d0e}
+    .type-other{background:#f0f4f8;color:#555}
+    .st-new{background:#e8f0fe;color:#1e40af}
+    .st-in_progress{background:#fff3cd;color:#854d0e}
+    .st-done{background:#d1fae5;color:#065f46}
+    .st-rejected{background:#f3f4f6;color:#9ca3af}
+    .anon-chip{background:#f3f4f6;color:#888;border-radius:10px;padding:2px 8px;font-size:.75rem;font-style:italic}
+    .fb-detail-btn{background:#f0f7ff;border:1px solid #c7d7f0;border-radius:7px;padding:4px 11px;font-size:.8rem;cursor:pointer;color:#0a4d8c;font-weight:600}
+    .status-sel{padding:4px 8px;border:1px solid #dde8f5;border-radius:7px;font-size:.82rem;font-family:inherit;cursor:pointer}
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:center;justify-content:center}
+    .modal-overlay.open{display:flex}
+    .modal-box{background:#fff;border-radius:18px;padding:28px;width:100%;max-width:520px;box-shadow:0 16px 48px rgba(0,0,0,.18);max-height:85vh;overflow-y:auto}
+    .modal-box h3{color:#0a4d8c;margin:0 0 14px;font-size:1.1rem}
+    .modal-meta{font-size:.83rem;color:#888;margin-bottom:14px;line-height:1.7}
+    .modal-meta strong{color:#333}
+    .modal-text{background:#f7faff;border-radius:10px;padding:14px 16px;font-size:.91rem;line-height:1.65;color:#222;white-space:pre-wrap;margin-bottom:14px}
+    .modal-close{background:#f5f5f5;border:none;border-radius:9px;padding:9px 22px;font-size:.9rem;font-weight:600;cursor:pointer;color:#555;width:100%}
+    .modal-close:hover{background:#e8e8e8}
+    .back-link{display:inline-flex;align-items:center;gap:6px;color:#1a7fd4;font-size:.88rem;font-weight:600;text-decoration:none;margin-bottom:20px}
+    .back-link:hover{text-decoration:underline}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo"><span class="logo-icon">🎓</span> Auditorium Onboard</div>
+    <div class="user-badge"><span id="headerUser">—</span></div>
+  </div>
+</header>
+
+<div class="modal-overlay" id="detailOverlay">
+  <div class="modal-box">
+    <h3 id="detailTitle">—</h3>
+    <div class="modal-meta" id="detailMeta"></div>
+    <div class="modal-text" id="detailText"></div>
+    <button class="modal-close" onclick="closeDetail()">✕ Закрыть</button>
+  </div>
+</div>
+
+<div class="fb-wrap">
+  <a href="index.html" class="back-link">← На главную</a>
+  <h1>💬 Обратная связь</h1>
+  <p class="subtitle">Задай вопрос, предложи идею или сообщи о проблеме. HR увидит твоё обращение и вернётся с ответом в ближайшее время.</p>
+
+  <div class="fb-card">
+    <h2>📝 Новое обращение</h2>
+    <div class="fb-row">
+      <div class="fb-field">
+        <label>Тип обращения</label>
+        <select id="fbType">
+          <option value="question">❓ Вопрос</option>
+          <option value="problem">⚠️ Проблема</option>
+          <option value="idea">💡 Идея / предложение</option>
+          <option value="other">📎 Другое</option>
+        </select>
+      </div>
+      <div class="fb-field">
+        <label>Тема (коротко)</label>
+        <input type="text" id="fbTitle" placeholder="Например: не понимаю задачу L2" maxlength="80">
+      </div>
+    </div>
+    <div class="fb-field">
+      <label>Сообщение</label>
+      <textarea id="fbText" placeholder="Опиши подробнее — что случилось, что непонятно или что хочется улучшить..."></textarea>
+    </div>
+    <label class="fb-anon">
+      <input type="checkbox" id="fbAnon">
+      Отправить анонимно (ХР увидит только роль и день адаптации, без имени)
+    </label>
+    <button class="fb-btn" id="fbSendBtn" onclick="sendFeedback()">📤 Отправить обращение</button>
+    <div class="fb-msg" id="fbMsg"></div>
+  </div>
+
+  <div id="hrPanel" style="display:none">
+    <div class="fb-card">
+      <div class="hr-panel-title">📋 Обращения сотрудников</div>
+      <div class="fb-stats" id="fbStats"></div>
+      <div class="filter-bar">
+        <label>Тип:</label>
+        <select id="filterType" onchange="renderTable()">
+          <option value="">Все</option>
+          <option value="question">❓ Вопрос</option>
+          <option value="problem">⚠️ Проблема</option>
+          <option value="idea">💡 Идея</option>
+          <option value="other">📎 Другое</option>
+        </select>
+        <label>Статус:</label>
+        <select id="filterStatus" onchange="renderTable()">
+          <option value="">Все</option>
+          <option value="new">🔵 Новое</option>
+          <option value="in_progress">🟡 В работе</option>
+          <option value="done">🟢 Решено</option>
+          <option value="rejected">⚫ Отклонено</option>
+        </select>
+      </div>
+      <table class="fb-table">
+        <thead>
+          <tr>
+            <th>Сотрудник</th>
+            <th>Тип</th>
+            <th>Тема</th>
+            <th>Дата</th>
+            <th>Статус</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="fbTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<footer><p>ООО «Аудиториум СиДжи» · Система геймификации адаптации · 2026</p></footer>
+
+<script src="db.js"></script>
+<script src="auth.js"></script>
+<script>
+const TQ_BIN_ID  = '6a0c18b56877513b27974e7e';
+const TQ_API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
+const TQ_URL     = `https://api.jsonbin.io/v3/b/${TQ_BIN_ID}`;
+
+const ROLE_NAMES = {
+  producer:'Продюсер', sales:'Менеджер по продажам', marketing:'Специалист по маркетингу',
+  hr:'HR-менеджер', ceo:'Генеральный директор',
+  exec_dir:'Исполнительный директор', ops_dir:'Операционный директор'
+};
+const TYPE_LABELS   = { question:'❓ Вопрос', problem:'⚠️ Проблема', idea:'💡 Идея', other:'📎 Другое' };
+const TYPE_CLS      = { question:'type-question', problem:'type-problem', idea:'type-idea', other:'type-other' };
+const STATUS_LABELS = { new:'🔵 Новое', in_progress:'🟡 В работе', done:'🟢 Решено', rejected:'⚫ Отклонено' };
+
+let tqData = { members:[], quizzes:[], feedback:[] };
+
+async function loadTQ() {
+  try {
+    const r = await fetch(TQ_URL, { cache:'no-cache', headers:{'X-Master-Key':TQ_API_KEY,'X-Bin-Meta':'false'} });
+    const d = await r.json();
+    tqData = {
+      members:  Array.isArray(d.members)  ? d.members  : [],
+      quizzes:  Array.isArray(d.quizzes)  ? d.quizzes  : [],
+      feedback: Array.isArray(d.feedback) ? d.feedback : [],
+      ...(d.routes ? { routes: d.routes } : {})
+    };
+  } catch(e) {}
+}
+
+async function saveTQ() {
+  await fetch(TQ_URL, {
+    method:'PUT',
+    headers:{'Content-Type':'application/json','X-Master-Key':TQ_API_KEY},
+    body: JSON.stringify(tqData)
+  });
+}
+
+function getDayOnPlatform() {
+  const u = Auth.current();
+  if (!u || !u.createdAt || u.createdAt < 1577836800000) return null;
+  return Math.max(1, Math.floor((Date.now() - u.createdAt) / 86400000) + 1);
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showMsg(text, isErr) {
+  const el = document.getElementById('fbMsg');
+  el.textContent = text;
+  el.className = 'fb-msg ' + (isErr ? 'err' : 'ok');
+  if (!isErr) setTimeout(() => el.textContent = '', 4500);
+}
+
+async function sendFeedback() {
+  const title = document.getElementById('fbTitle').value.trim();
+  const text  = document.getElementById('fbText').value.trim();
+  const type  = document.getElementById('fbType').value;
+  const anon  = document.getElementById('fbAnon').checked;
+
+  if (!title) { showMsg('Укажи тему обращения', true); return; }
+  if (!text)  { showMsg('Напиши текст сообщения', true); return; }
+
+  const u     = Auth.current();
+  const login = Auth.currentLogin();
+  const btn   = document.getElementById('fbSendBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Отправляем...';
+
+  const entry = {
+    id:        'fb_' + Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+    login:     anon ? null : login,
+    fio:       anon ? null : (u ? u.fio : null),
+    role:      u ? u.role : null,
+    type, title, text,
+    day:       getDayOnPlatform(),
+    anonymous: anon,
+    status:    'new',
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  };
+
+  try {
+    await loadTQ();
+    if (!Array.isArray(tqData.feedback)) tqData.feedback = [];
+    tqData.feedback.push(entry);
+    await saveTQ();
+    showMsg('✅ Обращение отправлено! HR скоро свяжется с тобой.');
+    document.getElementById('fbTitle').value  = '';
+    document.getElementById('fbText').value   = '';
+    document.getElementById('fbAnon').checked = false;
+    document.getElementById('fbType').value   = 'question';
+    if (Auth.isAdmin()) { renderStats(); renderTable(); }
+  } catch(e) {
+    showMsg('❌ Ошибка отправки. Попробуй ещё раз.', true);
+  }
+  btn.disabled = false;
+  btn.textContent = '📤 Отправить обращение';
+}
+
+/* ---- HR-панель ---- */
+function renderStats() {
+  const all = tqData.feedback || [];
+  document.getElementById('fbStats').innerHTML = [
+    `<div class="fb-stat"><span>${all.length}</span>всего</div>`,
+    `<div class="fb-stat"><span>${all.filter(f=>f.status==='new').length}</span>новых</div>`,
+    `<div class="fb-stat"><span>${all.filter(f=>f.status==='in_progress').length}</span>в работе</div>`,
+    `<div class="fb-stat"><span>${all.filter(f=>f.status==='done').length}</span>решено</div>`
+  ].join('');
+}
+
+function renderTable() {
+  const tf = document.getElementById('filterType').value;
+  const sf = document.getElementById('filterStatus').value;
+  const all = (tqData.feedback || [])
+    .filter(f => (!tf || f.type===tf) && (!sf || f.status===sf))
+    .sort((a,b) => b.createdAt - a.createdAt);
+
+  const tbody = document.getElementById('fbTableBody');
+  if (!all.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Обращений пока нет</td></tr>';
+    return;
+  }
+  tbody.innerHTML = all.map(f => {
+    const who = f.anonymous
+      ? `<span class="anon-chip">Аноним</span><br><small style="color:#aaa">${ROLE_NAMES[f.role]||f.role||'—'}</small>`
+      : `<strong>${esc(f.fio||f.login||'—')}</strong><br><small style="color:#888">${ROLE_NAMES[f.role]||f.role||'—'}${f.day?' · день '+f.day:''}</small>`;
+    const date = f.createdAt ? new Date(f.createdAt).toLocaleDateString('ru-RU') : '—';
+    const typeBadge = `<span class="type-badge ${TYPE_CLS[f.type]||'type-other'}">${TYPE_LABELS[f.type]||f.type}</span>`;
+    const statusSel = `<select class="status-sel" onchange="changeStatus('${f.id}',this.value)">
+      ${Object.entries(STATUS_LABELS).map(([v,l])=>`<option value="${v}"${f.status===v?' selected':''}>${l}</option>`).join('')}
+    </select>`;
+    return `<tr>
+      <td>${who}</td>
+      <td>${typeBadge}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(f.title)}">${esc(f.title)}</td>
+      <td style="white-space:nowrap;color:#888;font-size:.82rem">${date}</td>
+      <td>${statusSel}</td>
+      <td><button class="fb-detail-btn" onclick="openDetail('${f.id}')">Открыть →</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function changeStatus(id, newStatus) {
+  const idx = (tqData.feedback||[]).findIndex(f => f.id === id);
+  if (idx === -1) return;
+  tqData.feedback[idx].status = newStatus;
+  tqData.feedback[idx].updatedAt = Date.now();
+  try { await saveTQ(); renderStats(); } catch(e) {}
+}
+
+function openDetail(id) {
+  const f = (tqData.feedback||[]).find(f => f.id === id);
+  if (!f) return;
+  document.getElementById('detailTitle').textContent = (TYPE_LABELS[f.type]||'Обращение') + ': ' + f.title;
+  const date = f.createdAt ? new Date(f.createdAt).toLocaleString('ru-RU') : '—';
+  const who  = f.anonymous
+    ? `Аноним · ${ROLE_NAMES[f.role]||f.role||'—'}${f.day?' · день адаптации '+f.day:''}`
+    : `${f.fio||f.login||'—'} · ${ROLE_NAMES[f.role]||f.role||'—'}${f.day?' · день '+f.day:''}`;
+  document.getElementById('detailMeta').innerHTML =
+    `<strong>Сотрудник:</strong> ${esc(who)}<br>
+     <strong>Дата:</strong> ${date}<br>
+     <strong>Статус:</strong> ${STATUS_LABELS[f.status]||f.status}`;
+  document.getElementById('detailText').textContent = f.text;
+  document.getElementById('detailOverlay').classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detailOverlay').classList.remove('open');
+}
+
+window.onload = async function() {
+  if (!Auth.requireAuth()) return;
+  const u = Auth.current();
+  document.getElementById('headerUser').textContent = u ? u.fio.split(' ')[0] : '—';
+  await loadTQ();
+  if (Auth.isAdmin()) {
+    document.getElementById('hrPanel').style.display = 'block';
+    renderStats();
+    renderTable();
+  }
+};
+</script>
+</body>
+</html>
