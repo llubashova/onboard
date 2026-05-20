@@ -24,7 +24,13 @@
     .acc-divider{border:none;border-top:1px solid #eee;margin:14px 0}
     .acc-msg{font-size:.85rem;color:#27ae60;text-align:center;min-height:18px;margin-bottom:4px}
     .hr-dashboard{background:#f0f7ff;border-radius:16px;padding:20px 24px;margin-bottom:24px}
-    .hr-dashboard h3{color:#0a4d8c;margin:0 0 14px;font-size:1.05rem}
+    .hr-dashboard-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .hr-dashboard-header h3{color:#0a4d8c;margin:0;font-size:1.05rem}
+    .hr-refresh-btn{background:#e8f3ff;border:none;border-radius:10px;padding:6px 14px;font-size:.82rem;font-weight:700;color:#0a4d8c;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:5px}
+    .hr-refresh-btn:hover{background:#d0e8ff}
+    .hr-refresh-btn.spinning span{display:inline-block;animation:spin .6s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .hr-last-updated{font-size:.75rem;color:#aaa;margin-top:6px;text-align:right}
     .hr-table{width:100%;border-collapse:collapse;font-size:.88rem}
     .hr-table th{background:#0a4d8c;color:#fff;padding:8px 12px;text-align:left;font-weight:600}
     .hr-table td{padding:8px 12px;border-bottom:1px solid #dde8f5}
@@ -103,11 +109,17 @@
   </div>
 
   <div class="hr-dashboard" id="hrDashboard" style="display:none">
-    <h3>📊 Прогресс сотрудников</h3>
+    <div class="hr-dashboard-header">
+      <h3>📊 Прогресс сотрудников</h3>
+      <button class="hr-refresh-btn" id="hrRefreshBtn" onclick="refreshDashboard()">
+        <span>🔄</span> Обновить
+      </button>
+    </div>
     <table class="hr-table">
       <thead><tr><th>ФИО</th><th>Роль</th><th>День адаптации</th><th>Уровень</th><th>Прогресс</th><th>XP / %</th></tr></thead>
       <tbody id="hrTableBody"></tbody>
     </table>
+    <div class="hr-last-updated" id="hrLastUpdated"></div>
   </div>
 
   <div class="section-title">🗺️ Выбери маршрут</div>
@@ -183,6 +195,10 @@ const FALLBACK_ROUTES = [
   { role:'marketing', icon:'📣', title:'Специалист по маркетингу', subtitle:'Яндекс.Директ, контент-план, email, TG-канал',        link:'marketing.html', order:3 }
 ];
 
+const BIN_ID  = '6a07317badc21f119aa526dd';
+const API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
+const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
 const TQ_BIN_ID  = '6a0c18b56877513b27974e7e';
 const TQ_API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
 const TQ_URL     = `https://api.jsonbin.io/v3/b/${TQ_BIN_ID}`;
@@ -215,6 +231,52 @@ function getDayOnPlatform(userObj) {
   return Math.max(1, Math.floor((Date.now() - userObj.createdAt) / 86400000) + 1);
 }
 
+// ── Перезагрузка данных из облака (для HR-дашборда) ──────────
+function reloadFromCloud() {
+  return fetch(BIN_URL, {
+    cache: 'no-cache',
+    headers: { 'X-Master-Key': API_KEY, 'X-Bin-Meta': 'false' }
+  })
+  .then(r => r.ok ? r.json() : null)
+  .then(cloud => {
+    if (!cloud) return;
+    if (cloud.users && Object.keys(cloud.users).length > 0) {
+      // Нормализуем логины
+      const norm = {};
+      Object.entries(cloud.users).forEach(([l,u]) => { norm[l.toLowerCase()] = u; });
+      localStorage.setItem('ao_users', JSON.stringify(norm));
+    }
+    // Восстанавливаем прогресс — с учётом progressResetAt
+    if (cloud.progress && typeof cloud.progress === 'object') {
+      const users = JSON.parse(localStorage.getItem('ao_users') || '{}');
+      Object.keys(cloud.progress).forEach(k => {
+        if (!k.startsWith('ao_p_')) return;
+        const parts = k.slice(5).split('_');
+        const login = parts[0];
+        const u = users[login];
+        // Если у пользователя есть метка сброса — НЕ восстанавливаем
+        if (u && u.progressResetAt) return;
+        localStorage.setItem(k, cloud.progress[k]);
+      });
+    }
+  })
+  .catch(() => {});
+}
+
+function refreshDashboard() {
+  const btn = document.getElementById('hrRefreshBtn');
+  if (btn) btn.classList.add('spinning');
+  reloadFromCloud().then(() => {
+    renderHrDashboard();
+    renderOverallProgress();
+    if (btn) {
+      btn.classList.remove('spinning');
+      const upd = document.getElementById('hrLastUpdated');
+      if (upd) upd.textContent = 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
+    }
+  });
+}
+
 function openAcc() {
   const u = Auth.current(); if (!u) return;
   document.getElementById('accFio').value = u.fio;
@@ -242,7 +304,10 @@ document.getElementById('accSaveBtn').addEventListener('click', function() {
 
 function confirmReset() {
   if (!confirm('Сбросить весь твой прогресс? Это нельзя отменить.')) return;
-  Auth.resetProgress(); closeAcc(); updateUI();
+  closeAcc();
+  Auth.resetProgress();
+  // Ждём синк и перезагружаем страницу чтобы все данные точно обнулились
+  setTimeout(() => window.location.reload(), 1500);
 }
 function confirmDeleteSelf() {
   if (!confirm('Удалить свой аккаунт? Это нельзя отменить!')) return;
@@ -393,7 +458,21 @@ function updateUI() {
 
 window.onload = function() {
   if (!Auth.requireAuth()) return;
-  DB.ready.then(() => { updateUI(); renderRoutes(); });
+  DB.ready.then(() => {
+    updateUI();
+    renderRoutes();
+    // Автообновление дашборда каждые 30 секунд (только для HR)
+    if (Auth.isAdmin()) {
+      setInterval(() => {
+        reloadFromCloud().then(() => {
+          renderHrDashboard();
+          renderOverallProgress();
+          const upd = document.getElementById('hrLastUpdated');
+          if (upd) upd.textContent = 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
+        });
+      }, 30000);
+    }
+  });
 };
 </script>
 </body>
