@@ -4,7 +4,7 @@
    streak (🔥 серия дней, Duolingo-style) · XP-счётчик анимация
    ============================================================ */
 
-// ── КОНФЕТТИ ─────────────────────────────────────────────────
+// ── КОНФЕТТИ ─────────────────────────────────────────────
 const Confetti = (() => {
   const COLORS = ['#1a7fd4','#27ae60','#f39c12','#e74c3c','#9b59b6','#00cec9'];
   let canvas, ctx, particles = [], raf;
@@ -66,7 +66,7 @@ const Confetti = (() => {
 })();
 
 
-// ── +XP ПОПАП ────────────────────────────────────────────────
+// ── +XP ПОПАП ────────────────────────────────────────────
 function showXpPopup(pts, x, y) {
   const el = document.createElement('div');
   el.className = 'xp-popup';
@@ -78,21 +78,12 @@ function showXpPopup(pts, x, y) {
 }
 
 
-// ── АНИМИРОВАННЫЙ XP-СЧЁТЧИК (Duolingo-style) ────────────────
-/**
- * Плавно анимирует числовое значение в элементе.
- * @param {HTMLElement} el  — целевой элемент
- * @param {number} from     — начальное значение
- * @param {number} to       — конечное значение
- * @param {string} suffix   — суффикс (напр. '%' или ' XP')
- * @param {number} duration — длительность мс (по умолч. 700)
- */
+// ── АНИМИРОВАННЫЙ XP-СЧЁТЧИК (Duolingo-style) ──────────────────
 function animateCounter(el, from, to, suffix = '', duration = 700) {
   if (!el) return;
   const start = performance.now();
   function step(now) {
     const t = Math.min((now - start) / duration, 1);
-    // ease-out cubic
     const ease = 1 - Math.pow(1 - t, 3);
     const val = Math.round(from + (to - from) * ease);
     el.textContent = val + suffix;
@@ -102,7 +93,7 @@ function animateCounter(el, from, to, suffix = '', duration = 700) {
 }
 
 
-// ── LEVEL-UP ЭКРАН ───────────────────────────────────────────
+// ── LEVEL-UP ЭКРАН ─────────────────────────────────────────────
 function showLevelUp(levelName, emoji) {
   const overlay = document.createElement('div');
   overlay.className = 'levelup-overlay';
@@ -122,7 +113,7 @@ function showLevelUp(levelName, emoji) {
 }
 
 
-// ── БЕЙДЖИ ───────────────────────────────────────────────────
+// ── БЕЙДЖИ ─────────────────────────────────────────────────
 const BADGES = [
   { id:'first_step',  icon:'🚀', name:'Первый шаг',      desc:'Выполни первую задачу',           check:(xp,pct)=> xp >= 5  },
   { id:'day1_hero',   icon:'⭐', name:'Герой первого дня', desc:'Набери 30+ XP',                  check:(xp,pct)=> xp >= 30 },
@@ -161,7 +152,6 @@ function showBadgeToast(badge) {
   setTimeout(() => el.remove(), 3500);
 }
 
-// рендер панели бейджей (вызывается на index.html)
 function renderBadgesPanel(container) {
   if (!container) return;
   const state = getBadgeState();
@@ -173,18 +163,7 @@ function renderBadgesPanel(container) {
 }
 
 
-// ── 🔥 STREAK (СЕРИЯ ДНЕЙ, DUOLINGO-STYLE) ──────────────────
-/**
- * Streak хранит:
- *   ao_streak_count_{login}  — текущая серия (число)
- *   ao_streak_last_{login}   — дата последней активности (YYYY-MM-DD)
- *
- * Логика:
- *   - При вызове updateStreak() сравниваем сегодняшнюю дату с last_date.
- *   - Если сегодня === last_date → ничего не меняем (уже засчитано).
- *   - Если yesterday === last_date → streak++, last_date = today.
- *   - Иначе (пропуск) → streak сбрасывается до 1, last_date = today.
- */
+// ── 🔥 STREAK (Duolingo-style) ─────────────────────────────────
 function _streakKey(type) {
   const login = (typeof Auth !== 'undefined' && Auth.currentLogin) ? Auth.currentLogin() : 'user';
   return 'ao_streak_' + type + '_' + login;
@@ -203,12 +182,10 @@ function updateStreak() {
   let count = parseInt(localStorage.getItem(_streakKey('count')) || '0', 10);
 
   if (last === today) {
-    // Уже засчитан сегодня
     return count;
   } else if (last === yesterday) {
     count += 1;
   } else {
-    // Пропуск — сбрасываем
     count = 1;
     if (last && last !== yesterday) _showStreakBroken();
   }
@@ -223,7 +200,6 @@ function updateStreak() {
 function getStreak() {
   const last = localStorage.getItem(_streakKey('last'));
   const count = parseInt(localStorage.getItem(_streakKey('count')) || '0', 10);
-  // Если последняя активность не сегодня и не вчера — streak сгорел
   if (!last || (last !== _today() && last !== _yesterday())) return 0;
   return count;
 }
@@ -262,17 +238,13 @@ function _streakDays(n) {
   return 'дней';
 }
 
-/**
- * Рендерит виджет streak в контейнер.
- * @param {HTMLElement} el
- */
 function renderStreakWidget(el) {
   if (!el) return;
   const streak = getStreak();
   const isEmpty = streak === 0;
   el.innerHTML = `
     <div class="streak-widget ${isEmpty ? 'streak-empty' : ''}" title="${isEmpty ? 'Зайди сегодня, чтобы начать серию!' : 'Ты заходишь ' + streak + ' ' + _streakDays(streak) + ' подряд!'}">
-      <span class="streak-fire">${isEmpty ? '🩶' : '🔥'}</span>
+      <span class="streak-fire">${isEmpty ? '🧡' : '🔥'}</span>
       <span class="streak-count">${isEmpty ? '0' : streak}</span>
     </div>`;
 }
@@ -328,15 +300,70 @@ function maybeShowWelcome(userName, roleName) {
 }
 
 
-// ── LEVEL-UP ТРЕКЕР (для страниц ролей) ──────────────────────
+// ── LEVEL-UP ТРЕКЕР (для страниц ролей) ────────────────────────
 let _lastLevel = null;
-function trackLevelUp(xp) {
+function trackLevelUp(xp, maxXp) {
+  const pct = Math.round(xp / (maxXp || 331) * 100);
   let level, emoji;
-  if (xp >= 180 || xp / (window._MAX_XP || 331) >= 0.55) { level = 'Профи'; emoji = '🏆'; }
-  else if (xp >= 66 || xp / (window._MAX_XP || 331) >= 0.20) { level = 'Продвинутый'; emoji = '🚀'; }
-  else { level = 'Новичок'; emoji = '🌱'; }
+  if (pct >= 60)      { level = 'Профи'; emoji = '🏆'; }
+  else if (pct >= 24) { level = 'Продвинутый'; emoji = '🚀'; }
+  else                { level = 'Новичок'; emoji = '🌱'; }
 
   if (_lastLevel && _lastLevel !== level) showLevelUp(level, emoji);
   _lastLevel = level;
 }
-function initLevelTracker(xp) { _lastLevel = xp >= 180 ? 'Профи' : xp >= 66 ? 'Продвинутый' : 'Новичок'; }
+function initLevelTracker(xp, maxXp) {
+  const pct = Math.round(xp / (maxXp || 331) * 100);
+  _lastLevel = pct >= 60 ? 'Профи' : pct >= 24 ? 'Продвинутый' : 'Новичок';
+}
+
+
+// ─────────────────────────────────────────────────────────────
+// 🎮 ОБЪЕКТ Game — единая точка входа для страниц ролей
+// Вызывается при отметке чекбокса на страницах ролей
+// ─────────────────────────────────────────────────────────────
+const Game = {
+  /**
+   * Вызывать при отметке любой задачи
+   * @param {string} taskKey    — id задачи
+   * @param {number} xpEarned   — XP за эту задачу
+   * @param {number} totalXp    — текущий общий XP
+   * @param {number} maxXp      — максимальный XP маршрута
+   * @param {string} levelName  — название текущего уровня (e.g. '🌱 Новичок')
+   */
+  onTaskComplete(taskKey, xpEarned, totalXp, maxXp, levelName) {
+    // 1. +XP попап в месте клика
+    const cb = document.getElementById(taskKey);
+    if (cb) {
+      const rect = cb.getBoundingClientRect();
+      showXpPopup(xpEarned, rect.left + rect.width / 2, rect.top + window.scrollY);
+    } else {
+      showXpPopup(xpEarned);
+    }
+
+    // 2. Конфетти при первой задаче или крупных
+    if (totalXp <= xpEarned || xpEarned >= 20) {
+      Confetti.burst(window.innerWidth / 2, window.innerHeight / 3, 30);
+    }
+
+    // 3. Проверка бейджей
+    const pct = Math.round(totalXp / maxXp * 100);
+    checkBadges(totalXp, pct);
+
+    // 4. Level-up анимация
+    trackLevelUp(totalXp, maxXp);
+  },
+
+  /**
+   * Вызывать при загрузке страницы роли (после loadChecks)
+   * @param {number} totalXp
+   * @param {number} maxXp
+   * @param {string} userName
+   * @param {string} roleName
+   */
+  onPageLoad(totalXp, maxXp, userName, roleName) {
+    initLevelTracker(totalXp, maxXp);
+    updateStreak();
+    maybeShowWelcome(userName, roleName);
+  }
+};
