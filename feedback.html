@@ -44,10 +44,6 @@
     .type-problem{background:#fee2e2;color:#991b1b}
     .type-idea{background:#fef9c3;color:#854d0e}
     .type-other{background:#f0f4f8;color:#555}
-    .st-new{background:#e8f0fe;color:#1e40af}
-    .st-in_progress{background:#fff3cd;color:#854d0e}
-    .st-done{background:#d1fae5;color:#065f46}
-    .st-rejected{background:#f3f4f6;color:#9ca3af}
     .anon-chip{background:#f3f4f6;color:#888;border-radius:10px;padding:2px 8px;font-size:.75rem;font-style:italic}
     .fb-detail-btn{background:#f0f7ff;border:1px solid #c7d7f0;border-radius:7px;padding:4px 11px;font-size:.8rem;cursor:pointer;color:#0a4d8c;font-weight:600}
     .status-sel{padding:4px 8px;border:1px solid #dde8f5;border-radius:7px;font-size:.82rem;font-family:inherit;cursor:pointer}
@@ -110,7 +106,7 @@
     </div>
     <label class="fb-anon">
       <input type="checkbox" id="fbAnon">
-      Отправить анонимно (ХР увидит только роль и день адаптации, без имени)
+      Отправить анонимно (HR увидит только роль и день адаптации, без имени)
     </label>
     <button class="fb-btn" id="fbSendBtn" onclick="sendFeedback()">📤 Отправить обращение</button>
     <div class="fb-msg" id="fbMsg"></div>
@@ -330,16 +326,20 @@ function closeDetail() {
   document.getElementById('detailOverlay').classList.remove('open');
 }
 
-window.onload = async function() {
+/* ---- Инициализация через DB.ready — как на index.html ---- */
+window.onload = function() {
   if (!Auth.requireAuth()) return;
-  const u = Auth.current();
-  document.getElementById('headerUser').textContent = u ? u.fio.split(' ')[0] : '—';
-  await loadTQ();
-  if (Auth.isAdmin()) {
-    document.getElementById('hrPanel').style.display = 'block';
-    renderStats();
-    renderTable();
-  }
+  DB.ready.then(async function() {
+    const u = Auth.current();
+    if (!u) return;
+    document.getElementById('headerUser').textContent = u.fio.split(' ')[0];
+    await loadTQ();
+    if (Auth.isAdmin()) {
+      document.getElementById('hrPanel').style.display = 'block';
+      renderStats();
+      renderTable();
+    }
+  });
 };
 </script>
 </body>
