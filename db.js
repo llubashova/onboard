@@ -1,7 +1,6 @@
-// db.js — JSONBin bridge v8
-// v7: прогресс при restoreProgress мержится (merge), а не перетирается
-// v8: добавлен cache:'no-cache' во все fetch-запросы чтобы мобильные
-//     браузеры не показывали устаревшие данные из кэша
+// db.js — JSONBin bridge v9
+// v9: restoreProgress учитывает progressResetAt — не восстанавливает
+//     прогресс из облака если пользователь сбросил его после последней синхронизации
 const DB = (() => {
   const BIN_ID  = '6a07317badc21f119aa526dd';
   const API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
@@ -19,15 +18,40 @@ const DB = (() => {
     return progress;
   }
 
-  // v7: мержим облачный прогресс с локальным
-  // Правило: '1' побеждает '0' (выполненное задание не откатывается назад)
-  function restoreProgress(cloudProgress) {
+  // v9: при merge облака уважаем progressResetAt
+  // Если пользователь сбросил прогресс — не восстанавливаем старые '1' из облака
+  function restoreProgress(cloudProgress, cloudUsers) {
     if (!cloudProgress || typeof cloudProgress !== 'object') return;
+
+    // Собираем resetAt по логинам из облачных users
+    const resetMap = {};
+    if (cloudUsers && typeof cloudUsers === 'object') {
+      Object.entries(cloudUsers).forEach(([login, u]) => {
+        if (u && u.progressResetAt) resetMap[login.toLowerCase()] = u.progressResetAt;
+      });
+    }
+
     Object.keys(cloudProgress).forEach(k => {
       if (!k.startsWith('ao_p_')) return;
       const cloudVal = cloudProgress[k];
+
+      // Извлекаем логин из ключа ao_p_<login>_<task>
+      const parts = k.slice(5).split('_'); // убираем 'ao_p_'
+      const login = parts[0];
+      const resetAt = resetMap[login];
+
+      // Если есть метка сброса — пропускаем восстановление этого ключа
+      // (локальный сброс был после последней синхронизации с облаком)
+      if (resetAt) {
+        // Не восстанавливаем: пользователь явно сбросил прогресс
+        return;
+      }
+
+      // Стандартная логика: '1' из облака применяем если локально нет '1'
       const localVal = localStorage.getItem(k);
-      if (cloudVal === '1' || localVal !== '1') {
+      if (cloudVal === '1' && localVal !== '1') {
+        localStorage.setItem(k, cloudVal);
+      } else if (cloudVal !== '1') {
         localStorage.setItem(k, cloudVal);
       }
     });
@@ -42,7 +66,6 @@ const DB = (() => {
     return normalized;
   }
 
-  // v8: cache:'no-cache' — принудительно идём в сеть, игнорируем кэш браузера
   const cloudFetch = fetch(URL, {
     cache: 'no-cache',
     headers: { 'X-Master-Key': API_KEY, 'X-Bin-Meta': 'false' }
@@ -51,9 +74,11 @@ const DB = (() => {
   .then(cloud => {
     if (!cloud) return;
     if (cloud.users && Object.keys(cloud.users).length > 0) {
-      localStorage.setItem('ao_users',   JSON.stringify(normalizeUsers(cloud.users)));
+      const normalizedUsers = normalizeUsers(cloud.users);
+      localStorage.setItem('ao_users',   JSON.stringify(normalizedUsers));
       localStorage.setItem('ao_invites', JSON.stringify(cloud.invites || {}));
-      restoreProgress(cloud.progress || {});
+      // Передаём users в restoreProgress чтобы учесть progressResetAt
+      restoreProgress(cloud.progress || {}, normalizedUsers);
     }
     if (Array.isArray(cloud.quizzes)) {
       localStorage.setItem('ao_quizzes', JSON.stringify(cloud.quizzes));

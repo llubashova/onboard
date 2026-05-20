@@ -140,23 +140,40 @@ const Auth = {
 
   deleteSelf() {
     const login = this.currentLogin(); if (!login) return;
+    // Удаляем прогресс из localStorage
     const prefix = 'ao_p_' + login + '_';
     Object.keys(localStorage).filter(k => k.startsWith(prefix)).forEach(k => localStorage.removeItem(k));
+    // Удаляем пользователя (включая badges внутри объекта)
     const users = this.getUsers();
     delete users[login];
     this.saveUsers(users);
-    // Принудительная синхронизация с облаком — чтобы прогресс удалился и там
     if (typeof DB !== 'undefined' && DB.syncNow) DB.syncNow();
     localStorage.removeItem('ao_session');
     window.location.href = 'login.html';
   },
 
-  // Сброс прогресса текущего пользователя (самосброс)
+  // Сброс прогресса текущего пользователя
+  // Сбрасывает: чекбоксы (ao_p_*), бейджи, welcomed-флаг
   resetProgress() {
     const login = this.currentLogin(); if (!login) return;
+
+    // 1. Удаляем все чекбоксы из localStorage
     const prefix = 'ao_p_' + login + '_';
     Object.keys(localStorage).filter(k => k.startsWith(prefix)).forEach(k => localStorage.removeItem(k));
-    // Принудительная синхронизация — без неё HR увидит старые данные из облака
+
+    // 2. Сбрасываем бейджи внутри объекта пользователя
+    const users = this.getUsers();
+    if (users[login]) {
+      users[login].badges = {};
+      // Метка сброса — облако при следующем merge НЕ восстановит старый прогресс
+      users[login].progressResetAt = Date.now();
+      this.saveUsers(users); // сохраняем сразу
+    }
+
+    // 3. Сбрасываем welcomed-флаг (чтобы welcome-экран показался снова)
+    localStorage.removeItem('ao_welcomed_' + login);
+
+    // 4. Принудительная синхронизация с облаком — отправляем пустой прогресс
     if (typeof DB !== 'undefined' && DB.syncNow) {
       DB.syncNow();
     } else {
@@ -167,8 +184,20 @@ const Auth = {
   // Сброс прогресса конкретного пользователя (HR сбрасывает сотруднику)
   resetProgressForUser(targetLogin) {
     if (!this.isAdmin()) return;
+
+    // 1. Удаляем чекбоксы
     const prefix = 'ao_p_' + targetLogin + '_';
     Object.keys(localStorage).filter(k => k.startsWith(prefix)).forEach(k => localStorage.removeItem(k));
+
+    // 2. Сбрасываем бейджи и ставим метку сброса
+    const users = this.getUsers();
+    if (users[targetLogin]) {
+      users[targetLogin].badges = {};
+      users[targetLogin].progressResetAt = Date.now();
+      this.saveUsers(users);
+    }
+
+    // 3. Синхронизация
     if (typeof DB !== 'undefined' && DB.syncNow) {
       DB.syncNow();
     } else {
@@ -188,7 +217,6 @@ const Auth = {
   getCheckForUser(userLogin, key) {
     return localStorage.getItem('ao_p_' + userLogin + '_' + key) === '1';
   },
-  // Запись прогресса за конкретного пользователя (например, квизовый XP)
   setCheckForUser(userLogin, key, val) {
     if (!userLogin) return;
     localStorage.setItem('ao_p_' + userLogin + '_' + key, val ? '1' : String(val));
