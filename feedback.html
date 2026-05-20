@@ -106,7 +106,7 @@
     </div>
     <label class="fb-anon">
       <input type="checkbox" id="fbAnon">
-      Отправить анонимно (HR увидит только роль и день адаптации, без имени)
+      Отправить анонимно (хр не узнает, кто ты)
     </label>
     <button class="fb-btn" id="fbSendBtn" onclick="sendFeedback()">📤 Отправить обращение</button>
     <div class="fb-msg" id="fbMsg"></div>
@@ -224,13 +224,14 @@ async function sendFeedback() {
   btn.disabled = true;
   btn.textContent = '⏳ Отправляем...';
 
+  // Если анонимно — не сохраняем ничего, кроме текста и типа
   const entry = {
     id:        'fb_' + Date.now().toString(36) + Math.random().toString(36).slice(2,5),
     login:     anon ? null : login,
     fio:       anon ? null : (u ? u.fio : null),
-    role:      u ? u.role : null,
+    role:      anon ? null : (u ? u.role : null),
     type, title, text,
-    day:       getDayOnPlatform(),
+    day:       anon ? null : getDayOnPlatform(),
     anonymous: anon,
     status:    'new',
     createdAt: Date.now(),
@@ -279,8 +280,9 @@ function renderTable() {
     return;
   }
   tbody.innerHTML = all.map(f => {
+    // Аноним — только «Аноним», без любых подсказок
     const who = f.anonymous
-      ? `<span class="anon-chip">Аноним</span><br><small style="color:#aaa">${ROLE_NAMES[f.role]||f.role||'—'}</small>`
+      ? `<span class="anon-chip">🕵️ Аноним</span>`
       : `<strong>${esc(f.fio||f.login||'—')}</strong><br><small style="color:#888">${ROLE_NAMES[f.role]||f.role||'—'}${f.day?' · день '+f.day:''}</small>`;
     const date = f.createdAt ? new Date(f.createdAt).toLocaleDateString('ru-RU') : '—';
     const typeBadge = `<span class="type-badge ${TYPE_CLS[f.type]||'type-other'}">${TYPE_LABELS[f.type]||f.type}</span>`;
@@ -311,9 +313,8 @@ function openDetail(id) {
   if (!f) return;
   document.getElementById('detailTitle').textContent = (TYPE_LABELS[f.type]||'Обращение') + ': ' + f.title;
   const date = f.createdAt ? new Date(f.createdAt).toLocaleString('ru-RU') : '—';
-  const who  = f.anonymous
-    ? `Аноним · ${ROLE_NAMES[f.role]||f.role||'—'}${f.day?' · день адаптации '+f.day:''}`
-    : `${f.fio||f.login||'—'} · ${ROLE_NAMES[f.role]||f.role||'—'}${f.day?' · день '+f.day:''}`;
+  // Аноним — ни имени, ни роли, ни дня
+  const who = f.anonymous ? 'Аноним' : `${f.fio||f.login||'—'} · ${ROLE_NAMES[f.role]||f.role||'—'}${f.day?' · день '+f.day:''}`;
   document.getElementById('detailMeta').innerHTML =
     `<strong>Сотрудник:</strong> ${esc(who)}<br>
      <strong>Дата:</strong> ${date}<br>
@@ -326,7 +327,6 @@ function closeDetail() {
   document.getElementById('detailOverlay').classList.remove('open');
 }
 
-/* ---- Инициализация через DB.ready — как на index.html ---- */
 window.onload = function() {
   if (!Auth.requireAuth()) return;
   DB.ready.then(async function() {
