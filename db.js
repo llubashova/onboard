@@ -1,4 +1,5 @@
-// db.js — JSONBin bridge v11
+// db.js — JSONBin bridge v12
+// v12: timeout снижен до 1500мс — окно «Подключение» больше не висит
 // v11: fix reset — активно удаляем ao_p_* из localStorage если progressResetAt есть в облаке
 const DB = (() => {
   const BIN_ID  = '6a07317badc21f119aa526dd';
@@ -29,12 +30,9 @@ const DB = (() => {
     return progress;
   }
 
-  // v11: если у пользователя есть progressResetAt — активно чистим его ключи из localStorage
-  // и не восстанавливаем их из облака
   function restoreProgress(cloudProgress, cloudUsers) {
     if (!cloudProgress || typeof cloudProgress !== 'object') return;
 
-    // Собираем resetMap: login → timestamp сброса
     const resetMap = {};
     if (cloudUsers && typeof cloudUsers === 'object') {
       Object.entries(cloudUsers).forEach(([login, u]) => {
@@ -42,7 +40,7 @@ const DB = (() => {
       });
     }
 
-    // 1. Активно удаляем все ключи сброшенных пользователей из localStorage
+    // 1. Активно удаляем ao_p_* сброшенных из localStorage
     if (Object.keys(resetMap).length > 0) {
       const keysToDelete = [];
       for (let i = 0; i < localStorage.length; i++) {
@@ -58,7 +56,7 @@ const DB = (() => {
     Object.keys(cloudProgress).forEach(k => {
       if (!k.startsWith('ao_p_')) return;
       const login = _loginFromKey(k);
-      if (login && resetMap[login]) return; // сброшен — не восстанавливаем
+      if (login && resetMap[login]) return;
       const cloudVal = cloudProgress[k];
       const localVal = localStorage.getItem(k);
       if (cloudVal === '1' && localVal !== '1') {
@@ -100,14 +98,14 @@ const DB = (() => {
   })
   .catch(() => {});
 
-  const timeout = new Promise(resolve => setTimeout(resolve, 4000));
+  // v12: снижаем с 4000 до 1500мс — если JSONBin медленный отвечает, просто работаем с локальным
+  const timeout = new Promise(resolve => setTimeout(resolve, 1500));
   const ready   = Promise.race([cloudFetch, timeout]);
 
   function _buildPayload() {
     const users = JSON.parse(localStorage.getItem('ao_users') || '{}');
     const rawProgress = collectProgress();
 
-    // Если progressResetAt есть — не включаем прогресс в payload
     const progress = {};
     Object.entries(rawProgress).forEach(([k, v]) => {
       const login = _loginFromKey(k);
