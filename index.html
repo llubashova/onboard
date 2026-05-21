@@ -305,12 +305,31 @@ function getDayOnPlatform(userObj){
 async function renderCustomRouteBanner(){
   const banner=document.getElementById('customRouteBanner');
   if(!banner) return;
-  if(Auth.isAdmin()){banner.style.display='none';return;}
+
+  // Для администраторов — скрыть баннер, но загрузить кастомные маршруты для дашборда
+  if(Auth.isAdmin()){
+    banner.style.display='none';
+    try{
+      const resp=await fetch(TQ_URL,{cache:'no-cache',headers:{'X-Master-Key':TQ_API_KEY,'X-Bin-Meta':'false'}});
+      const d=await resp.json();
+      _cachedCustomRoutes=Array.isArray(d.customRoutes)?d.customRoutes:[];
+    }catch(e){}
+    renderHrDashboard();
+    return;
+  }
+
   const login=Auth.currentLogin();
   const users=Auth.getUsers();
   const me=users[login];
-  if(!me||!me.customRouteId){banner.style.display='none';return;}
 
+  // Если у сотрудника нет инд. маршрута — рисуем прогресс сразу и уходим
+  if(!me||!me.customRouteId){
+    banner.style.display='none';
+    renderOverallProgress();
+    return;
+  }
+
+  // Есть инд. маршрут — сначала грузим данные, потом считаем всё вместе
   try{
     const resp=await fetch(TQ_URL,{cache:'no-cache',headers:{'X-Master-Key':TQ_API_KEY,'X-Bin-Meta':'false'}});
     const d=await resp.json();
@@ -318,7 +337,11 @@ async function renderCustomRouteBanner(){
   }catch(e){}
 
   const route=_cachedCustomRoutes.find(r=>r.id===me.customRouteId)||null;
-  if(!route){banner.style.display='none';return;}
+  if(!route){
+    banner.style.display='none';
+    renderOverallProgress();
+    return;
+  }
 
   const p=calcCRProgress(route.id,route.levels);
   document.getElementById('crbIcon').textContent  = route.icon||'🎯';
@@ -328,6 +351,8 @@ async function renderCustomRouteBanner(){
   document.getElementById('crbFill').style.width  = p.pct+'%';
   document.getElementById('crbBarLabel').textContent=`${p.done} из ${p.total} задач`;
   banner.style.display='block';
+
+  // Теперь _cachedCustomRoutes заполнен — считаем правильный общий прогресс
   renderOverallProgress();
 }
 
@@ -422,10 +447,8 @@ function renderHrDashboard(){
     return;
   }
   tbody.innerHTML=employees.sort((a,b)=>a[1].fio.localeCompare(b[1].fio)).map(([login,u])=>{
-    // ── Основной маршрут ──
     const base=calcProgress(login,u.role);
     const basePct=base.pct;
-    // ── Индивидуальный маршрут ──
     let crHtml='<span class="cr-none">не назначен</span>';
     let crXpHtml='<span class="cr-none">—</span>';
     if(u.customRouteId&&_cachedCustomRoutes.length){
@@ -440,7 +463,6 @@ function renderHrDashboard(){
         crXpHtml=`${crp.xpEarned}/${crp.xpTotal} XP`;
       }
     }
-    // ── Суммарный уровень ──
     let totalXp=base.xp, totalMax=base.maxXp;
     if(u.customRouteId&&_cachedCustomRoutes.length){
       const cr=_cachedCustomRoutes.find(r=>r.id===u.customRouteId);
@@ -480,6 +502,7 @@ function renderOverallProgress(){
   }else if(u&&MAX_XP[u.role]){
     const base=calcProgress(myLogin,u.role);
     let totalXp=base.xp,totalMax=base.maxXp;
+    // _cachedCustomRoutes гарантированно заполнен к моменту вызова (после await в renderCustomRouteBanner)
     if(_cachedCustomRoutes.length){
       const users=Auth.getUsers();
       const me=users[myLogin];
@@ -590,10 +613,13 @@ function updateUI(){
   document.getElementById('welcomeTitle').textContent='Привет, '+u.fio.split(' ')[0]+'! 👋';
   document.getElementById('welcomeSubtitle').textContent=Auth.isAdmin()?'Панель HR — управление адаптацией':'Добро пожаловать в систему адаптации';
   renderDayCounter();
-  renderOverallProgress();
+  // renderOverallProgress() НЕ вызываем здесь для сотрудников с инд. маршрутом —
+  // он будет вызван из renderCustomRouteBanner() после загрузки данных.
+  // Для админов — можно сразу, т.к. им инд. маршрут не нужен.
+  if(Auth.isAdmin()) renderOverallProgress();
   renderBadges();
   const hrDash=document.getElementById('hrDashboard');
-  if(Auth.isAdmin()){hrDash.style.display='block';renderHrDashboard();}else hrDash.style.display='none';
+  if(Auth.isAdmin()){hrDash.style.display='block';}else hrDash.style.display='none';
 }
 
 window.onload=function(){
@@ -601,6 +627,7 @@ window.onload=function(){
   DB.ready.then(()=>{
     updateUI();
     renderRoutes();
+    // renderCustomRouteBanner всегда вызывается и всегда завершает вызовом renderOverallProgress
     renderCustomRouteBanner();
     if(Auth.isAdmin()){
       setInterval(()=>{
