@@ -31,12 +31,15 @@
     .hr-refresh-btn.spinning span{display:inline-block;animation:spin .6s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
     .hr-last-updated{font-size:.75rem;color:#aaa;margin-top:6px;text-align:right}
-    .hr-table{width:100%;border-collapse:collapse;font-size:.88rem}
-    .hr-table th{background:#0a4d8c;color:#fff;padding:8px 12px;text-align:left;font-weight:600}
-    .hr-table td{padding:8px 12px;border-bottom:1px solid #dde8f5}
+    .hr-table{width:100%;border-collapse:collapse;font-size:.85rem}
+    .hr-table th{background:#0a4d8c;color:#fff;padding:8px 10px;text-align:left;font-weight:600;white-space:nowrap}
+    .hr-table td{padding:8px 10px;border-bottom:1px solid #dde8f5;vertical-align:middle}
     .hr-table tr:hover td{background:#e8f3ff}
-    .hr-pbar{height:8px;background:#dde8f5;border-radius:4px;overflow:hidden;min-width:80px}
+    .hr-pbar{height:7px;background:#dde8f5;border-radius:4px;overflow:hidden;min-width:60px}
     .hr-pfill{height:100%;background:linear-gradient(90deg,#1a7fd4,#27ae60);border-radius:4px;transition:.3s}
+    .hr-pfill.cr{background:linear-gradient(90deg,#9b59b6,#e74c3c)}
+    .cr-badge-cell{font-size:.8rem;color:#555;white-space:nowrap}
+    .cr-none{color:#ccc;font-size:.78rem;font-style:italic}
     .role-card.locked{opacity:.55;pointer-events:none;cursor:not-allowed}
     .role-card.locked .role-btn{background:#ccc;color:#888}
     .badges-section{margin:24px 0 8px}
@@ -147,10 +150,21 @@
         <span>🔄</span> Обновить
       </button>
     </div>
-    <table class="hr-table">
-      <thead><tr><th>ФИО</th><th>Роль</th><th>День адаптации</th><th>Уровень</th><th>Прогресс</th><th>XP / %</th></tr></thead>
-      <tbody id="hrTableBody"></tbody>
-    </table>
+    <div style="overflow-x:auto">
+      <table class="hr-table">
+        <thead><tr>
+          <th>ФИО</th>
+          <th>Роль</th>
+          <th>День</th>
+          <th>Уровень</th>
+          <th>Осн. маршрут</th>
+          <th>XP осн.</th>
+          <th>Инд. маршрут</th>
+          <th>XP инд.</th>
+        </tr></thead>
+        <tbody id="hrTableBody"></tbody>
+      </table>
+    </div>
     <div class="hr-last-updated" id="hrLastUpdated"></div>
   </div>
 
@@ -236,285 +250,299 @@ const TQ_BIN_ID  = '6a0c18b56877513b27974e7e';
 const TQ_API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
 const TQ_URL     = `https://api.jsonbin.io/v3/b/${TQ_BIN_ID}`;
 
-// Кеш кастомных маршрутов для renderOverallProgress
 let _cachedCustomRoutes = [];
 
-function esc(str) {
+function esc(str){
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function _loginFromKey(key) {
-  if (!key.startsWith('ao_p_')) return null;
-  const body = key.slice(5);
-  for (const prefix of ROLE_PREFIXES) {
-    const idx = body.indexOf('_' + prefix);
-    if (idx !== -1) return body.slice(0, idx).toLowerCase();
+function _loginFromKey(key){
+  if(!key.startsWith('ao_p_')) return null;
+  const body=key.slice(5);
+  for(const prefix of ROLE_PREFIXES){
+    const idx=body.indexOf('_'+prefix);
+    if(idx!==-1) return body.slice(0,idx).toLowerCase();
   }
   return body.split('_')[0].toLowerCase();
 }
 
-function getXpLevel(xp, role) {
-  const maxXp = MAX_XP[role] || 290;
-  const pct = maxXp ? xp / maxXp * 100 : 0;
-  if (pct >= 60) return '🏆 Профи';
-  if (pct >= 25) return '🚀 Продвинутый';
+function getXpLevel(xp,maxXp){
+  const pct=maxXp?Math.round(xp/maxXp*100):0;
+  if(pct>=60) return '🏆 Профи';
+  if(pct>=24) return '🚀 Продвинутый';
   return '🌱 Новичок';
 }
 
-function calcProgress(userLogin, role) {
-  const prefix = role + '_';
-  const keys = Object.keys(TASK_XP).filter(k => k.startsWith(prefix));
-  if (!keys.length) return { xp:0, maxXp:0, pct:0 };
-  let xp = 0;
-  keys.forEach(k => { if (Auth.getCheckForUser(userLogin, k)) xp += TASK_XP[k]; });
-  const maxXp = MAX_XP[role] || keys.reduce((s,k) => s + TASK_XP[k], 0);
-  return { xp, maxXp, pct: Math.round(xp / maxXp * 100) };
+function calcProgress(userLogin,role){
+  const prefix=role+'_';
+  const keys=Object.keys(TASK_XP).filter(k=>k.startsWith(prefix));
+  if(!keys.length) return{xp:0,maxXp:0,pct:0};
+  let xp=0;
+  keys.forEach(k=>{if(Auth.getCheckForUser(userLogin,k)) xp+=TASK_XP[k];});
+  const maxXp=MAX_XP[role]||keys.reduce((s,k)=>s+TASK_XP[k],0);
+  return{xp,maxXp,pct:Math.round(xp/maxXp*100)};
 }
 
-function crKey(routeId, li, ti) { return `ao_cr_${routeId}_${li}_${ti}`; }
+function crKey(routeId,li,ti){return `ao_cr_${routeId}_${li}_${ti}`;}
 
-function calcCRProgress(routeId, levels) {
-  let done = 0, total = 0, xpEarned = 0, xpTotal = 0;
-  (levels||[]).forEach((lv, li) => {
-    (lv.tasks||[]).forEach((_t, ti) => {
-      total++; xpTotal += (_t.xp||0);
-      if (localStorage.getItem(crKey(routeId, li, ti)) === '1') { done++; xpEarned += (_t.xp||0); }
+function calcCRProgress(routeId,levels){
+  let done=0,total=0,xpEarned=0,xpTotal=0;
+  (levels||[]).forEach((lv,li)=>{
+    (lv.tasks||[]).forEach((_t,ti)=>{
+      total++;xpTotal+=(_t.xp||0);
+      if(localStorage.getItem(crKey(routeId,li,ti))==='1'){done++;xpEarned+=(_t.xp||0);}
     });
   });
-  return { done, total, xpEarned, xpTotal, pct: total ? Math.round(done/total*100) : 0 };
+  return{done,total,xpEarned,xpTotal,pct:total?Math.round(done/total*100):0};
 }
 
-function getDayOnPlatform(userObj) {
-  const MIN = 1577836800000;
-  if (!userObj || !userObj.createdAt || userObj.createdAt < MIN) return null;
-  return Math.max(1, Math.floor((Date.now() - userObj.createdAt) / 86400000) + 1);
+function getDayOnPlatform(userObj){
+  const MIN=1577836800000;
+  if(!userObj||!userObj.createdAt||userObj.createdAt<MIN) return null;
+  return Math.max(1,Math.floor((Date.now()-userObj.createdAt)/86400000)+1);
 }
 
-async function renderCustomRouteBanner() {
-  const banner = document.getElementById('customRouteBanner');
-  if (!banner) return;
-  if (Auth.isAdmin()) { banner.style.display='none'; return; }
-  const login = Auth.currentLogin();
-  const users = Auth.getUsers();
-  const me = users[login];
-  if (!me || !me.customRouteId) { banner.style.display='none'; return; }
+async function renderCustomRouteBanner(){
+  const banner=document.getElementById('customRouteBanner');
+  if(!banner) return;
+  if(Auth.isAdmin()){banner.style.display='none';return;}
+  const login=Auth.currentLogin();
+  const users=Auth.getUsers();
+  const me=users[login];
+  if(!me||!me.customRouteId){banner.style.display='none';return;}
 
-  let route = null;
-  try {
-    const resp = await fetch(TQ_URL, { cache:'no-cache', headers:{'X-Master-Key':TQ_API_KEY,'X-Bin-Meta':'false'} });
-    const d = await resp.json();
-    _cachedCustomRoutes = Array.isArray(d.customRoutes) ? d.customRoutes : [];
-    route = _cachedCustomRoutes.find(r => r.id === me.customRouteId) || null;
-  } catch(e) {}
+  try{
+    const resp=await fetch(TQ_URL,{cache:'no-cache',headers:{'X-Master-Key':TQ_API_KEY,'X-Bin-Meta':'false'}});
+    const d=await resp.json();
+    _cachedCustomRoutes=Array.isArray(d.customRoutes)?d.customRoutes:[];
+  }catch(e){}
 
-  if (!route) { banner.style.display='none'; return; }
+  const route=_cachedCustomRoutes.find(r=>r.id===me.customRouteId)||null;
+  if(!route){banner.style.display='none';return;}
 
-  const p = calcCRProgress(route.id, route.levels);
-  document.getElementById('crbIcon').textContent  = route.icon || '🎯';
+  const p=calcCRProgress(route.id,route.levels);
+  document.getElementById('crbIcon').textContent  = route.icon||'🎯';
   document.getElementById('crbTitle').textContent = route.title;
-  document.getElementById('crbSub').textContent   = route.subtitle || 'Персональный план адаптации';
-  document.getElementById('crbPct').textContent   = p.pct + '%';
-  document.getElementById('crbFill').style.width  = p.pct + '%';
-  document.getElementById('crbBarLabel').textContent = `${p.done} из ${p.total} задач`;
-  banner.style.display = 'block';
-
-  // После загрузки кастомных маршрутов пересчитываем общий прогресс
+  document.getElementById('crbSub').textContent   = route.subtitle||'Персональный план адаптации';
+  document.getElementById('crbPct').textContent   = p.pct+'%';
+  document.getElementById('crbFill').style.width  = p.pct+'%';
+  document.getElementById('crbBarLabel').textContent=`${p.done} из ${p.total} задач`;
+  banner.style.display='block';
   renderOverallProgress();
 }
 
-function reloadFromCloud() {
-  return fetch(BIN_URL, {
-    cache: 'no-cache',
-    headers: { 'X-Master-Key': API_KEY, 'X-Bin-Meta': 'false' }
-  })
-  .then(r => r.ok ? r.json() : null)
-  .then(cloud => {
-    if (!cloud) return;
-    let users = JSON.parse(localStorage.getItem('ao_users') || '{}');
-    if (cloud.users && Object.keys(cloud.users).length > 0) {
-      const norm = {};
-      Object.entries(cloud.users).forEach(([l,u]) => { norm[l.toLowerCase()] = u; });
-      localStorage.setItem('ao_users', JSON.stringify(norm));
-      users = norm;
-    }
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const k = localStorage.key(i);
-      if (!k || !k.startsWith('ao_p_')) continue;
-      const login = _loginFromKey(k);
-      const u = login ? users[login] : null;
-      if (u && u.progressResetAt) localStorage.removeItem(k);
-    }
-    if (cloud.progress && typeof cloud.progress === 'object') {
-      Object.keys(cloud.progress).forEach(k => {
-        if (!k.startsWith('ao_p_')) return;
-        const login = _loginFromKey(k);
-        const u = login ? users[login] : null;
-        if (u && u.progressResetAt) return;
-        localStorage.setItem(k, cloud.progress[k]);
-      });
-    }
-  })
-  .catch(() => {});
+function reloadFromCloud(){
+  return fetch(BIN_URL,{cache:'no-cache',headers:{'X-Master-Key':API_KEY,'X-Bin-Meta':'false'}})
+    .then(r=>r.ok?r.json():null)
+    .then(cloud=>{
+      if(!cloud) return;
+      let users=JSON.parse(localStorage.getItem('ao_users')||'{}');
+      if(cloud.users&&Object.keys(cloud.users).length>0){
+        const norm={};
+        Object.entries(cloud.users).forEach(([l,u])=>{norm[l.toLowerCase()]=u;});
+        localStorage.setItem('ao_users',JSON.stringify(norm));
+        users=norm;
+      }
+      for(let i=localStorage.length-1;i>=0;i--){
+        const k=localStorage.key(i);
+        if(!k||!k.startsWith('ao_p_')) continue;
+        const login=_loginFromKey(k);
+        const u=login?users[login]:null;
+        if(u&&u.progressResetAt) localStorage.removeItem(k);
+      }
+      if(cloud.progress&&typeof cloud.progress==='object'){
+        Object.keys(cloud.progress).forEach(k=>{
+          if(!k.startsWith('ao_p_')) return;
+          const login=_loginFromKey(k);
+          const u=login?users[login]:null;
+          if(u&&u.progressResetAt) return;
+          localStorage.setItem(k,cloud.progress[k]);
+        });
+      }
+    })
+    .catch(()=>{});
 }
 
-function refreshDashboard() {
-  const btn = document.getElementById('hrRefreshBtn');
-  if (btn) btn.classList.add('spinning');
-  reloadFromCloud().then(() => {
+function refreshDashboard(){
+  const btn=document.getElementById('hrRefreshBtn');
+  if(btn) btn.classList.add('spinning');
+  reloadFromCloud().then(()=>{
     renderHrDashboard();
     renderOverallProgress();
-    if (btn) {
+    if(btn){
       btn.classList.remove('spinning');
-      const upd = document.getElementById('hrLastUpdated');
-      if (upd) upd.textContent = 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
+      const upd=document.getElementById('hrLastUpdated');
+      if(upd) upd.textContent='Обновлено: '+new Date().toLocaleTimeString('ru-RU');
     }
   });
 }
 
-function openAcc() {
-  const u = Auth.current(); if (!u) return;
-  document.getElementById('accFio').value = u.fio;
-  document.getElementById('accPass').value = '';
-  document.getElementById('accMsg').textContent = '';
-  const rs = document.getElementById('accRole');
-  if (Auth.isAdmin()) { rs.style.display='block'; rs.value=u.role; } else rs.style.display='none';
-  document.getElementById('accAdminBtn').style.display = Auth.isAdmin() ? 'block' : 'none';
+function openAcc(){
+  const u=Auth.current();if(!u) return;
+  document.getElementById('accFio').value=u.fio;
+  document.getElementById('accPass').value='';
+  document.getElementById('accMsg').textContent='';
+  const rs=document.getElementById('accRole');
+  if(Auth.isAdmin()){rs.style.display='block';rs.value=u.role;}else rs.style.display='none';
+  document.getElementById('accAdminBtn').style.display=Auth.isAdmin()?'block':'none';
   document.getElementById('accOverlay').classList.add('open');
 }
-function closeAcc() { document.getElementById('accOverlay').classList.remove('open'); }
+function closeAcc(){document.getElementById('accOverlay').classList.remove('open');}
 
-document.getElementById('accSaveBtn').addEventListener('click', function() {
-  const fio = document.getElementById('accFio').value.trim();
-  const pass = document.getElementById('accPass').value;
-  const msg = document.getElementById('accMsg');
-  if (!fio) { msg.style.color='#e74c3c'; msg.textContent='ФИО не может быть пустым'; return; }
-  if (pass && pass.length < 4) { msg.style.color='#e74c3c'; msg.textContent='Пароль минимум 4 символа'; return; }
-  Auth.update(fio, pass||null);
-  if (Auth.isAdmin()) Auth.updateRole(document.getElementById('accRole').value);
-  msg.style.color='#27ae60'; msg.textContent='✅ Сохранено!';
+document.getElementById('accSaveBtn').addEventListener('click',function(){
+  const fio=document.getElementById('accFio').value.trim();
+  const pass=document.getElementById('accPass').value;
+  const msg=document.getElementById('accMsg');
+  if(!fio){msg.style.color='#e74c3c';msg.textContent='ФИО не может быть пустым';return;}
+  if(pass&&pass.length<4){msg.style.color='#e74c3c';msg.textContent='Пароль минимум 4 символа';return;}
+  Auth.update(fio,pass||null);
+  if(Auth.isAdmin()) Auth.updateRole(document.getElementById('accRole').value);
+  msg.style.color='#27ae60';msg.textContent='✅ Сохранено!';
   updateUI();
-  setTimeout(() => { msg.textContent=''; closeAcc(); }, 1200);
+  setTimeout(()=>{msg.textContent='';closeAcc();},1200);
 });
 
-function confirmReset() {
-  if (!confirm('Сбросить весь твой прогресс? Это нельзя отменить.')) return;
+function confirmReset(){
+  if(!confirm('Сбросить весь твой прогресс? Это нельзя отменить.')) return;
   closeAcc();
   Auth.resetProgress();
-  setTimeout(() => window.location.reload(), 1500);
+  setTimeout(()=>window.location.reload(),1500);
 }
-function confirmDeleteSelf() {
-  if (!confirm('Удалить свой аккаунт? Это нельзя отменить!')) return;
+function confirmDeleteSelf(){
+  if(!confirm('Удалить свой аккаунт? Это нельзя отменить!')) return;
   Auth.deleteSelf();
 }
 
-function renderHrDashboard() {
-  const tbody = document.getElementById('hrTableBody');
-  const users = Auth.getUsers();
-  const employees = Object.entries(users).filter(([,u]) => EMPLOYEE_ROLES.includes(u.role));
-  if (!employees.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="color:#aaa;text-align:center;padding:16px">Нет зарегистрированных сотрудников</td></tr>';
+function renderHrDashboard(){
+  const tbody=document.getElementById('hrTableBody');
+  const users=Auth.getUsers();
+  const employees=Object.entries(users).filter(([,u])=>EMPLOYEE_ROLES.includes(u.role));
+  if(!employees.length){
+    tbody.innerHTML='<tr><td colspan="8" style="color:#aaa;text-align:center;padding:16px">Нет зарегистрированных сотрудников</td></tr>';
     return;
   }
-  tbody.innerHTML = employees.sort((a,b)=>a[1].fio.localeCompare(b[1].fio)).map(([login,u])=>{
-    const base = calcProgress(login, u.role);
-    // Добавляем XP из индивидуального маршрута если есть
-    let totalXp = base.xp, totalMax = base.maxXp;
-    if (u.customRouteId && _cachedCustomRoutes.length) {
-      const cr = _cachedCustomRoutes.find(r => r.id === u.customRouteId);
-      if (cr) {
-        const crp = calcCRProgress(cr.id, cr.levels);
-        totalXp += crp.xpEarned; totalMax += crp.xpTotal;
+  tbody.innerHTML=employees.sort((a,b)=>a[1].fio.localeCompare(b[1].fio)).map(([login,u])=>{
+    // ── Основной маршрут ──
+    const base=calcProgress(login,u.role);
+    const basePct=base.pct;
+    // ── Индивидуальный маршрут ──
+    let crHtml='<span class="cr-none">не назначен</span>';
+    let crXpHtml='<span class="cr-none">—</span>';
+    if(u.customRouteId&&_cachedCustomRoutes.length){
+      const cr=_cachedCustomRoutes.find(r=>r.id===u.customRouteId);
+      if(cr){
+        const crp=calcCRProgress(cr.id,cr.levels);
+        crHtml=`<div style="display:flex;align-items:center;gap:6px">
+          <div class="hr-pbar" style="min-width:70px"><div class="hr-pfill cr" style="width:${crp.pct}%"></div></div>
+          <span style="font-size:.78rem;color:#555">${crp.pct}%</span>
+        </div>
+        <div style="font-size:.72rem;color:#888;margin-top:2px">${esc(cr.title)}</div>`;
+        crXpHtml=`${crp.xpEarned}/${crp.xpTotal} XP`;
       }
     }
-    const pct = totalMax ? Math.round(totalXp / totalMax * 100) : 0;
-    const day = getDayOnPlatform(u);
-    const dayCell = day ? `<span class="day-chip">📅 День ${day}</span>` : '<span style="color:#ccc;font-size:.8rem">—</span>';
+    // ── Суммарный уровень ──
+    let totalXp=base.xp, totalMax=base.maxXp;
+    if(u.customRouteId&&_cachedCustomRoutes.length){
+      const cr=_cachedCustomRoutes.find(r=>r.id===u.customRouteId);
+      if(cr){
+        const crp=calcCRProgress(cr.id,cr.levels);
+        totalXp+=crp.xpEarned;totalMax+=crp.xpTotal;
+      }
+    }
+    const day=getDayOnPlatform(u);
+    const dayCell=day?`<span class="day-chip">📅 День ${day}</span>`:'<span style="color:#ccc;font-size:.8rem">—</span>';
     return `<tr>
-      <td><a href="${u.role}.html?view=${login}" style="color:#0a4d8c;font-weight:600;text-decoration:none">${u.fio}</a></td>
+      <td><a href="${u.role}.html?view=${login}" style="color:#0a4d8c;font-weight:600;text-decoration:none">${esc(u.fio)}</a></td>
       <td>${ROLE_NAMES[u.role]||u.role}</td>
       <td>${dayCell}</td>
-      <td>${getXpLevel(totalXp, u.role)}</td>
-      <td><div class="hr-pbar"><div class="hr-pfill" style="width:${pct}%"></div></div></td>
-      <td>${totalXp}/${totalMax} XP · ${pct}%</td>
+      <td>${getXpLevel(totalXp,totalMax)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="hr-pbar"><div class="hr-pfill" style="width:${basePct}%"></div></div>
+          <span style="font-size:.78rem;color:#555">${basePct}%</span>
+        </div>
+      </td>
+      <td style="white-space:nowrap">${base.xp}/${base.maxXp} XP</td>
+      <td class="cr-badge-cell">${crHtml}</td>
+      <td style="white-space:nowrap;color:#9b59b6;font-weight:600">${crXpHtml}</td>
     </tr>`;
   }).join('');
 }
 
-function renderOverallProgress() {
-  const u = Auth.current(), myLogin = Auth.currentLogin(), isAdmin = Auth.isAdmin();
-  if (isAdmin) {
-    const emp = Object.entries(Auth.getUsers()).filter(([,su])=>EMPLOYEE_ROLES.includes(su.role));
-    if (!emp.length) { document.getElementById('overallPct').textContent='—'; document.getElementById('overallLabel').textContent='нет сотрудников'; return; }
-    const avg = Math.round(emp.reduce((s,[l,su])=>s+calcProgress(l,su.role).pct,0)/emp.length);
-    document.getElementById('overallPct').textContent = avg+'%';
-    document.getElementById('overallLabel').textContent = 'средний прогресс команды';
-  } else if (u && MAX_XP[u.role]) {
-    const base = calcProgress(myLogin, u.role);
-    // Учитываем XP из индивидуального маршрута
-    let totalXp = base.xp, totalMax = base.maxXp;
-    if (_cachedCustomRoutes.length) {
-      const users = Auth.getUsers();
-      const me = users[myLogin];
-      if (me && me.customRouteId) {
-        const cr = _cachedCustomRoutes.find(r => r.id === me.customRouteId);
-        if (cr) {
-          const crp = calcCRProgress(cr.id, cr.levels);
-          totalXp += crp.xpEarned; totalMax += crp.xpTotal;
+function renderOverallProgress(){
+  const u=Auth.current(),myLogin=Auth.currentLogin(),isAdmin=Auth.isAdmin();
+  if(isAdmin){
+    const emp=Object.entries(Auth.getUsers()).filter(([,su])=>EMPLOYEE_ROLES.includes(su.role));
+    if(!emp.length){document.getElementById('overallPct').textContent='—';document.getElementById('overallLabel').textContent='нет сотрудников';return;}
+    const avg=Math.round(emp.reduce((s,[l,su])=>s+calcProgress(l,su.role).pct,0)/emp.length);
+    document.getElementById('overallPct').textContent=avg+'%';
+    document.getElementById('overallLabel').textContent='средний прогресс команды';
+  }else if(u&&MAX_XP[u.role]){
+    const base=calcProgress(myLogin,u.role);
+    let totalXp=base.xp,totalMax=base.maxXp;
+    if(_cachedCustomRoutes.length){
+      const users=Auth.getUsers();
+      const me=users[myLogin];
+      if(me&&me.customRouteId){
+        const cr=_cachedCustomRoutes.find(r=>r.id===me.customRouteId);
+        if(cr){
+          const crp=calcCRProgress(cr.id,cr.levels);
+          totalXp+=crp.xpEarned;totalMax+=crp.xpTotal;
         }
       }
     }
-    const pct = totalMax ? Math.round(totalXp / totalMax * 100) : 0;
-    document.getElementById('overallPct').textContent = pct+'%';
-    document.getElementById('overallLabel').textContent = 'твой прогресс';
-  } else {
-    document.getElementById('overallPct').textContent = '—';
-    document.getElementById('overallLabel').textContent = 'общий прогресс';
+    const pct=totalMax?Math.round(totalXp/totalMax*100):0;
+    document.getElementById('overallPct').textContent=pct+'%';
+    document.getElementById('overallLabel').textContent='твой прогресс';
+  }else{
+    document.getElementById('overallPct').textContent='—';
+    document.getElementById('overallLabel').textContent='общий прогресс';
   }
 }
 
-function renderDayCounter() {
-  const wrap = document.getElementById('dayCounterWrap');
-  wrap.innerHTML = '';
-  const u = Auth.current(); if (!u) return;
-  const MIN = 1577836800000;
-  if (!u.createdAt || u.createdAt < MIN) {
-    const users = Auth.getUsers(), login = Auth.currentLogin();
-    if (users[login]) { users[login].createdAt = Date.now(); Auth.saveUsers(users); u.createdAt = users[login].createdAt; }
+function renderDayCounter(){
+  const wrap=document.getElementById('dayCounterWrap');
+  wrap.innerHTML='';
+  const u=Auth.current();if(!u) return;
+  const MIN=1577836800000;
+  if(!u.createdAt||u.createdAt<MIN){
+    const users=Auth.getUsers(),login=Auth.currentLogin();
+    if(users[login]){users[login].createdAt=Date.now();Auth.saveUsers(users);u.createdAt=users[login].createdAt;}
   }
-  const days = getDayOnPlatform(u) || 1;
-  wrap.innerHTML = Auth.isAdmin()
-    ? `<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">👩‍💼 Режим HR-администратора</div>`
-    : `<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">📅 День адаптации: <strong>${days}</strong></div>`;
+  const days=getDayOnPlatform(u)||1;
+  wrap.innerHTML=Auth.isAdmin()
+    ?`<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">👩‍💼 Режим HR-администратора</div>`
+    :`<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">📅 День адаптации: <strong>${days}</strong></div>`;
 }
 
-function buildRouteCards(routes) {
-  const grid = document.getElementById('rolesGrid');
-  if (!grid) return;
-  const u = Auth.current(), myLogin = Auth.currentLogin(), isAdmin = Auth.isAdmin(), users = Auth.getUsers();
-  grid.innerHTML = '';
-  routes.sort((a,b)=>(Number(a.order)||999)-(Number(b.order)||999)).forEach(route => {
-    const role = route.role || '';
-    const isMyRole = u && u.role === role;
-    const isEmployee = EMPLOYEE_ROLES.includes(u && u.role);
-    const locked = !isAdmin && isEmployee && !isMyRole;
-    const p = isMyRole ? calcProgress(myLogin, role) : { xp:0, maxXp:0, pct:0 };
-    let metaHtml = '', progText = '—', progPct = 0;
-    if (isAdmin) {
-      const staff = Object.entries(users).filter(([,su])=>su.role===role);
-      if (staff.length) {
-        const avg = Math.round(staff.reduce((s,[l])=>s+calcProgress(l,role).pct,0)/staff.length);
-        metaHtml = `<div class="admin-card-meta"><span class="staff-count">👤 ${staff.length} чел.</span></div>`;
-        progText = avg+'% (ср.)'; progPct = avg;
-      } else {
-        metaHtml = `<div class="admin-card-meta"><span class="admin-card-empty">Нет сотрудников</span></div>`;
+function buildRouteCards(routes){
+  const grid=document.getElementById('rolesGrid');
+  if(!grid) return;
+  const u=Auth.current(),myLogin=Auth.currentLogin(),isAdmin=Auth.isAdmin(),users=Auth.getUsers();
+  grid.innerHTML='';
+  routes.sort((a,b)=>(Number(a.order)||999)-(Number(b.order)||999)).forEach(route=>{
+    const role=route.role||'';
+    const isMyRole=u&&u.role===role;
+    const isEmployee=EMPLOYEE_ROLES.includes(u&&u.role);
+    const locked=!isAdmin&&isEmployee&&!isMyRole;
+    const p=isMyRole?calcProgress(myLogin,role):{xp:0,maxXp:0,pct:0};
+    let metaHtml='',progText='—',progPct=0;
+    if(isAdmin){
+      const staff=Object.entries(users).filter(([,su])=>su.role===role);
+      if(staff.length){
+        const avg=Math.round(staff.reduce((s,[l])=>s+calcProgress(l,role).pct,0)/staff.length);
+        metaHtml=`<div class="admin-card-meta"><span class="staff-count">👤 ${staff.length} чел.</span></div>`;
+        progText=avg+'% (ср.)';progPct=avg;
+      }else{
+        metaHtml=`<div class="admin-card-meta"><span class="admin-card-empty">Нет сотрудников</span></div>`;
       }
-    } else if (isMyRole) {
-      progText = p.xp+' XP · '+p.pct+'%'; progPct = p.pct;
+    }else if(isMyRole){
+      progText=p.xp+' XP · '+p.pct+'%';progPct=p.pct;
     }
-    const card = document.createElement('a');
-    card.href = locked ? '#' : esc(route.link||'#');
-    card.className = 'role-card'+(locked?' locked':'');
-    card.innerHTML = `
+    const card=document.createElement('a');
+    card.href=locked?'#':esc(route.link||'#');
+    card.className='role-card'+(locked?' locked':'');
+    card.innerHTML=`
       <div class="role-icon">${esc(route.icon||'🗺️')}</div>
       <h2>${esc(route.title||'Маршрут')}</h2>
       <p class="role-desc">${esc(route.subtitle||'')}</p>
@@ -529,61 +557,60 @@ function buildRouteCards(routes) {
   });
 }
 
-function renderRoutes() {
+function renderRoutes(){
   buildRouteCards(FALLBACK_ROUTES);
-  fetch(TQ_URL, { cache:'no-cache', headers:{'X-Master-Key':TQ_API_KEY,'X-Bin-Meta':'false'} })
-    .then(r => r.json())
-    .then(d => { if (Array.isArray(d.routes) && d.routes.length) buildRouteCards(d.routes); })
-    .catch(() => {});
+  fetch(TQ_URL,{cache:'no-cache',headers:{'X-Master-Key':TQ_API_KEY,'X-Bin-Meta':'false'}})
+    .then(r=>r.json())
+    .then(d=>{if(Array.isArray(d.routes)&&d.routes.length) buildRouteCards(d.routes);})
+    .catch(()=>{});
 }
 
-function renderBadges() {
-  const u = Auth.current();
-  if (!u || Auth.isAdmin()) { document.getElementById('badgesSection').style.display='none'; return; }
-  const myLogin = Auth.currentLogin();
-  const section = document.getElementById('badgesSection');
-  const panel   = document.getElementById('badgesPanel');
-  const all = Game.getAllBadges(myLogin);
-  const hasEarned = all.some(b => b.earned);
-  if (!hasEarned) { section.style.display='none'; return; }
-  section.style.display = 'block';
-  panel.innerHTML = all.map(b => {
-    const when = b.earnedAt ? new Date(b.earnedAt).toLocaleDateString('ru-RU') : '';
-    return `<div class="badge-chip ${b.earned ? 'earned' : 'locked'}" title="${b.desc}${when ? ' · получен '+when : ''}">
+function renderBadges(){
+  const u=Auth.current();
+  if(!u||Auth.isAdmin()){document.getElementById('badgesSection').style.display='none';return;}
+  const myLogin=Auth.currentLogin();
+  const section=document.getElementById('badgesSection');
+  const panel=document.getElementById('badgesPanel');
+  const all=Game.getAllBadges(myLogin);
+  if(!all.some(b=>b.earned)){section.style.display='none';return;}
+  section.style.display='block';
+  panel.innerHTML=all.map(b=>{
+    const when=b.earnedAt?new Date(b.earnedAt).toLocaleDateString('ru-RU'):'';
+    return `<div class="badge-chip ${b.earned?'earned':'locked'}" title="${b.desc}${when?' · получен '+when:''}">
       <span class="badge-chip-icon">${b.icon}</span>
       <span class="badge-chip-label">${b.name}</span>
-      ${b.earned && when ? `<span class="badge-chip-date">${when}</span>` : ''}
+      ${b.earned&&when?`<span class="badge-chip-date">${when}</span>`:''}
     </div>`;
   }).join('');
 }
 
-function updateUI() {
-  const u = Auth.current(); if (!u) return;
-  document.getElementById('headerUser').textContent = u.fio.split(' ')[0];
-  document.getElementById('welcomeTitle').textContent = 'Привет, '+u.fio.split(' ')[0]+'! 👋';
-  document.getElementById('welcomeSubtitle').textContent = Auth.isAdmin() ? 'Панель HR — управление адаптацией' : 'Добро пожаловать в систему адаптации';
+function updateUI(){
+  const u=Auth.current();if(!u) return;
+  document.getElementById('headerUser').textContent=u.fio.split(' ')[0];
+  document.getElementById('welcomeTitle').textContent='Привет, '+u.fio.split(' ')[0]+'! 👋';
+  document.getElementById('welcomeSubtitle').textContent=Auth.isAdmin()?'Панель HR — управление адаптацией':'Добро пожаловать в систему адаптации';
   renderDayCounter();
   renderOverallProgress();
   renderBadges();
-  const hrDash = document.getElementById('hrDashboard');
-  if (Auth.isAdmin()) { hrDash.style.display='block'; renderHrDashboard(); } else hrDash.style.display='none';
+  const hrDash=document.getElementById('hrDashboard');
+  if(Auth.isAdmin()){hrDash.style.display='block';renderHrDashboard();}else hrDash.style.display='none';
 }
 
-window.onload = function() {
-  if (!Auth.requireAuth()) return;
-  DB.ready.then(() => {
+window.onload=function(){
+  if(!Auth.requireAuth()) return;
+  DB.ready.then(()=>{
     updateUI();
     renderRoutes();
-    renderCustomRouteBanner(); // подгружает кастомные маршруты и потом пересчитывает прогресс
-    if (Auth.isAdmin()) {
-      setInterval(() => {
-        reloadFromCloud().then(() => {
+    renderCustomRouteBanner();
+    if(Auth.isAdmin()){
+      setInterval(()=>{
+        reloadFromCloud().then(()=>{
           renderHrDashboard();
           renderOverallProgress();
-          const upd = document.getElementById('hrLastUpdated');
-          if (upd) upd.textContent = 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
+          const upd=document.getElementById('hrLastUpdated');
+          if(upd) upd.textContent='Обновлено: '+new Date().toLocaleTimeString('ru-RU');
         });
-      }, 30000);
+      },30000);
     }
   });
 };
