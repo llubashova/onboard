@@ -1,10 +1,9 @@
 // admin_custom_routes.js — логика таба «Индивидуальные маршруты»
-// Подключается в конце admin.html
 
 // ─── Состояние ────────────────────────────────────────────────────
 let _crEditId   = null;
-let _crAssigned = [];  // массив логинов
-let _crLevels   = [];  // [{title, tasks:[{name,xp}]}]
+let _crAssigned = [];
+let _crLevels   = [];
 
 // ─── Заполняем select сотрудниками ────────────────────────────────
 function populateCRAssignSelect() {
@@ -101,22 +100,24 @@ async function saveCR() {
   const emptyTask = _crLevels.some(l => l.tasks.some(t => !t.name.trim()));
   if (emptyTask) { showAlert('⚠️ Заполни названия всех задач', true); return; }
 
-  const obj = {
-    id:        _crEditId || (Date.now().toString(36) + Math.random().toString(36).slice(2, 5)),
-    title,
-    icon:      document.getElementById('crIcon').value.trim() || '🎯',
-    role:      document.getElementById('crRole').value,
-    subtitle:  document.getElementById('crSubtitle').value.trim(),
-    assignedTo: [..._crAssigned],
-    levels:    JSON.parse(JSON.stringify(_crLevels)),
-    updatedAt: Date.now()
-  };
-
   const btn = document.getElementById('crSaveBtn');
   btn.textContent = '⏳ Сохраняю…'; btn.disabled = true;
 
+  // Сначала загружаем свежие данные из облака
   await loadTQ();
   if (!Array.isArray(_tqData.customRoutes)) _tqData.customRoutes = [];
+
+  // Только ПОСЛЕ loadTQ() формируем объект и добавляем
+  const obj = {
+    id:         _crEditId || (Date.now().toString(36) + Math.random().toString(36).slice(2, 5)),
+    title,
+    icon:       document.getElementById('crIcon').value.trim() || '🎯',
+    role:       document.getElementById('crRole').value,
+    subtitle:   document.getElementById('crSubtitle').value.trim(),
+    assignedTo: [..._crAssigned],
+    levels:     JSON.parse(JSON.stringify(_crLevels)),
+    updatedAt:  Date.now()
+  };
 
   if (_crEditId) {
     const idx = _tqData.customRoutes.findIndex(r => r.id === _crEditId);
@@ -131,15 +132,6 @@ async function saveCR() {
   _crAssigned.forEach(login => {
     if (users[login]) users[login].customRouteId = obj.id;
   });
-  // Снимаем назначение если сотрудник был в старом маршруте, но убран из нового
-  if (_crEditId) {
-    const old = (_tqData.customRoutes.find(r => r.id === _crEditId) || {}).assignedTo || [];
-    old.forEach(login => {
-      if (!_crAssigned.includes(login) && users[login] && users[login].customRouteId === _crEditId) {
-        delete users[login].customRouteId;
-      }
-    });
-  }
   Auth.saveUsers(users);
 
   await saveTQ();
@@ -175,7 +167,6 @@ async function deleteCR(id) {
   await loadTQ();
   const removed = (_tqData.customRoutes || []).find(r => r.id === id);
   _tqData.customRoutes = (_tqData.customRoutes || []).filter(r => r.id !== id);
-  // Снимаем назначение у сотрудников
   if (removed && removed.assignedTo) {
     const users = Auth.getUsers();
     removed.assignedTo.forEach(login => {
