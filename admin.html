@@ -8,6 +8,7 @@
   <script>if(!localStorage.getItem('ao_session'))location.replace('login.html');</script>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <script src="admin_init.js"></script>
   <style>
     .admin-wrap{max-width:960px;margin:0 auto;padding:24px 16px}
     h2{color:#0a4d8c;margin:0 0 6px}
@@ -55,13 +56,11 @@
     .stats-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px}
     .stat-chip{background:#f0f7ff;border-radius:10px;padding:8px 16px;font-size:.82rem;color:#0a4d8c;font-weight:600}
     .stat-chip span{font-size:1.2rem;font-weight:800;display:block}
-    /* Tabs */
     .admin-tabs{display:flex;gap:4px;margin-bottom:24px;border-bottom:2px solid #e8f0fe;padding-bottom:0;flex-wrap:wrap}
     .admin-tab{padding:10px 16px;border:none;background:none;font-size:.88rem;font-weight:600;color:#888;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:.15s;font-family:inherit}
     .admin-tab.active{color:#0a4d8c;border-bottom-color:#0a4d8c}
     .admin-tab:hover{color:#1a7fd4}
     .tab-panel{display:none} .tab-panel.active{display:block}
-    /* KB editor */
     .kb-form{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
     .kb-form-full{grid-column:1/-1}
     .kb-form label{font-size:.82rem;font-weight:600;color:#555;display:block;margin-bottom:4px}
@@ -71,7 +70,6 @@
     .kb-article-title{font-size:.9rem;font-weight:700;color:#1a1a1a;margin-bottom:2px}
     .kb-article-sub{font-size:.78rem;color:#888}
     .kb-cat-badge{display:inline-block;border-radius:10px;padding:2px 9px;font-size:.75rem;font-weight:700;background:#e8f0fe;color:#0a4d8c}
-    /* Custom routes */
     .cr-task-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
     .cr-task-row input{flex:1;padding:8px 10px;border:1.5px solid #e8f0fe;border-radius:8px;font-size:.85rem;font-family:inherit;outline:none}
     .cr-task-row input:focus{border-color:#1a7fd4}
@@ -146,7 +144,7 @@
       <div class="invite-controls">
         <select id="newInviteRole">
           <optgroup label="— Сотрудники —">
-            <option value="producer">🎬 Продюсер</option>
+            <option value="producer">🎬 Прод��сер</option>
             <option value="sales">📞 Менеджер по продажам</option>
             <option value="marketing">📣 Специалист по маркетингу</option>
           </optgroup>
@@ -173,14 +171,8 @@
     <div class="section-card">
       <h3>✏️ Добавить статью</h3>
       <div class="kb-form">
-        <div>
-          <label>Заголовок *</label>
-          <input type="text" id="kbTitle" placeholder="Название статьи">
-        </div>
-        <div>
-          <label>Иконка (эмодзи)</label>
-          <input type="text" id="kbIcon" placeholder="📄" maxlength="4">
-        </div>
+        <div><label>Заголовок *</label><input type="text" id="kbTitle" placeholder="Название статьи"></div>
+        <div><label>Иконка (эмодзи)</label><input type="text" id="kbIcon" placeholder="📄" maxlength="4"></div>
         <div>
           <label>Категория *</label>
           <select id="kbCategory" onchange="updateSubcats()">
@@ -191,29 +183,14 @@
             <option value="marketing">📣 Маркетинг</option>
           </select>
         </div>
-        <div>
-          <label>Подраздел</label>
-          <select id="kbSubcategory">
-            <option value="">— Выбери категорию сначала —</option>
-          </select>
-        </div>
-        <div class="kb-form-full">
-          <label>Содержимое статьи *</label>
-          <textarea id="kbContent" placeholder="Напиши текст статьи. Каждая новая строка — новый абзац."></textarea>
-        </div>
-        <div>
-          <label>Теги (через запятую)</label>
-          <input type="text" id="kbTags" placeholder="crm, инструкция, шаблон">
-        </div>
-        <div>
-          <label>Ссылка на файл (Google Drive, PDF…)</label>
-          <input type="text" id="kbFileUrl" placeholder="https://drive.google.com/…">
-        </div>
+        <div><label>Подраздел</label><select id="kbSubcategory"><option value="">— Выбери категорию сначала —</option></select></div>
+        <div class="kb-form-full"><label>Содержимое статьи *</label><textarea id="kbContent" placeholder="Напиши текст статьи."></textarea></div>
+        <div><label>Теги (через запятую)</label><input type="text" id="kbTags" placeholder="crm, инструкция"></div>
+        <div><label>Ссылка на файл</label><input type="text" id="kbFileUrl" placeholder="https://drive.google.com/…"></div>
       </div>
       <button class="btn btn-primary" onclick="saveArticle()" id="kbSaveBtn">💾 Сохранить статью</button>
-      <button class="btn" style="background:#f5f5f5;color:#555;margin-left:8px" onclick="resetForm()" id="kbCancelBtn" style="display:none">✕ Отмена</button>
+      <button class="btn" style="background:#f5f5f5;color:#555;margin-left:8px" onclick="resetForm()">✕ Отмена</button>
     </div>
-
     <div class="section-card">
       <h3>📋 Все статьи <span id="kbCount" style="font-size:.8rem;color:#aaa;font-weight:400"></span></h3>
       <table class="kb-admin-table">
@@ -223,122 +200,63 @@
     </div>
   </div>
 
-<!-- TAB: ROUTES -->
-<div class="tab-panel" id="tab-routes">
-  <div class="section-card">
-    <h3>✏️ Добавить / редактировать маршрут</h3>
-    <div class="kb-form">
-      <div>
-        <label>Название маршрута *</label>
-        <input type="text" id="rtTitle" placeholder="Продюсер">
+  <!-- TAB: ROUTES -->
+  <div class="tab-panel" id="tab-routes">
+    <div class="section-card">
+      <h3>✏️ Добавить / редактировать маршрут</h3>
+      <div class="kb-form">
+        <div><label>Название *</label><input type="text" id="rtTitle" placeholder="Продюсер"></div>
+        <div><label>Иконка</label><input type="text" id="rtIcon" placeholder="🎬" maxlength="4"></div>
+        <div><label>Роль *</label><select id="rtRole"><option value="producer">🎬 Продюсер</option><option value="sales">📞 Менеджер по продажам</option><option value="marketing">📣 Специалист по маркетингу</option></select></div>
+        <div><label>Ссылка *</label><input type="text" id="rtLink" placeholder="producer.html"></div>
+        <div class="kb-form-full"><label>Краткое описание *</label><input type="text" id="rtSubtitle" placeholder="Исследования, деловая программа"></div>
+        <div class="kb-form-full"><label>Полное описание</label><textarea id="rtDescription" placeholder="Подробное описание"></textarea></div>
+        <div><label>Цвет (HEX)</label><input type="text" id="rtColor" placeholder="#0a4d8c" maxlength="7"></div>
+        <div><label>Порядок</label><input type="number" id="rtOrder" placeholder="1" min="1"></div>
       </div>
-      <div>
-        <label>Иконка (эмодзи)</label>
-        <input type="text" id="rtIcon" placeholder="🎬" maxlength="4">
-      </div>
-      <div>
-        <label>Роль / ключ маршрута *</label>
-        <select id="rtRole">
-          <option value="producer">🎬 Продюсер</option>
-          <option value="sales">📞 Менеджер по продажам</option>
-          <option value="marketing">📣 Специалист по маркетингу</option>
-        </select>
-      </div>
-      <div>
-        <label>Ссылка на страницу *</label>
-        <input type="text" id="rtLink" placeholder="producer.html">
-      </div>
-      <div class="kb-form-full">
-        <label>Краткое описание *</label>
-        <input type="text" id="rtSubtitle" placeholder="Исследования, деловая программа, работа со спикерами">
-      </div>
-      <div class="kb-form-full">
-        <label>Полное описание</label>
-        <textarea id="rtDescription" placeholder="Подробное описание маршрута"></textarea>
-      </div>
-      <div>
-        <label>Цвет карточки (HEX)</label>
-        <input type="text" id="rtColor" placeholder="#0a4d8c" maxlength="7">
-      </div>
-      <div>
-        <label>Порядок сортировки</label>
-        <input type="number" id="rtOrder" placeholder="1" min="1">
-      </div>
+      <button class="btn btn-primary" onclick="saveRoute()" id="rtSaveBtn">💾 Сохранить</button>
+      <button class="btn" style="background:#f5f5f5;color:#555;margin-left:8px" onclick="resetRouteForm()">✕ Отмена</button>
     </div>
-    <button class="btn btn-primary" onclick="saveRoute()" id="rtSaveBtn">💾 Сохранить маршрут</button>
-    <button class="btn" style="background:#f5f5f5;color:#555;margin-left:8px" onclick="resetRouteForm()">✕ Отмена</button>
+    <div class="section-card">
+      <h3>🗺️ Все маршруты <span id="rtCount" style="font-size:.8rem;color:#aaa;font-weight:400"></span></h3>
+      <table class="kb-admin-table"><thead><tr><th>Маршрут</th><th>Роль</th><th>Ссылка</th><th>Порядок</th><th>Действия</th></tr></thead><tbody id="rtTable"></tbody></table>
+    </div>
   </div>
 
-  <div class="section-card">
-    <h3>🗺️ Все маршруты <span id="rtCount" style="font-size:.8rem;color:#aaa;font-weight:400"></span></h3>
-    <table class="kb-admin-table">
-      <thead><tr><th>Маршрут</th><th>Роль</th><th>Ссылка</th><th>Порядок</th><th>Действия</th></tr></thead>
-      <tbody id="rtTable"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- TAB: CUSTOM ROUTES -->
-<div class="tab-panel" id="tab-custom">
-  <div class="section-card">
-    <h3>✏️ Создать / редактировать индивидуальный маршрут</h3>
-    <p style="font-size:.85rem;color:#888;margin:-8px 0 16px">Маршрут виден только назначенным сотрудникам и администраторам.</p>
-    <div class="kb-form">
-      <div>
-        <label>Название маршрута *</label>
-        <input type="text" id="crTitle" placeholder="Углублённый продюсер">
+  <!-- TAB: CUSTOM ROUTES -->
+  <div class="tab-panel" id="tab-custom">
+    <div class="section-card">
+      <h3>✏️ Создать / редактировать индивидуальный маршрут</h3>
+      <p style="font-size:.85rem;color:#888;margin:-8px 0 16px">Маршрут виден только назначенным сотрудникам и администраторам.</p>
+      <div class="kb-form">
+        <div><label>Название *</label><input type="text" id="crTitle" placeholder="Углублённый продюсер"></div>
+        <div><label>Иконка</label><input type="text" id="crIcon" placeholder="🎯" maxlength="4"></div>
+        <div><label>Базовая роль *</label><select id="crRole"><option value="producer">🎬 Продюсер</option><option value="sales">📞 Менеджер по продажам</option><option value="marketing">📣 Специалист по маркетингу</option></select></div>
+        <div><label>Краткое описание</label><input type="text" id="crSubtitle" placeholder="Для опытных продюсеров"></div>
       </div>
-      <div>
-        <label>Иконка (эмодзи)</label>
-        <input type="text" id="crIcon" placeholder="🎯" maxlength="4">
+      <div style="margin-bottom:16px">
+        <label style="font-size:.82rem;font-weight:600;color:#555;display:block;margin-bottom:6px">Назначить сотрудникам</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <select id="crAssignSelect" style="padding:8px 12px;border:2px solid #e8f0fe;border-radius:8px;font-size:.88rem;font-family:inherit;outline:none;min-width:200px"><option value="">— выбери сотрудника —</option></select>
+          <button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc" onclick="crAddAssignee()">+ Добавить</button>
+        </div>
+        <div id="crAssignedList" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
       </div>
-      <div>
-        <label>Базовая роль *</label>
-        <select id="crRole">
-          <option value="producer">🎬 Продюсер</option>
-          <option value="sales">📞 Менеджер по продажам</option>
-          <option value="marketing">📣 Специалист по маркетингу</option>
-        </select>
+      <div style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <label style="font-size:.82rem;font-weight:600;color:#555">Уровни и задачи</label>
+          <button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc" onclick="crAddLevel()">+ Добавить уровень</button>
+        </div>
+        <div id="crLevels"></div>
       </div>
-      <div>
-        <label>Краткое описание</label>
-        <input type="text" id="crSubtitle" placeholder="Для опытных продюсеров">
-      </div>
+      <button class="btn btn-primary" onclick="saveCR()" id="crSaveBtn">💾 Сохранить маршрут</button>
+      <button class="btn" style="background:#f5f5f5;color:#555;margin-left:8px" onclick="resetCRForm()">✕ Отмена</button>
     </div>
-
-    <!-- Назначить сотрудникам -->
-    <div style="margin-bottom:16px">
-      <label style="font-size:.82rem;font-weight:600;color:#555;display:block;margin-bottom:6px">Назначить сотрудникам</label>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <select id="crAssignSelect" style="padding:8px 12px;border:2px solid #e8f0fe;border-radius:8px;font-size:.88rem;font-family:inherit;outline:none;min-width:200px">
-          <option value="">— выбери сотрудника —</option>
-        </select>
-        <button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc" onclick="crAddAssignee()">+ Добавить</button>
-      </div>
-      <div id="crAssignedList" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
+    <div class="section-card">
+      <h3>👤 Все индивидуальные маршруты <span id="crCount" style="font-size:.8rem;color:#aaa;font-weight:400"></span></h3>
+      <table class="kb-admin-table"><thead><tr><th>Маршрут</th><th>Базовая роль</th><th>Назначен</th><th>Уровней / задач</th><th>Действия</th></tr></thead><tbody id="crTable"></tbody></table>
     </div>
-
-    <!-- Уровни и задачи -->
-    <div style="margin-bottom:12px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <label style="font-size:.82rem;font-weight:600;color:#555">Уровни и задачи</label>
-        <button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc" onclick="crAddLevel()">+ Добавить уровень</button>
-      </div>
-      <div id="crLevels"></div>
-    </div>
-
-    <button class="btn btn-primary" onclick="saveCR()" id="crSaveBtn">💾 Сохранить маршрут</button>
-    <button class="btn" style="background:#f5f5f5;color:#555;margin-left:8px" onclick="resetCRForm()">✕ Отмена</button>
   </div>
-
-  <div class="section-card">
-    <h3>👤 Все индивидуальные маршруты <span id="crCount" style="font-size:.8rem;color:#aaa;font-weight:400"></span></h3>
-    <table class="kb-admin-table">
-      <thead><tr><th>Маршрут</th><th>Базовая роль</th><th>Назначен</th><th>Уровней / задач</th><th>Действия</th></tr></thead>
-      <tbody id="crTable"></tbody>
-    </table>
-  </div>
-</div>
 
   <!-- TAB: TEAM -->
   <div class="tab-panel" id="tab-team">
@@ -347,22 +265,12 @@
       <div class="kb-form">
         <div><label>Имя и фамилия *</label><input type="text" id="tmName" placeholder="Иван Иванов"></div>
         <div><label>Должность *</label><input type="text" id="tmRole" placeholder="Менеджер по продажам"></div>
-        <div>
-          <label>Отдел *</label>
-          <select id="tmGroup">
-            <option value="management">🏢 Руководство / административный</option>
-            <option value="production">🎬 Производственный</option>
-            <option value="sales">📞 Продажи</option>
-            <option value="marketing">📣 Маркетинг</option>
-            <option value="ops">⚙️ Операционный</option>
-            <option value="other">👤 Прочие</option>
-          </select>
-        </div>
-        <div><label>Иконка (эмодзи) — если нет фото</label><input type="text" id="tmEmoji" placeholder="👤" maxlength="4"></div>
-        <div><label>Ссылка на фото (необязательно)</label><input type="text" id="tmPhoto" placeholder="https://i.imgur.com/xxx.jpg"></div>
+        <div><label>Отдел *</label><select id="tmGroup"><option value="management">🏢 Руководство</option><option value="production">🎬 Производственный</option><option value="sales">📞 Продажи</option><option value="marketing">📣 Маркетинг</option><option value="ops">⚙️ Операционный</option><option value="other">👤 Прочие</option></select></div>
+        <div><label>Иконка (эмодзи)</label><input type="text" id="tmEmoji" placeholder="👤" maxlength="4"></div>
+        <div><label>Ссылка на фото</label><input type="text" id="tmPhoto" placeholder="https://i.imgur.com/xxx.jpg"></div>
         <div><label>Цвет аватара (HEX)</label><input type="text" id="tmColor" placeholder="#1a7fd4" maxlength="7"></div>
         <div class="kb-form-full"><label>Описание</label><input type="text" id="tmDesc" placeholder="Чем занимается сотрудник"></div>
-        <div><label>По каким вопросам обращаться (через запятую)</label><input type="text" id="tmHelp" placeholder="CRM, Продажи, Клиенты"></div>
+        <div><label>По каким вопросам обращаться</label><input type="text" id="tmHelp" placeholder="CRM, Продажи"></div>
         <div><label>Telegram</label><input type="text" id="tmTg" placeholder="@username"></div>
       </div>
       <button class="btn btn-primary" onclick="saveMember()" id="tmSaveBtn">💾 Сохранить</button>
@@ -370,10 +278,7 @@
     </div>
     <div class="section-card">
       <h3>👥 Список команды <span id="tmCount" style="font-size:.8rem;color:#aaa;font-weight:400"></span></h3>
-      <table class="kb-admin-table">
-        <thead><tr><th>Сотрудник</th><th>Отдел</th><th>Telegram</th><th>Действия</th></tr></thead>
-        <tbody id="tmTable"></tbody>
-      </table>
+      <table class="kb-admin-table"><thead><tr><th>Сотрудник</th><th>Отдел</th><th>Telegram</th><th>Действия</th></tr></thead><tbody id="tmTable"></tbody></table>
     </div>
   </div>
 
@@ -383,16 +288,8 @@
       <h3>✏️ Создать квиз</h3>
       <div class="kb-form">
         <div><label>Название квиза *</label><input type="text" id="qzTitle" placeholder="Как мы ищем клиентов"></div>
-        <div><label>Иконка (эмодзи)</label><input type="text" id="qzIcon" placeholder="🧩" maxlength="4"></div>
-        <div>
-          <label>Категория *</label>
-          <select id="qzCategory">
-            <option value="general">✨ Общие (для всех)</option>
-            <option value="producer">🎬 Продюсеры</option>
-            <option value="sales">📞 Продажи</option>
-            <option value="marketing">📣 Маркетинг</option>
-          </select>
-        </div>
+        <div><label>Иконка</label><input type="text" id="qzIcon" placeholder="🧩" maxlength="4"></div>
+        <div><label>Категория *</label><select id="qzCategory"><option value="general">✨ Общие (для всех)</option><option value="producer">🎬 Продюсеры</option><option value="sales">📞 Продажи</option><option value="marketing">📣 Маркетинг</option></select></div>
         <div></div>
       </div>
       <div style="margin:0 0 16px">
@@ -405,35 +302,15 @@
     </div>
     <div class="section-card">
       <h3>🧩 Все квизы <span id="qzCount" style="font-size:.8rem;color:#aaa;font-weight:400"></span></h3>
-      <table class="kb-admin-table">
-        <thead><tr><th>Квиз</th><th>Категория</th><th>Вопросов</th><th>Действия</th></tr></thead>
-        <tbody id="qzTable"></tbody>
-      </table>
+      <table class="kb-admin-table"><thead><tr><th>Квиз</th><th>Категория</th><th>Вопросов</th><th>Действия</th></tr></thead><tbody id="qzTable"></tbody></table>
     </div>
   </div>
 
-</div>
+</div><!-- /.admin-wrap -->
 
 <script src="db.js"></script>
 <script src="auth.js"></script>
-<script>
-// ─── Tab switching ────────────────────────────────────────────────
-function switchTab(id) {
-  const ids = ['users','invites','kb','routes','custom','team','quiz'];
-  document.querySelectorAll('.admin-tab').forEach((t, i) => {
-    t.classList.toggle('active', ids[i] === id);
-  });
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('tab-' + id).classList.add('active');
-  if (id === 'routes') { loadTQ().then(() => renderRoutesTable()); }
-  if (id === 'team')   { loadTQ().then(() => renderTmTable()); }
-  if (id === 'quiz')   { loadTQ().then(() => renderQzTable()); }
-  if (id === 'custom') { loadTQ().then(() => { populateCRAssignSelect(); renderCRTable(); }); }
-}
-
-// ─── Users ────────────────────────────────────────────────────────
-const ROLE_NAMES={producer:'Продюсер',sales:'Менеджер по продажам',marketing:'Специалист по маркетингу',hr:'HR-менеджер',ceo:'Генеральный директор',exec_dir:'Исполнительный директор',ops_dir:'Операционный директор'};
-const ROLE_BADGES={producer:'badge-prod',sales:'badge-sales',marketing:'badge-mkt',hr:'badge-hr',ceo:'badge-ceo',exec_dir:'badge-exec',ops_dir:'badge-ops'};
-
-const ROLE_KEYS={
-  producer:{maxXp:290,keys:[['producer_l1_p1',10],['producer_l1_p2',10],['producer_l1_p3',10],['producer_l1_p4',10],['producer_l1_m1',8],['pro
+<script src="admin_custom_routes.js"></script>
+<script src="admin_init.js"></script>
+</body>
+</html>
