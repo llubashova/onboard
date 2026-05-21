@@ -12,15 +12,12 @@
     .cr-hero{background:linear-gradient(135deg,#0a4d8c,#1a7fd4);border-radius:20px;padding:28px 32px;color:#fff;margin-bottom:20px}
     .cr-hero h1{margin:0 0 6px;font-size:1.6rem}
     .cr-hero p{margin:0;opacity:.85;font-size:.95rem}
-
-    /* XP-панель — точная копия producer.html */
     .xp-panel{background:#fff;border-radius:14px;padding:16px 20px;margin-bottom:24px;box-shadow:0 2px 12px rgba(10,77,140,.1);display:flex;align-items:center;gap:20px;flex-wrap:wrap}
     .xp-level-badge{font-size:1.3rem;font-weight:800;color:#0a4d8c;min-width:160px}
     .xp-bar-wrap{flex:1;min-width:180px}
     .xp-bar-label{font-size:.8rem;color:#888;margin-bottom:4px;display:flex;justify-content:space-between}
     .xp-bar{height:12px;background:#e8f3ff;border-radius:6px;overflow:hidden}
     .xp-bar-fill{height:100%;background:linear-gradient(90deg,#1a7fd4,#27ae60);border-radius:6px;transition:.4s}
-
     .cr-level{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:20px;overflow:hidden}
     .cr-level-head{background:#f0f7ff;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #dde8f5}
     .cr-level-head h2{margin:0;font-size:1rem;color:#0a4d8c}
@@ -56,7 +53,6 @@
       <h1 id="crHeroTitle">🎯 Индивидуальный маршрут</h1>
       <p id="crHeroSub">Твой персональный план адаптации</p>
     </div>
-    <!-- XP-панель -->
     <div class="xp-panel">
       <div class="xp-level-badge" id="xpLevelBadge">🌱 Новичок</div>
       <div class="xp-bar-wrap">
@@ -82,44 +78,14 @@ const TQ_BIN_ID  = '6a0c18b56877513b27974e7e';
 const TQ_API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
 const TQ_URL     = `https://api.jsonbin.io/v3/b/${TQ_BIN_ID}`;
 
-// XP по ролевым маршрутам (для суммарного XP)
-const ROLE_TASK_XP = {
-  producer_l1_p1:10,producer_l1_p2:10,producer_l1_p3:10,producer_l1_p4:10,
-  producer_l1_m1:8,producer_l1_m2:8,
-  producer_l1_s1:5,producer_l1_s2:5,producer_l1_s3:5,
-  producer_l2_p1:15,producer_l2_p2:15,producer_l2_p3:15,producer_l2_p4:15,producer_l2_p5:15,
-  producer_l2_m1:8,producer_l2_m2:8,
-  producer_l2_s1:5,producer_l2_s2:5,
-  producer_l3_p1:25,producer_l3_p2:25,producer_l3_p3:25,producer_l3_p4:25,
-  producer_l3_m1:8,producer_l3_s1:5,producer_l3_s2:5,
-  sales_l1_p1:10,sales_l1_p2:10,sales_l1_p3:10,sales_l1_p4:10,
-  sales_l1_m1:8,sales_l1_m2:8,
-  sales_l1_s1:5,sales_l1_s2:5,sales_l1_s3:5,
-  sales_l2_p1:15,sales_l2_p2:15,sales_l2_p3:15,sales_l2_p4:15,sales_l2_p5:15,
-  sales_l2_m1:8,sales_l2_m2:8,
-  sales_l2_s1:5,sales_l2_s2:5,
-  sales_l3_p1:25,sales_l3_p2:25,sales_l3_p3:25,sales_l3_p4:25,
-  sales_l3_m1:8,sales_l3_s1:5,sales_l3_s2:5,
-  marketing_l1_p1:10,marketing_l1_p2:10,marketing_l1_p3:10,marketing_l1_p4:10,
-  marketing_l1_m1:8,marketing_l1_m2:8,
-  marketing_l1_s1:5,marketing_l1_s2:5,marketing_l1_s3:5,
-  marketing_l2_p1:15,marketing_l2_p2:15,marketing_l2_p3:15,marketing_l2_p4:15,marketing_l2_p5:15,
-  marketing_l2_m1:8,marketing_l2_m2:8,
-  marketing_l2_s1:5,marketing_l2_s2:5,
-  marketing_l3_p1:25,marketing_l3_p2:25,marketing_l3_p3:25,marketing_l3_p4:25,
-  marketing_l3_m1:8,marketing_l3_s1:5,marketing_l3_s2:5
-};
-const ROLE_MAX_XP = { producer:290, sales:290, marketing:290 };
-
 let _route = null;
 let _login = null;
 let _userRole = null;
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
 function crKey(routeId, li, ti) { return `ao_cr_${routeId}_${li}_${ti}`; }
 
-// Считаем XP только по кастомному маршруту
+// Считаем XP ТОЛЬКО по кастомному маршруту (не суммируем ролевой)
 function calcCRProgress(routeId, levels) {
   let done=0, total=0, xpEarned=0, xpTotal=0;
   (levels||[]).forEach((lv,li)=>{
@@ -131,40 +97,23 @@ function calcCRProgress(routeId, levels) {
   return {done,total,xpEarned,xpTotal,pct:total?Math.round(done/total*100):0};
 }
 
-// XP по ролевому маршруту текущего пользователя
-function calcRoleXp(login, role) {
-  const keys = Object.keys(ROLE_TASK_XP).filter(k=>k.startsWith(role+'_'));
-  let xp=0;
-  keys.forEach(k=>{ if(Auth.getCheckForUser(login,k)) xp+=ROLE_TASK_XP[k]; });
-  return { xp, maxXp: ROLE_MAX_XP[role]||290 };
-}
-
-// Суммарный XP (роль + кастомный) — основа для уровней и бейджей
-function calcTotalXp() {
-  if(!_route) return {totalXp:0,maxXp:0};
-  const base = _userRole ? calcRoleXp(_login,_userRole) : {xp:0,maxXp:0};
-  const cr   = calcCRProgress(_route.id,_route.levels);
-  return {totalXp: base.xp+cr.xpEarned, maxXp: base.maxXp+cr.xpTotal};
-}
-
-// Уровень — как у producer.html, но от суммарного XP
-// Пороги: 24% → Продвинутый, 60% → Профи (те же что в game.js trackLevelUp)
-function getXpLevel(totalXp, maxXp) {
-  const pct = maxXp ? Math.round(totalXp/maxXp*100) : 0;
+function getXpLevel(xpEarned, xpTotal) {
+  const pct = xpTotal ? Math.round(xpEarned/xpTotal*100) : 0;
   if(pct>=60) return '🏆 Профи';
   if(pct>=24) return '🚀 Продвинутый';
   return '🌱 Новичок';
 }
 
 function updateXpPanel(animated, prevXp) {
-  const {totalXp,maxXp} = calcTotalXp();
-  const pct = maxXp ? Math.round(totalXp/maxXp*100) : 0;
-  document.getElementById('xpLevelBadge').textContent = getXpLevel(totalXp,maxXp);
+  if(!_route) return;
+  const {xpEarned, xpTotal} = calcCRProgress(_route.id, _route.levels);
+  const pct = xpTotal ? Math.round(xpEarned/xpTotal*100) : 0;
+  document.getElementById('xpLevelBadge').textContent = getXpLevel(xpEarned, xpTotal);
   const counter = document.getElementById('xpCounter');
   if(animated && prevXp!==undefined){
-    animateCounter(counter, prevXp, totalXp, ' / '+maxXp+' XP');
+    animateCounter(counter, prevXp, xpEarned, ' / '+xpTotal+' XP');
   } else {
-    counter.textContent = totalXp+' / '+maxXp+' XP';
+    counter.textContent = xpEarned+' / '+xpTotal+' XP';
   }
   document.getElementById('xpPct').textContent = pct+'%';
   document.getElementById('xpBarFill').style.width = pct+'%';
@@ -176,12 +125,12 @@ function saveTaskCheck(routeId, li, ti, checked, taskXp) {
   else localStorage.removeItem(key);
 
   if(checked){
-    const prevTotalXp = calcTotalXp().totalXp - taskXp;
-    updateXpPanel(true, prevTotalXp);
-    const {totalXp,maxXp} = calcTotalXp();
-    // taskKey = элемент с id для попапа — используем синтетический id
+    const {xpEarned} = calcCRProgress(routeId, _route.levels);
+    const prevXp = xpEarned - taskXp;
+    updateXpPanel(true, prevXp);
+    const {xpEarned:totalXp, xpTotal:maxXp} = calcCRProgress(routeId, _route.levels);
     const syntheticId = `cr_${li}_${ti}`;
-    Game.onTaskComplete(syntheticId, taskXp, totalXp, maxXp, getXpLevel(totalXp,maxXp));
+    Game.onTaskComplete(syntheticId, taskXp, totalXp, maxXp, getXpLevel(totalXp, maxXp));
   } else {
     updateXpPanel();
   }
@@ -208,7 +157,6 @@ function renderLevels() {
         <div class="cr-task-list">
           ${tasks.map((t,ti)=>{
             const checked = localStorage.getItem(crKey(r.id,li,ti))==='1';
-            // синтетический id для попапа XP
             const synId = `cr_${li}_${ti}`;
             return `<div class="cr-task-item">
               <input type="checkbox" id="${synId}" ${checked?'checked':''}
@@ -255,9 +203,8 @@ async function init() {
   updateXpPanel();
   renderLevels();
 
-  // инициализируем level-трекер и welcome — как producer.html
-  const {totalXp,maxXp} = calcTotalXp();
-  Game.onPageLoad(totalXp, maxXp, u?u.fio.split(' ')[0]:'Сотрудник', _route.title||'Индивидуальный маршрут');
+  const {xpEarned, xpTotal} = calcCRProgress(_route.id, _route.levels);
+  Game.onPageLoad(xpEarned, xpTotal, u?u.fio.split(' ')[0]:'Сотрудник', _route.title||'Индивидуальный маршрут');
 }
 
 DB.ready.then(init);
