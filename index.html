@@ -47,7 +47,6 @@
     .admin-card-meta .staff-count{background:#e8f3ff;border-radius:20px;padding:2px 9px;font-size:.78rem;color:#0a4d8c}
     .admin-card-empty{font-size:.82rem;color:#aaa;font-style:italic}
     .day-chip{display:inline-block;background:#e8f3ff;color:#0a4d8c;border-radius:20px;padding:2px 9px;font-size:.78rem;font-weight:700;white-space:nowrap}
-    /* Карточка индивидуального маршрута */
     .custom-route-banner{display:none;background:linear-gradient(135deg,#0a4d8c,#1a7fd4);border-radius:18px;padding:22px 26px;margin-bottom:24px;color:#fff;text-decoration:none;transition:.15s;position:relative;overflow:hidden}
     .custom-route-banner:hover{opacity:.93;transform:translateY(-1px)}
     .custom-route-banner::before{content:'';position:absolute;right:-20px;top:-20px;width:100px;height:100px;background:rgba(255,255,255,.07);border-radius:50%}
@@ -237,6 +236,9 @@ const TQ_BIN_ID  = '6a0c18b56877513b27974e7e';
 const TQ_API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
 const TQ_URL     = `https://api.jsonbin.io/v3/b/${TQ_BIN_ID}`;
 
+// Кеш кастомных маршрутов для renderOverallProgress
+let _cachedCustomRoutes = [];
+
 function esc(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -269,41 +271,40 @@ function calcProgress(userLogin, role) {
   return { xp, maxXp, pct: Math.round(xp / maxXp * 100) };
 }
 
+function crKey(routeId, li, ti) { return `ao_cr_${routeId}_${li}_${ti}`; }
+
+function calcCRProgress(routeId, levels) {
+  let done = 0, total = 0, xpEarned = 0, xpTotal = 0;
+  (levels||[]).forEach((lv, li) => {
+    (lv.tasks||[]).forEach((_t, ti) => {
+      total++; xpTotal += (_t.xp||0);
+      if (localStorage.getItem(crKey(routeId, li, ti)) === '1') { done++; xpEarned += (_t.xp||0); }
+    });
+  });
+  return { done, total, xpEarned, xpTotal, pct: total ? Math.round(done/total*100) : 0 };
+}
+
 function getDayOnPlatform(userObj) {
   const MIN = 1577836800000;
   if (!userObj || !userObj.createdAt || userObj.createdAt < MIN) return null;
   return Math.max(1, Math.floor((Date.now() - userObj.createdAt) / 86400000) + 1);
 }
 
-function crKey(routeId, li, ti) { return `ao_cr_${routeId}_${li}_${ti}`; }
-
-function calcCRProgress(routeId, levels) {
-  let done = 0, total = 0;
-  (levels||[]).forEach((lv, li) => {
-    (lv.tasks||[]).forEach((_t, ti) => {
-      total++;
-      if (localStorage.getItem(crKey(routeId, li, ti)) === '1') done++;
-    });
-  });
-  return { done, total, pct: total ? Math.round(done/total*100) : 0 };
-}
-
 async function renderCustomRouteBanner() {
   const banner = document.getElementById('customRouteBanner');
   if (!banner) return;
-  const isAdmin = Auth.isAdmin();
-  if (isAdmin) { banner.style.display='none'; return; }
+  if (Auth.isAdmin()) { banner.style.display='none'; return; }
   const login = Auth.currentLogin();
   const users = Auth.getUsers();
   const me = users[login];
   if (!me || !me.customRouteId) { banner.style.display='none'; return; }
 
-  // Загружаем данные маршрута
   let route = null;
   try {
     const resp = await fetch(TQ_URL, { cache:'no-cache', headers:{'X-Master-Key':TQ_API_KEY,'X-Bin-Meta':'false'} });
     const d = await resp.json();
-    if (Array.isArray(d.customRoutes)) route = d.customRoutes.find(r => r.id === me.customRouteId) || null;
+    _cachedCustomRoutes = Array.isArray(d.customRoutes) ? d.customRoutes : [];
+    route = _cachedCustomRoutes.find(r => r.id === me.customRouteId) || null;
   } catch(e) {}
 
   if (!route) { banner.style.display='none'; return; }
@@ -316,6 +317,9 @@ async function renderCustomRouteBanner() {
   document.getElementById('crbFill').style.width  = p.pct + '%';
   document.getElementById('crbBarLabel').textContent = `${p.done} из ${p.total} задач`;
   banner.style.display = 'block';
+
+  // После загрузки кастомных маршрутов пересчитываем общий прогресс
+  renderOverallProgress();
 }
 
 function reloadFromCloud() {
@@ -412,16 +416,26 @@ function renderHrDashboard() {
     return;
   }
   tbody.innerHTML = employees.sort((a,b)=>a[1].fio.localeCompare(b[1].fio)).map(([login,u])=>{
-    const p = calcProgress(login, u.role);
+    const base = calcProgress(login, u.role);
+    // Добавляем XP из индивидуального маршрута если есть
+    let totalXp = base.xp, totalMax = base.maxXp;
+    if (u.customRouteId && _cachedCustomRoutes.length) {
+      const cr = _cachedCustomRoutes.find(r => r.id === u.customRouteId);
+      if (cr) {
+        const crp = calcCRProgress(cr.id, cr.levels);
+        totalXp += crp.xpEarned; totalMax += crp.xpTotal;
+      }
+    }
+    const pct = totalMax ? Math.round(totalXp / totalMax * 100) : 0;
     const day = getDayOnPlatform(u);
     const dayCell = day ? `<span class="day-chip">📅 День ${day}</span>` : '<span style="color:#ccc;font-size:.8rem">—</span>';
     return `<tr>
       <td><a href="${u.role}.html?view=${login}" style="color:#0a4d8c;font-weight:600;text-decoration:none">${u.fio}</a></td>
       <td>${ROLE_NAMES[u.role]||u.role}</td>
       <td>${dayCell}</td>
-      <td>${getXpLevel(p.xp,u.role)}</td>
-      <td><div class="hr-pbar"><div class="hr-pfill" style="width:${p.pct}%"></div></div></td>
-      <td>${p.xp}/${p.maxXp} XP · ${p.pct}%</td>
+      <td>${getXpLevel(totalXp, u.role)}</td>
+      <td><div class="hr-pbar"><div class="hr-pfill" style="width:${pct}%"></div></div></td>
+      <td>${totalXp}/${totalMax} XP · ${pct}%</td>
     </tr>`;
   }).join('');
 }
@@ -435,8 +449,22 @@ function renderOverallProgress() {
     document.getElementById('overallPct').textContent = avg+'%';
     document.getElementById('overallLabel').textContent = 'средний прогресс команды';
   } else if (u && MAX_XP[u.role]) {
-    const p = calcProgress(myLogin, u.role);
-    document.getElementById('overallPct').textContent = p.pct+'%';
+    const base = calcProgress(myLogin, u.role);
+    // Учитываем XP из индивидуального маршрута
+    let totalXp = base.xp, totalMax = base.maxXp;
+    if (_cachedCustomRoutes.length) {
+      const users = Auth.getUsers();
+      const me = users[myLogin];
+      if (me && me.customRouteId) {
+        const cr = _cachedCustomRoutes.find(r => r.id === me.customRouteId);
+        if (cr) {
+          const crp = calcCRProgress(cr.id, cr.levels);
+          totalXp += crp.xpEarned; totalMax += crp.xpTotal;
+        }
+      }
+    }
+    const pct = totalMax ? Math.round(totalXp / totalMax * 100) : 0;
+    document.getElementById('overallPct').textContent = pct+'%';
     document.getElementById('overallLabel').textContent = 'твой прогресс';
   } else {
     document.getElementById('overallPct').textContent = '—';
@@ -546,7 +574,7 @@ window.onload = function() {
   DB.ready.then(() => {
     updateUI();
     renderRoutes();
-    renderCustomRouteBanner();
+    renderCustomRouteBanner(); // подгружает кастомные маршруты и потом пересчитывает прогресс
     if (Auth.isAdmin()) {
       setInterval(() => {
         reloadFromCloud().then(() => {

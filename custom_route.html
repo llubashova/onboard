@@ -60,6 +60,16 @@ const TQ_BIN_ID  = '6a0c18b56877513b27974e7e';
 const TQ_API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
 const TQ_URL     = `https://api.jsonbin.io/v3/b/${TQ_BIN_ID}`;
 
+const TASK_XP_ROLE = {
+  producer:290, sales:290, marketing:290
+};
+const ROLE_TASK_KEYS = {
+  producer: Object.keys({producer_l1_p1:10,producer_l1_p2:10,producer_l1_p3:10,producer_l1_p4:10,producer_l1_m1:8,producer_l1_m2:8,producer_l1_s1:5,producer_l1_s2:5,producer_l1_s3:5,producer_l2_p1:15,producer_l2_p2:15,producer_l2_p3:15,producer_l2_p4:15,producer_l2_p5:15,producer_l2_m1:8,producer_l2_m2:8,producer_l2_s1:5,producer_l2_s2:5,producer_l3_p1:25,producer_l3_p2:25,producer_l3_p3:25,producer_l3_p4:25,producer_l3_m1:8,producer_l3_s1:5,producer_l3_s2:5}),
+  sales: Object.keys({sales_l1_p1:10,sales_l1_p2:10,sales_l1_p3:10,sales_l1_p4:10,sales_l1_m1:8,sales_l1_m2:8,sales_l1_s1:5,sales_l1_s2:5,sales_l1_s3:5,sales_l2_p1:15,sales_l2_p2:15,sales_l2_p3:15,sales_l2_p4:15,sales_l2_p5:15,sales_l2_m1:8,sales_l2_m2:8,sales_l2_s1:5,sales_l2_s2:5,sales_l3_p1:25,sales_l3_p2:25,sales_l3_p3:25,sales_l3_p4:25,sales_l3_m1:8,sales_l3_s1:5,sales_l3_s2:5}),
+  marketing: Object.keys({marketing_l1_p1:10,marketing_l1_p2:10,marketing_l1_p3:10,marketing_l1_p4:10,marketing_l1_m1:8,marketing_l1_m2:8,marketing_l1_s1:5,marketing_l1_s2:5,marketing_l1_s3:5,marketing_l2_p1:15,marketing_l2_p2:15,marketing_l2_p3:15,marketing_l2_p4:15,marketing_l2_p5:15,marketing_l2_m1:8,marketing_l2_m2:8,marketing_l2_s1:5,marketing_l2_s2:5,marketing_l3_p1:25,marketing_l3_p2:25,marketing_l3_p3:25,marketing_l3_p4:25,marketing_l3_m1:8,marketing_l3_s1:5,marketing_l3_s2:5})
+};
+const TASK_XP_MAP = {producer_l1_p1:10,producer_l1_p2:10,producer_l1_p3:10,producer_l1_p4:10,producer_l1_m1:8,producer_l1_m2:8,producer_l1_s1:5,producer_l1_s2:5,producer_l1_s3:5,producer_l2_p1:15,producer_l2_p2:15,producer_l2_p3:15,producer_l2_p4:15,producer_l2_p5:15,producer_l2_m1:8,producer_l2_m2:8,producer_l2_s1:5,producer_l2_s2:5,producer_l3_p1:25,producer_l3_p2:25,producer_l3_p3:25,producer_l3_p4:25,producer_l3_m1:8,producer_l3_s1:5,producer_l3_s2:5,sales_l1_p1:10,sales_l1_p2:10,sales_l1_p3:10,sales_l1_p4:10,sales_l1_m1:8,sales_l1_m2:8,sales_l1_s1:5,sales_l1_s2:5,sales_l1_s3:5,sales_l2_p1:15,sales_l2_p2:15,sales_l2_p3:15,sales_l2_p4:15,sales_l2_p5:15,sales_l2_m1:8,sales_l2_m2:8,sales_l2_s1:5,sales_l2_s2:5,sales_l3_p1:25,sales_l3_p2:25,sales_l3_p3:25,sales_l3_p4:25,sales_l3_m1:8,sales_l3_s1:5,sales_l3_s2:5,marketing_l1_p1:10,marketing_l1_p2:10,marketing_l1_p3:10,marketing_l1_p4:10,marketing_l1_m1:8,marketing_l1_m2:8,marketing_l1_s1:5,marketing_l1_s2:5,marketing_l1_s3:5,marketing_l2_p1:15,marketing_l2_p2:15,marketing_l2_p3:15,marketing_l2_p4:15,marketing_l2_p5:15,marketing_l2_m1:8,marketing_l2_m2:8,marketing_l2_s1:5,marketing_l2_s2:5,marketing_l3_p1:25,marketing_l3_p2:25,marketing_l3_p3:25,marketing_l3_p4:25,marketing_l3_m1:8,marketing_l3_s1:5,marketing_l3_s2:5};
+
 let _route = null;
 let _login = null;
 let _tqData = {};
@@ -70,7 +80,7 @@ function crKey(routeId, li, ti) { return `ao_cr_${routeId}_${li}_${ti}`; }
 
 function calcCRProgress(routeId, levels) {
   let done = 0, total = 0, xpEarned = 0, xpTotal = 0;
-  levels.forEach((lv, li) => {
+  (levels||[]).forEach((lv, li) => {
     (lv.tasks||[]).forEach((t, ti) => {
       total++; xpTotal += (t.xp||0);
       if (localStorage.getItem(crKey(routeId, li, ti)) === '1') { done++; xpEarned += (t.xp||0); }
@@ -79,10 +89,31 @@ function calcCRProgress(routeId, levels) {
   return { done, total, xpEarned, xpTotal, pct: total ? Math.round(done/total*100) : 0 };
 }
 
-function saveTaskCheck(routeId, li, ti, checked) {
+function calcRoleXp(login, role) {
+  const keys = ROLE_TASK_KEYS[role] || [];
+  let xp = 0;
+  keys.forEach(k => {
+    if (Auth.getCheckForUser(login, k)) xp += (TASK_XP_MAP[k] || 0);
+  });
+  return { xp, maxXp: TASK_XP_ROLE[role] || 290 };
+}
+
+function saveTaskCheck(routeId, li, ti, checked, taskXp) {
   const key = crKey(routeId, li, ti);
   if (checked) localStorage.setItem(key, '1');
   else localStorage.removeItem(key);
+
+  if (checked) {
+    const u = Auth.current();
+    const login = Auth.currentLogin();
+    const role = u ? u.role : null;
+    const cr = calcCRProgress(routeId, _route ? _route.levels : []);
+    const base = role ? calcRoleXp(login, role) : { xp: 0, maxXp: 290 };
+    const totalXp = base.xp + cr.xpEarned;
+    const maxXp   = base.maxXp + cr.xpTotal;
+    Game.onTaskComplete('cr_' + li + '_' + ti, taskXp, totalXp, maxXp, role || 'custom');
+  }
+
   renderPage();
 }
 
@@ -121,7 +152,7 @@ function renderPage() {
             const checked = localStorage.getItem(crKey(r.id,li,ti))==='1';
             return `<div class="cr-task-item">
               <input type="checkbox" id="cr_${li}_${ti}" ${checked?'checked':''}
-                onchange="saveTaskCheck('${esc(r.id)}',${li},${ti},this.checked)">
+                onchange="saveTaskCheck('${esc(r.id)}',${li},${ti},this.checked,${t.xp||0})">
               <label for="cr_${li}_${ti}" class="cr-task-name ${checked?'done':''}">${esc(t.name)}</label>
               <span class="cr-task-xp ${checked?'earned':''}">+${t.xp||0} XP</span>
             </div>`;
@@ -140,7 +171,6 @@ async function init() {
   _login = login;
   document.getElementById('headerUser').textContent = u ? u.fio.split(' ')[0] : '—';
 
-  // Загружаем маршруты из TQ bin
   try {
     const resp = await fetch(TQ_URL, { cache:'no-cache', headers:{'X-Master-Key':TQ_API_KEY,'X-Bin-Meta':'false'} });
     _tqData = await resp.json();
@@ -152,6 +182,14 @@ async function init() {
   if (routeId && Array.isArray(_tqData.customRoutes)) {
     _route = _tqData.customRoutes.find(r => r.id === routeId) || null;
   }
+
+  // Инициализируем level-трекер от суммарного XP
+  if (_route && u) {
+    const base = calcRoleXp(login, u.role);
+    const cr   = calcCRProgress(_route.id, _route.levels);
+    Game.onPageLoad(base.xp + cr.xpEarned, base.maxXp + cr.xpTotal, u.fio.split(' ')[0], u.role);
+  }
+
   renderPage();
 }
 
