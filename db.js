@@ -1,6 +1,5 @@
-// db.js — JSONBin bridge v12
-// v12: timeout снижен до 1500мс — окно «Подключение» больше не висит
-// v11: fix reset — активно удаляем ao_p_* из localStorage если progressResetAt есть в облаке
+// db.js — JSONBin bridge v13
+// v13: Скрываем loadingScreen внутри ready.then — независимо от остальных скриптов
 const DB = (() => {
   const BIN_ID  = '6a07317badc21f119aa526dd';
   const API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
@@ -32,15 +31,12 @@ const DB = (() => {
 
   function restoreProgress(cloudProgress, cloudUsers) {
     if (!cloudProgress || typeof cloudProgress !== 'object') return;
-
     const resetMap = {};
     if (cloudUsers && typeof cloudUsers === 'object') {
       Object.entries(cloudUsers).forEach(([login, u]) => {
         if (u && u.progressResetAt) resetMap[login.toLowerCase()] = u.progressResetAt;
       });
     }
-
-    // 1. Активно удаляем ao_p_* сброшенных из localStorage
     if (Object.keys(resetMap).length > 0) {
       const keysToDelete = [];
       for (let i = 0; i < localStorage.length; i++) {
@@ -51,19 +47,14 @@ const DB = (() => {
       }
       keysToDelete.forEach(k => localStorage.removeItem(k));
     }
-
-    // 2. Восстанавливаем остальное (пропуская сброшенных)
     Object.keys(cloudProgress).forEach(k => {
       if (!k.startsWith('ao_p_')) return;
       const login = _loginFromKey(k);
       if (login && resetMap[login]) return;
       const cloudVal = cloudProgress[k];
       const localVal = localStorage.getItem(k);
-      if (cloudVal === '1' && localVal !== '1') {
-        localStorage.setItem(k, cloudVal);
-      } else if (cloudVal !== '1') {
-        localStorage.setItem(k, cloudVal);
-      }
+      if (cloudVal === '1' && localVal !== '1') localStorage.setItem(k, cloudVal);
+      else if (cloudVal !== '1') localStorage.setItem(k, cloudVal);
     });
   }
 
@@ -74,6 +65,14 @@ const DB = (() => {
       normalized[login.toLowerCase()] = u;
     });
     return normalized;
+  }
+
+  // Функция скрытия loadingScreen — вызывается изнутри DB
+  function _hideLoader() {
+    try {
+      var el = document.getElementById('loadingScreen');
+      if (el) el.style.display = 'none';
+    } catch(e) {}
   }
 
   const cloudFetch = fetch(URL, {
@@ -98,14 +97,17 @@ const DB = (() => {
   })
   .catch(() => {});
 
-  // v12: снижаем с 4000 до 1500мс — если JSONBin медленный отвечает, просто работаем с локальным
+  // Таймаут 1500мс
   const timeout = new Promise(resolve => setTimeout(resolve, 1500));
-  const ready   = Promise.race([cloudFetch, timeout]);
+
+  // ready: как только один из двух завершился — сразу скрываем лоадер
+  const ready = Promise.race([cloudFetch, timeout]).then(function() {
+    _hideLoader();
+  });
 
   function _buildPayload() {
     const users = JSON.parse(localStorage.getItem('ao_users') || '{}');
     const rawProgress = collectProgress();
-
     const progress = {};
     Object.entries(rawProgress).forEach(([k, v]) => {
       const login = _loginFromKey(k);
@@ -113,7 +115,6 @@ const DB = (() => {
       if (u && u.progressResetAt) return;
       progress[k] = v;
     });
-
     return {
       users,
       invites:  JSON.parse(localStorage.getItem('ao_invites') || '{}'),
@@ -151,20 +152,11 @@ const DB = (() => {
     .finally(() => { _syncing = false; });
   }
 
-  function getQuizzes() {
-    return JSON.parse(localStorage.getItem('ao_quizzes') || '[]');
-  }
-  function saveQuizzes(arr) {
-    localStorage.setItem('ao_quizzes', JSON.stringify(arr));
-    sync();
-  }
+  function getQuizzes() { return JSON.parse(localStorage.getItem('ao_quizzes') || '[]'); }
+  function saveQuizzes(arr) { localStorage.setItem('ao_quizzes', JSON.stringify(arr)); sync(); }
 
-  function getNotes() {
-    return JSON.parse(localStorage.getItem('ao_notes') || '{}');
-  }
-  function getNotesFor(login) {
-    return getNotes()[login] || { text: '', checklist: [], mode: 'standard' };
-  }
+  function getNotes() { return JSON.parse(localStorage.getItem('ao_notes') || '{}'); }
+  function getNotesFor(login) { return getNotes()[login] || { text: '', checklist: [], mode: 'standard' }; }
   function saveNotesFor(login, data) {
     const notes = getNotes();
     notes[login] = data;
