@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Индивидуальный маршрут</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <script>if(!localStorage.getItem('ao_session'))location.replace('login.html');</script>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="game.css?v=3">
+  <style>
+    .cr-hero{background:linear-gradient(135deg,#0a4d8c,#1a7fd4);border-radius:20px;padding:28px 32px;color:#fff;margin-bottom:28px}
+    .cr-hero h1{margin:0 0 6px;font-size:1.6rem}
+    .cr-hero p{margin:0 0 16px;opacity:.85;font-size:.95rem}
+    .cr-hero-prog{display:flex;align-items:center;gap:14px}
+    .cr-hero-pct{font-size:2rem;font-weight:800;min-width:56px}
+    .cr-hero-bar-wrap{flex:1}
+    .cr-hero-bar{height:10px;background:rgba(255,255,255,.25);border-radius:5px;overflow:hidden}
+    .cr-hero-fill{height:100%;background:#fff;border-radius:5px;transition:.4s}
+    .cr-hero-label{font-size:.8rem;opacity:.75;margin-top:4px}
+    .cr-level{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:20px;overflow:hidden}
+    .cr-level-head{background:#f0f7ff;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #dde8f5}
+    .cr-level-head h2{margin:0;font-size:1rem;color:#0a4d8c}
+    .cr-level-head .cr-lv-prog{font-size:.82rem;color:#1a7fd4;font-weight:600}
+    .cr-task-list{padding:12px 22px 16px}
+    .cr-task-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f0f4fa}
+    .cr-task-item:last-child{border-bottom:none}
+    .cr-task-item input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:#1a7fd4;flex-shrink:0}
+    .cr-task-name{flex:1;font-size:.93rem;color:#222}
+    .cr-task-name.done{text-decoration:line-through;color:#aaa}
+    .cr-task-xp{font-size:.78rem;background:#e8f3ff;color:#0a4d8c;border-radius:20px;padding:2px 8px;font-weight:700;white-space:nowrap}
+    .cr-task-xp.earned{background:#d1fae5;color:#065f46}
+    .cr-empty{text-align:center;padding:60px 20px;color:#aaa}
+    .back-btn{display:inline-flex;align-items:center;gap:6px;color:#1a7fd4;font-weight:600;text-decoration:none;font-size:.9rem;margin-bottom:20px;background:#e8f3ff;border-radius:10px;padding:8px 14px;transition:.15s}
+    .back-btn:hover{background:#d0e8ff}
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="logo"><span class="logo-icon">🎓</span> Auditorium Onboard</div>
+    <div class="user-badge" id="headerUserBadge" style="cursor:default">
+      <span id="headerUser">—</span>
+    </div>
+  </div>
+</header>
+
+<div class="main-wrap">
+  <a href="index.html" class="back-btn">← Назад на главную</a>
+  <div id="pageContent"><div class="cr-empty">⏳ Загрузка маршрута…</div></div>
+</div>
+
+<footer><p>ООО «Аудиториум СиДжи» · Система геймификации адаптации · 2026</p></footer>
+
+<script src="db.js"></script>
+<script src="auth.js"></script>
+<script src="game.js?v=3"></script>
+<script>
+const TQ_BIN_ID  = '6a0c18b56877513b27974e7e';
+const TQ_API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
+const TQ_URL     = `https://api.jsonbin.io/v3/b/${TQ_BIN_ID}`;
+
+let _route = null;
+let _login = null;
+let _tqData = {};
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function crKey(routeId, li, ti) { return `ao_cr_${routeId}_${li}_${ti}`; }
+
+function calcCRProgress(routeId, levels) {
+  let done = 0, total = 0, xpEarned = 0, xpTotal = 0;
+  levels.forEach((lv, li) => {
+    (lv.tasks||[]).forEach((t, ti) => {
+      total++; xpTotal += (t.xp||0);
+      if (localStorage.getItem(crKey(routeId, li, ti)) === '1') { done++; xpEarned += (t.xp||0); }
+    });
+  });
+  return { done, total, xpEarned, xpTotal, pct: total ? Math.round(done/total*100) : 0 };
+}
+
+function saveTaskCheck(routeId, li, ti, checked) {
+  const key = crKey(routeId, li, ti);
+  if (checked) localStorage.setItem(key, '1');
+  else localStorage.removeItem(key);
+  renderPage();
+}
+
+function renderPage() {
+  const r = _route;
+  if (!r) {
+    document.getElementById('pageContent').innerHTML = '<div class="cr-empty">😔 Индивидуальный маршрут не найден или не назначен</div>';
+    return;
+  }
+  document.title = r.title + ' — Auditorium Onboard';
+  const p = calcCRProgress(r.id, r.levels||[]);
+  let html = `
+    <div class="cr-hero">
+      <h1>${esc(r.icon||'🎯')} ${esc(r.title)}</h1>
+      <p>${esc(r.subtitle||'Твой персональный маршрут адаптации')}</p>
+      <div class="cr-hero-prog">
+        <div class="cr-hero-pct">${p.pct}%</div>
+        <div class="cr-hero-bar-wrap">
+          <div class="cr-hero-bar"><div class="cr-hero-fill" style="width:${p.pct}%"></div></div>
+          <div class="cr-hero-label">${p.done} из ${p.total} задач · ${p.xpEarned} / ${p.xpTotal} XP</div>
+        </div>
+      </div>
+    </div>
+  `;
+  (r.levels||[]).forEach((lv, li) => {
+    const tasks = lv.tasks||[];
+    const lvDone = tasks.filter((_,ti)=>localStorage.getItem(crKey(r.id,li,ti))==='1').length;
+    html += `
+      <div class="cr-level">
+        <div class="cr-level-head">
+          <h2>📌 ${esc(lv.title||('Уровень '+(li+1)))}</h2>
+          <span class="cr-lv-prog">${lvDone}/${tasks.length}</span>
+        </div>
+        <div class="cr-task-list">
+          ${tasks.map((t,ti) => {
+            const checked = localStorage.getItem(crKey(r.id,li,ti))==='1';
+            return `<div class="cr-task-item">
+              <input type="checkbox" id="cr_${li}_${ti}" ${checked?'checked':''}
+                onchange="saveTaskCheck('${esc(r.id)}',${li},${ti},this.checked)">
+              <label for="cr_${li}_${ti}" class="cr-task-name ${checked?'done':''}">${esc(t.name)}</label>
+              <span class="cr-task-xp ${checked?'earned':''}">+${t.xp||0} XP</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  });
+  document.getElementById('pageContent').innerHTML = html;
+}
+
+async function init() {
+  if (!Auth.requireAuth()) return;
+  const u = Auth.current();
+  const login = Auth.currentLogin();
+  _login = login;
+  document.getElementById('headerUser').textContent = u ? u.fio.split(' ')[0] : '—';
+
+  // Загружаем маршруты из TQ bin
+  try {
+    const resp = await fetch(TQ_URL, { cache:'no-cache', headers:{'X-Master-Key':TQ_API_KEY,'X-Bin-Meta':'false'} });
+    _tqData = await resp.json();
+  } catch(e) { _tqData = {}; }
+
+  const users = Auth.getUsers();
+  const me = users[login];
+  const routeId = me && me.customRouteId;
+  if (routeId && Array.isArray(_tqData.customRoutes)) {
+    _route = _tqData.customRoutes.find(r => r.id === routeId) || null;
+  }
+  renderPage();
+}
+
+DB.ready.then(init);
+</script>
+</body>
+</html>

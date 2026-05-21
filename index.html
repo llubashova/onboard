@@ -47,6 +47,21 @@
     .admin-card-meta .staff-count{background:#e8f3ff;border-radius:20px;padding:2px 9px;font-size:.78rem;color:#0a4d8c}
     .admin-card-empty{font-size:.82rem;color:#aaa;font-style:italic}
     .day-chip{display:inline-block;background:#e8f3ff;color:#0a4d8c;border-radius:20px;padding:2px 9px;font-size:.78rem;font-weight:700;white-space:nowrap}
+    /* Карточка индивидуального маршрута */
+    .custom-route-banner{display:none;background:linear-gradient(135deg,#0a4d8c,#1a7fd4);border-radius:18px;padding:22px 26px;margin-bottom:24px;color:#fff;text-decoration:none;transition:.15s;position:relative;overflow:hidden}
+    .custom-route-banner:hover{opacity:.93;transform:translateY(-1px)}
+    .custom-route-banner::before{content:'';position:absolute;right:-20px;top:-20px;width:100px;height:100px;background:rgba(255,255,255,.07);border-radius:50%}
+    .crb-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+    .crb-badge{background:rgba(255,255,255,.2);border-radius:20px;padding:2px 10px;font-size:.75rem;font-weight:700;letter-spacing:.03em}
+    .crb-title{font-size:1.15rem;font-weight:800;margin:0 0 4px}
+    .crb-sub{font-size:.85rem;opacity:.8;margin:0 0 14px}
+    .crb-prog-wrap{display:flex;align-items:center;gap:10px}
+    .crb-pct{font-size:1.4rem;font-weight:800;min-width:46px}
+    .crb-bar-wrap{flex:1}
+    .crb-bar{height:7px;background:rgba(255,255,255,.25);border-radius:4px;overflow:hidden}
+    .crb-fill{height:100%;background:#fff;border-radius:4px;transition:.4s}
+    .crb-bar-label{font-size:.75rem;opacity:.7;margin-top:3px}
+    .crb-arrow{position:absolute;right:22px;top:50%;transform:translateY(-50%);font-size:1.5rem;opacity:.6}
   </style>
 </head>
 <body>
@@ -102,6 +117,24 @@
       <div class="label" id="overallLabel">общий прогресс</div>
     </div>
   </div>
+
+  <!-- Карточка индивидуального маршрута -->
+  <a href="custom_route.html" class="custom-route-banner" id="customRouteBanner">
+    <div class="crb-top">
+      <span id="crbIcon">🎯</span>
+      <span class="crb-badge">👤 Индивидуальный маршрут</span>
+    </div>
+    <p class="crb-title" id="crbTitle">Мой маршрут</p>
+    <p class="crb-sub" id="crbSub">Персональный план адаптации</p>
+    <div class="crb-prog-wrap">
+      <div class="crb-pct" id="crbPct">0%</div>
+      <div class="crb-bar-wrap">
+        <div class="crb-bar"><div class="crb-fill" id="crbFill" style="width:0%"></div></div>
+        <div class="crb-bar-label" id="crbBarLabel">0 из 0 задач</div>
+      </div>
+    </div>
+    <span class="crb-arrow">→</span>
+  </a>
 
   <div class="badges-section" id="badgesSection" style="display:none">
     <div class="badges-section-title">🏅 Мои достижения</div>
@@ -208,7 +241,6 @@ function esc(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// Извлекаем логин из ao_p_<login>_<role>_... (логин может содержать '_')
 function _loginFromKey(key) {
   if (!key.startsWith('ao_p_')) return null;
   const body = key.slice(5);
@@ -243,8 +275,49 @@ function getDayOnPlatform(userObj) {
   return Math.max(1, Math.floor((Date.now() - userObj.createdAt) / 86400000) + 1);
 }
 
-// ── Перезагрузка из облака для HR-дашборда ───────────────────
-// Правильно парсит логин из ao_p_* ключей и уважает progressResetAt
+function crKey(routeId, li, ti) { return `ao_cr_${routeId}_${li}_${ti}`; }
+
+function calcCRProgress(routeId, levels) {
+  let done = 0, total = 0;
+  (levels||[]).forEach((lv, li) => {
+    (lv.tasks||[]).forEach((_t, ti) => {
+      total++;
+      if (localStorage.getItem(crKey(routeId, li, ti)) === '1') done++;
+    });
+  });
+  return { done, total, pct: total ? Math.round(done/total*100) : 0 };
+}
+
+async function renderCustomRouteBanner() {
+  const banner = document.getElementById('customRouteBanner');
+  if (!banner) return;
+  const isAdmin = Auth.isAdmin();
+  if (isAdmin) { banner.style.display='none'; return; }
+  const login = Auth.currentLogin();
+  const users = Auth.getUsers();
+  const me = users[login];
+  if (!me || !me.customRouteId) { banner.style.display='none'; return; }
+
+  // Загружаем данные маршрута
+  let route = null;
+  try {
+    const resp = await fetch(TQ_URL, { cache:'no-cache', headers:{'X-Master-Key':TQ_API_KEY,'X-Bin-Meta':'false'} });
+    const d = await resp.json();
+    if (Array.isArray(d.customRoutes)) route = d.customRoutes.find(r => r.id === me.customRouteId) || null;
+  } catch(e) {}
+
+  if (!route) { banner.style.display='none'; return; }
+
+  const p = calcCRProgress(route.id, route.levels);
+  document.getElementById('crbIcon').textContent  = route.icon || '🎯';
+  document.getElementById('crbTitle').textContent = route.title;
+  document.getElementById('crbSub').textContent   = route.subtitle || 'Персональный план адаптации';
+  document.getElementById('crbPct').textContent   = p.pct + '%';
+  document.getElementById('crbFill').style.width  = p.pct + '%';
+  document.getElementById('crbBarLabel').textContent = `${p.done} из ${p.total} задач`;
+  banner.style.display = 'block';
+}
+
 function reloadFromCloud() {
   return fetch(BIN_URL, {
     cache: 'no-cache',
@@ -253,34 +326,26 @@ function reloadFromCloud() {
   .then(r => r.ok ? r.json() : null)
   .then(cloud => {
     if (!cloud) return;
-
-    // 1. Загружаем users из облака
     let users = JSON.parse(localStorage.getItem('ao_users') || '{}');
     if (cloud.users && Object.keys(cloud.users).length > 0) {
       const norm = {};
       Object.entries(cloud.users).forEach(([l,u]) => { norm[l.toLowerCase()] = u; });
       localStorage.setItem('ao_users', JSON.stringify(norm));
-      users = norm; // используем свежие данные сразу
+      users = norm;
     }
-
-    // 2. Сначала УДАЛЯЕМ из localStorage ao_p_* ключи пользователей со сбросом
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const k = localStorage.key(i);
       if (!k || !k.startsWith('ao_p_')) continue;
       const login = _loginFromKey(k);
       const u = login ? users[login] : null;
-      if (u && u.progressResetAt) {
-        localStorage.removeItem(k);
-      }
+      if (u && u.progressResetAt) localStorage.removeItem(k);
     }
-
-    // 3. Восстанавливаем progress из облака — пропускаем сброшенных
     if (cloud.progress && typeof cloud.progress === 'object') {
       Object.keys(cloud.progress).forEach(k => {
         if (!k.startsWith('ao_p_')) return;
         const login = _loginFromKey(k);
         const u = login ? users[login] : null;
-        if (u && u.progressResetAt) return; // пропускаем
+        if (u && u.progressResetAt) return;
         localStorage.setItem(k, cloud.progress[k]);
       });
     }
@@ -350,7 +415,6 @@ function renderHrDashboard() {
     const p = calcProgress(login, u.role);
     const day = getDayOnPlatform(u);
     const dayCell = day ? `<span class="day-chip">📅 День ${day}</span>` : '<span style="color:#ccc;font-size:.8rem">—</span>';
-    const earnedBadges = Game.getBadges(login);
     return `<tr>
       <td><a href="${u.role}.html?view=${login}" style="color:#0a4d8c;font-weight:600;text-decoration:none">${u.fio}</a></td>
       <td>${ROLE_NAMES[u.role]||u.role}</td>
@@ -482,6 +546,7 @@ window.onload = function() {
   DB.ready.then(() => {
     updateUI();
     renderRoutes();
+    renderCustomRouteBanner();
     if (Auth.isAdmin()) {
       setInterval(() => {
         reloadFromCloud().then(() => {
