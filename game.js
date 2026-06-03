@@ -125,15 +125,13 @@ const BADGES = [
 
 // ── Хранение бейджей в облаке (через users[login].badges) ────
 function _getBadgeState(login) {
-  // Приоритет — данные из Auth (облако через DB)
   if (typeof Auth !== 'undefined') {
     const users = Auth.getUsers();
     const userLogin = login || Auth.currentLogin();
     if (users[userLogin] && users[userLogin].badges) {
-      return users[userLogin].badges; // { first_step: true, ... }
+      return users[userLogin].badges;
     }
   }
-  // Фоллбэк — localStorage (для обратной совместимости)
   const raw = localStorage.getItem('ao_badges_' + (login || (typeof Auth !== 'undefined' ? Auth.currentLogin() : 'user')));
   return raw ? JSON.parse(raw) : {};
 }
@@ -148,7 +146,6 @@ function _saveBadgeState(state, login) {
       return;
     }
   }
-  // Фоллбэк
   localStorage.setItem('ao_badges_' + (login || 'user'), JSON.stringify(state));
 }
 
@@ -330,20 +327,30 @@ function maybeShowWelcome(userName, roleName) {
 
 
 // ── LEVEL-UP ТРЕКЕР ──────────────────────────────────────────
+// FIX: используем абсолютный XP для определения уровня,
+// а не процент — чтобы пороги совпадали с getXpLevel() на страницах маршрутов.
+// Пороги: Новичок < 71 XP, Продвинутый 71–171 XP, Профи >= 172 XP (для 290 maxXp).
+// Для универсальности считаем через pct: Продвинутый >= 24%, Профи >= 59%.
 let _lastLevel = null;
-function trackLevelUp(xp, maxXp) {
-  const pct = Math.round(xp / (maxXp || 331) * 100);
-  let level, emoji;
-  if (pct >= 60)      { level = 'Профи'; emoji = '🏆'; }
-  else if (pct >= 24) { level = 'Продвинутый'; emoji = '🚀'; }
-  else                { level = 'Новичок'; emoji = '🌱'; }
 
-  if (_lastLevel && _lastLevel !== level) showLevelUp(level, emoji);
-  _lastLevel = level;
+function _levelFromPct(pct) {
+  if (pct >= 59) return { name: 'Профи',       emoji: '🏆' };
+  if (pct >= 24) return { name: 'Продвинутый', emoji: '🚀' };
+  return              { name: 'Новичок',      emoji: '🌱' };
 }
+
+function trackLevelUp(xp, maxXp) {
+  const pct = maxXp ? Math.round(xp / maxXp * 100) : 0;
+  const current = _levelFromPct(pct);
+  if (_lastLevel !== null && _lastLevel !== current.name) {
+    showLevelUp(current.name, current.emoji);
+  }
+  _lastLevel = current.name;
+}
+
 function initLevelTracker(xp, maxXp) {
-  const pct = Math.round(xp / (maxXp || 331) * 100);
-  _lastLevel = pct >= 60 ? 'Профи' : pct >= 24 ? 'Продвинутый' : 'Новичок';
+  const pct = maxXp ? Math.round(xp / maxXp * 100) : 0;
+  _lastLevel = _levelFromPct(pct).name;
 }
 
 
@@ -352,7 +359,8 @@ function initLevelTracker(xp, maxXp) {
 // ─────────────────────────────────────────────────────────────
 const Game = {
   /**
-   * Вызывать при отметке любой задачи
+   * Вызывать при отметке любой задачи.
+   * FIX: конфетти показываем всегда (не только на первой задаче или крупных XP).
    */
   onTaskComplete(taskKey, xpEarned, totalXp, maxXp, levelName) {
     // 1. +XP попап
@@ -364,16 +372,14 @@ const Game = {
       showXpPopup(xpEarned);
     }
 
-    // 2. Конфетти при первой задаче или крупных XP
-    if (totalXp <= xpEarned || xpEarned >= 20) {
-      Confetti.burst(window.innerWidth / 2, window.innerHeight / 3, 30);
-    }
+    // 2. Конфетти — всегда при отметке задачи (было: только первая или >= 20 XP)
+    Confetti.burst(window.innerWidth / 2, window.innerHeight / 3, 30);
 
     // 3. Проверка бейджей (сохраняет в облако)
     const pct = Math.round(totalXp / maxXp * 100);
     checkBadges(totalXp, pct);
 
-    // 4. Level-up анимация
+    // 4. Level-up анимация (FIX: теперь корректно ловит переход в Профи)
     trackLevelUp(totalXp, maxXp);
   },
 
@@ -386,12 +392,6 @@ const Game = {
     maybeShowWelcome(userName, roleName);
   },
 
-  /**
-   * Получить список заработанных бейджей пользователя
-   * Используется в index.html для отображения в профиле
-   * @param {string} login — логин пользователя (или текущий)
-   * @returns {Array} массив объектов бейджей с полем earnedAt
-   */
   getBadges(login) {
     const state = _getBadgeState(login);
     return BADGES
@@ -399,9 +399,6 @@ const Game = {
       .map(b => ({ ...b, earnedAt: state[b.id].earnedAt || null }));
   },
 
-  /**
-   * Получить ВСЕ бейджи (заработанные и нет) — для панели достижений
-   */
   getAllBadges(login) {
     const state = _getBadgeState(login);
     return BADGES.map(b => ({

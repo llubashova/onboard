@@ -166,9 +166,22 @@ const viewLogin = urlParams.get('view');
 const isViewMode = !!viewLogin && Auth.isAdmin();
 const activeLogin = isViewMode ? viewLogin : Auth.currentLogin();
 
+// FIX: при загрузке страницы маршрута — если это админ, сохраняем какой маршрут он просматривает
+// чтобы index.html мог показать его прогресс в дашборде
+if (!isViewMode && Auth.isAdmin()) {
+  const users = Auth.getUsers();
+  const myLogin = Auth.currentLogin();
+  if (users[myLogin]) {
+    users[myLogin].adminRouteRole = ROLE;
+    Auth.saveUsers(users);
+  }
+}
+
+// FIX: пороги совпадают с game.js _levelFromPct (59% = Профи, 24% = Продвинутый)
 function getXpLevel(xp) {
-  if (xp >= 172) return '🏆 Профи';
-  if (xp >= 71)  return '🚀 Продвинутый';
+  const pct = Math.round(xp / MAX_XP_TOTAL * 100);
+  if (pct >= 59) return '🏆 Профи';
+  if (pct >= 24) return '🚀 Продвинутый';
   return '🌱 Новичок';
 }
 
