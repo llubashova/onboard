@@ -202,6 +202,15 @@ const ROLE_NAMES = {
   producer:'Продюсер', sales:'Менеджер по продажам', marketing:'Специалист по маркетингу',
   hr:'HR-менеджер', ceo:'Генеральный директор', exec_dir:'Исполнительный директор', ops_dir:'Операционный директор'
 };
+
+// Приветствие и подпись роли — по конкретной роли пользователя
+const ROLE_GREETING = {
+  hr:       { subtitle: 'Панель HR — управление адаптацией',       badge: '👩‍💼 Режим HR-менеджера' },
+  ceo:      { subtitle: 'Панель руководителя — обзор адаптации',   badge: '👑 Режим генерального директора' },
+  exec_dir: { subtitle: 'Панель руководителя — обзор адаптации',   badge: '🏢 Режим исполнительного директора' },
+  ops_dir:  { subtitle: 'Панель операционного управления',          badge: '⚙️ Режим операционного директора' }
+};
+
 const TASK_XP = {
   producer_l1_p1:10,producer_l1_p2:10,producer_l1_p3:10,producer_l1_p4:10,
   producer_l1_m1:8,producer_l1_m2:8,
@@ -282,14 +291,9 @@ function calcProgress(userLogin,role){
   return{xp,maxXp,pct:Math.round(xp/maxXp*100)};
 }
 
-// Ключ для хранения прогресса кастомного маршрута в облаке
 function crCloudKey(login, routeId, li, ti){ return `ao_p_${login}_cr_${routeId}_${li}_${ti}`; }
-// Ключ для локального хранения (для текущего пользователя)
 function crKey(routeId, li, ti){ return `ao_cr_${routeId}_${li}_${ti}`; }
 
-// Считаем прогресс кастомного маршрута.
-// Для текущего пользователя — из localStorage по crKey.
-// Для другого пользователя (admin view) — из localStorage по crCloudKey (синхронизировано через облако).
 function calcCRProgress(routeId, levels, forLogin){
   const myLogin = Auth.currentLogin();
   const useCloud = forLogin && forLogin !== myLogin;
@@ -306,7 +310,6 @@ function calcCRProgress(routeId, levels, forLogin){
   return{done,total,xpEarned,xpTotal,pct:total?Math.round(done/total*100):0};
 }
 
-// Сохраняем прогресс кастомного маршрута в облако (дублируем ключ с логином)
 function syncCRToCloud(login, routeId, levels){
   if(!login||!routeId) return;
   (levels||[]).forEach((lv,li)=>{
@@ -364,7 +367,6 @@ async function renderCustomRouteBanner(){
     return;
   }
 
-  // Синхронизируем прогресс в облако (ao_p_ ключи) чтобы админ видел
   syncCRToCloud(login, route.id, route.levels);
 
   const p=calcCRProgress(route.id,route.levels);
@@ -482,7 +484,6 @@ function renderHrDashboard(){
     if(u.customRouteId&&_cachedCustomRoutes.length){
       const cr=_cachedCustomRoutes.find(r=>r.id===u.customRouteId);
       if(cr){
-        // Передаём login сотрудника — calcCRProgress возьмёт ao_p_ ключи
         const crp=calcCRProgress(cr.id,cr.levels,login);
         crHtml=`<div style="display:flex;align-items:center;gap:6px">
           <div class="hr-pbar" style="min-width:70px"><div class="hr-pfill cr" style="width:${crp.pct}%"></div></div>
@@ -494,7 +495,6 @@ function renderHrDashboard(){
     }
     const day=getDayOnPlatform(u);
     const dayCell=day?`<span class="day-chip">📅 День ${day}</span>`:'<span style="color:#ccc;font-size:.8rem">—</span>';
-    // Уровень считаем только по ролевому прогрессу
     return `<tr>
       <td><a href="${u.role}.html?view=${login}" style="color:#0a4d8c;font-weight:600;text-decoration:none">${esc(u.fio)}</a></td>
       <td>${ROLE_NAMES[u.role]||u.role}</td>
@@ -522,7 +522,6 @@ function renderOverallProgress(){
     document.getElementById('overallPct').textContent=avg+'%';
     document.getElementById('overallLabel').textContent='средний прогресс команды';
   }else if(u&&MAX_XP[u.role]){
-    // Общий прогресс сотрудника = только ролевой маршрут
     const base=calcProgress(myLogin,u.role);
     document.getElementById('overallPct').textContent=base.pct+'%';
     document.getElementById('overallLabel').textContent='твой прогресс';
@@ -542,9 +541,14 @@ function renderDayCounter(){
     if(users[login]){users[login].createdAt=Date.now();Auth.saveUsers(users);u.createdAt=users[login].createdAt;}
   }
   const days=getDayOnPlatform(u)||1;
-  wrap.innerHTML=Auth.isAdmin()
-    ?`<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">👩‍💼 Режим HR-администратора</div>`
-    :`<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">📅 День адаптации: <strong>${days}</strong></div>`;
+
+  if(Auth.isAdmin()){
+    // Показываем значок соответствующий конкретной роли
+    const roleInfo = ROLE_GREETING[u.role] || { badge: '👩‍💼 Режим администратора' };
+    wrap.innerHTML=`<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">${roleInfo.badge}</div>`;
+  } else {
+    wrap.innerHTML=`<div style="font-size:.9rem;color:#1a7fd4;font-weight:600">📅 День адаптации: <strong>${days}</strong></div>`;
+  }
 }
 
 function buildRouteCards(routes){
@@ -619,8 +623,18 @@ function renderBadges(){
 function updateUI(){
   const u=Auth.current();if(!u) return;
   document.getElementById('headerUser').textContent=u.fio.split(' ')[0];
+
+  // Приветствие по имени
   document.getElementById('welcomeTitle').textContent='Привет, '+u.fio.split(' ')[0]+'! 👋';
-  document.getElementById('welcomeSubtitle').textContent=Auth.isAdmin()?'Панель HR — управление адаптацией':'Добро пожаловать в систему адаптации';
+
+  // Подзаголовок — зависит от конкретной роли
+  if(Auth.isAdmin()){
+    const roleInfo = ROLE_GREETING[u.role] || { subtitle: 'Панель администратора — управление адаптацией' };
+    document.getElementById('welcomeSubtitle').textContent = roleInfo.subtitle;
+  } else {
+    document.getElementById('welcomeSubtitle').textContent = 'Добро пожаловать в систему адаптации';
+  }
+
   renderDayCounter();
   if(Auth.isAdmin()) renderOverallProgress();
   renderBadges();
