@@ -1,5 +1,8 @@
-// db.js — JSONBin bridge v13
-// v13: Скрываем loadingScreen внутри ready.then — независимо от остальных скриптов
+// db.js — JSONBin bridge v14
+// v14: fix restoreProgress merge (don't overwrite '1' with '0'),
+//      expose cloudFetch promise so pages can re-render after it resolves,
+//      add syncNow usage guidance
+
 const DB = (() => {
   const BIN_ID  = '6a07317badc21f119aa526dd';
   const API_KEY = '$2a$10$ztuK5lj5tKStjmGmDj8Pe.n.zb.iPHEiLM4Y6Zc6D.RbMWAejc.hC';
@@ -29,6 +32,9 @@ const DB = (() => {
     return progress;
   }
 
+  // BUG FIX: старая версия писала cloudVal даже если он "0", затирая локальное "1".
+  // Новая логика: облако может только ДОБАВИТЬ "1", но не убрать прогресс.
+  // Исключение — если у пользователя стоит progressResetAt (сброс через HR).
   function restoreProgress(cloudProgress, cloudUsers) {
     if (!cloudProgress || typeof cloudProgress !== 'object') return;
     const resetMap = {};
@@ -37,6 +43,7 @@ const DB = (() => {
         if (u && u.progressResetAt) resetMap[login.toLowerCase()] = u.progressResetAt;
       });
     }
+    // Сначала удаляем локальный прогресс пользователей со сбросом
     if (Object.keys(resetMap).length > 0) {
       const keysToDelete = [];
       for (let i = 0; i < localStorage.length; i++) {
@@ -47,14 +54,18 @@ const DB = (() => {
       }
       keysToDelete.forEach(k => localStorage.removeItem(k));
     }
+    // Применяем данные из облака: пишем ТОЛЬКО "1", никогда не затираем локальное "1" нулём
     Object.keys(cloudProgress).forEach(k => {
       if (!k.startsWith('ao_p_')) return;
       const login = _loginFromKey(k);
-      if (login && resetMap[login]) return;
+      if (login && resetMap[login]) return; // пользователь сбросил прогресс — не восстанавливаем
       const cloudVal = cloudProgress[k];
-      const localVal = localStorage.getItem(k);
-      if (cloudVal === '1' && localVal !== '1') localStorage.setItem(k, cloudVal);
-      else if (cloudVal !== '1') localStorage.setItem(k, cloudVal);
+      if (cloudVal === '1') {
+        // Облако говорит "выполнено" — ставим 1 в любом случае
+        localStorage.setItem(k, '1');
+      }
+      // Если cloudVal !== '1' — НЕ трогаем локальное значение.
+      // Это предотвращает затирание локального "1" облачным "0".
     });
   }
 
@@ -67,7 +78,6 @@ const DB = (() => {
     return normalized;
   }
 
-  // Функция скрытия loadingScreen — вызывается изнутри DB
   function _hideLoader() {
     try {
       var el = document.getElementById('loadingScreen');
@@ -75,6 +85,8 @@ const DB = (() => {
     } catch(e) {}
   }
 
+  // BUG FIX: сохраняем cloudFetch отдельно, чтобы страницы могли подписаться на него
+  // и перерисовать UI после того как данные из облака реально загрузились.
   const cloudFetch = fetch(URL, {
     cache: 'no-cache',
     headers: { 'X-Master-Key': API_KEY, 'X-Bin-Meta': 'false' }
@@ -100,10 +112,14 @@ const DB = (() => {
   // Таймаут 1500мс
   const timeout = new Promise(resolve => setTimeout(resolve, 1500));
 
-  // ready: как только один из двух завершился — сразу скрываем лоадер
+  // ready: первый из двух — скрываем лоадер
   const ready = Promise.race([cloudFetch, timeout]).then(function() {
     _hideLoader();
   });
+
+  // afterCloud: резолвится когда облако реально ответило (или упало).
+  // Используется страницами для повторного рендера после получения актуальных данных.
+  const afterCloud = cloudFetch;
 
   function _buildPayload() {
     const users = JSON.parse(localStorage.getItem('ao_users') || '{}');
@@ -164,5 +180,5 @@ const DB = (() => {
     sync();
   }
 
-  return { ready, sync, syncNow, getQuizzes, saveQuizzes, getNotes, getNotesFor, saveNotesFor };
+  return { ready, afterCloud, sync, syncNow, getQuizzes, saveQuizzes, getNotes, getNotesFor, saveNotesFor };
 })();
