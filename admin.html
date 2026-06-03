@@ -404,21 +404,63 @@ function renderUserTable(entries){
   });
 }
 
-function resetUserProgress(login,fio){if(!confirm(`Сбросить весь прогресс для «${fio}»?\nЭто нельзя отменить.`))return;Auth.resetProgressForUser(login);showAlert(`🔄 Прогресс «${fio}» сброшен — синхронизация…`);DB.syncNow().then(()=>{renderUsers();showAlert(`✅ Прогресс «${fio}» сброшен и сохранён в облако`);});}
+function resetUserProgress(login,fio){if(!confirm(`Сбросить весь прогресс для «${fio}»?\nЭто нельзя отменить.`))return;Auth.resetProgressForUser(login);showAlert(`🔄 Прогресс «${fio}» сбрасывается…`);DB.syncNow().then(()=>{renderUsers();showAlert(`✅ Прогресс «${fio}» сброшен и сохранён`);});}
 function renderUsers(){buildEntries();renderStats();applyFilters();}
 function exportExcel(){const rows=_allEntries.map(({login,u,xpData})=>({'ФИО':u.fio,'Логин':login,'Роль':ROLE_NAMES[u.role]||u.role,'XP':xpData?xpData.xp:'—','Max XP':xpData?xpData.maxXp:'—','Прогресс %':xpData?Math.round(xpData.xp/xpData.maxXp*100)+'%':'—','Уровень':xpData?xpData.level.label.replace(/[^\w а-яА-ЯёЁ]/gu,'').trim():'—','Статус':u.blocked?'Заблокирован':'Активен'}));const ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Прогресс');XLSX.writeFile(wb,'onboard_progress_'+new Date().toLocaleDateString('ru-RU').replace(/\./g,'-')+'.xlsx');showAlert('📥 Excel-файл скачан!');}
 
 // ─── Invites ─────────────────────────────────────────────────────
 function createInvite(){const role=document.getElementById('newInviteRole').value,label=document.getElementById('newInviteLabel').value.trim(),code=Auth.createInvite(role,label);document.getElementById('newInviteLabel').value='';renderInvites();showAlert('✅ Код создан: '+code);}
-function clearUsedInvites(){if(!confirm('Удалить все использованные ключи?'))return;Auth.clearUsedInvites();renderInvites();showAlert('🧹 Очищено');}
+
+// FIX: ждём syncNow перед ре-рендером — без этого облако не успевало записать
+// удалённые коды до следующей загрузки страницы, и они «воскресали»
+async function clearUsedInvites(){
+  if(!confirm('Удалить все использованные ключи?'))return;
+  Auth.clearUsedInvites();
+  showAlert('⏳ Очищаем…');
+  await DB.syncNow();
+  renderInvites();
+  showAlert('🧹 История очищена и сохранена');
+}
+
 function renderInvites(){const tbody=document.getElementById('inviteTableBody'),inv=Auth.getInvites(),codes=Object.keys(inv);if(!codes.length){tbody.innerHTML='<tr class="empty-row"><td colspan="5">Нет кодов</td></tr>';return;}tbody.innerHTML='';codes.sort((a,b)=>(inv[a].used?1:0)-(inv[b].used?1:0)).forEach(code=>{const c=inv[code],tr=document.createElement('tr');tr.innerHTML=`<td><span class="code-pill">${code}</span><button class="copy-btn" onclick="copyCode('${code}')">копировать</button></td><td><span class="ubadge ${ROLE_BADGES[c.role]||''}">${ROLE_NAMES[c.role]||c.role}</span></td><td>${c.label||'—'}</td><td>${c.used?'<span class="ubadge badge-used">Использован</span>':'<span class="ubadge badge-active">Активен</span>'}</td><td>${c.used?'':`<button class="btn btn-danger btn-sm" onclick="delInvite('${code}')">Удалить</button>`}</td>`;tbody.appendChild(tr);});}
 function copyCode(code){navigator.clipboard.writeText(code).then(()=>showAlert('📋 Скопировано: '+code));}
 function delInvite(code){if(!confirm('Удалить '+code+'?'))return;Auth.deleteInvite(code);renderInvites();}
 function changeRole(l,r){Auth.setUserRole(l,r);showAlert('✅ Роль обновлена');renderUsers();}
-function blockUser(l){if(!confirm('Заблокировать '+l+'?'))return;Auth.blockUser(l);renderUsers();showAlert('🔒 Заблокирован');}
-function unblockUser(l){Auth.unblockUser(l);renderUsers();showAlert('🔓 Разблокирован');}
-function promoteUser(l){if(!confirm('Дать '+l+' права администратора?'))return;Auth.promoteToAdmin(l);renderUsers();showAlert('⭐ Повышен до admin');}
-function deleteUser(l){if(!confirm('Удалить '+l+'?'))return;Auth.deleteUser(l);renderUsers();showAlert('🗑️ Удалён');}
+
+// FIX: все мутирующие операции с пользователями теперь ждут DB.syncNow()
+// до вызова renderUsers(), иначе облако восстанавливало старые данные при
+// следующем открытии страницы (debounced sync не успевал отправить до выгрузки)
+async function blockUser(l){
+  if(!confirm('Заблокировать '+l+'?'))return;
+  Auth.blockUser(l);
+  showAlert('⏳ Блокируем…');
+  await DB.syncNow();
+  renderUsers();
+  showAlert('🔒 Заблокирован и сохранено');
+}
+async function unblockUser(l){
+  Auth.unblockUser(l);
+  showAlert('⏳ Разблокируем…');
+  await DB.syncNow();
+  renderUsers();
+  showAlert('🔓 Разблокирован и сохранено');
+}
+async function promoteUser(l){
+  if(!confirm('Дать '+l+' права администратора?'))return;
+  Auth.promoteToAdmin(l);
+  showAlert('⏳ Сохраняем…');
+  await DB.syncNow();
+  renderUsers();
+  showAlert('⭐ Повышен до admin');
+}
+async function deleteUser(l){
+  if(!confirm('Удалить пользователя «'+l+'»?\nЭто действие нельзя отменить.'))return;
+  Auth.deleteUser(l);
+  showAlert('⏳ Удаляем…');
+  await DB.syncNow();
+  renderUsers();
+  showAlert('🗑️ Пользователь удалён и сохранено');
+}
 
 // ─── Knowledge Base ───────────────────────────────────────────────
 const KB_BIN_ID  = '6a0c10b5ee5a733b12e250c5';
