@@ -1,7 +1,9 @@
 // ============================================================
-// auth.js — модуль авторизации Auditorium Onboard v8
-// Прогресс хранится по ключу ao_p_<login>_<taskKey>
-// Логин всегда хранится в нижнем регистре
+// auth.js — модуль авторизации Auditorium Onboard v9
+// v9: deleteUser/blockUser/unblockUser/promoteToAdmin/clearUsedInvites
+//     используют _dbSyncNow() для немедленной записи в облако.
+// Это исправляет баг, когда пользователи/приглашения возвращались после перезагрузки
+// страницы из-за debounce sync не успевшего записать данные до загрузки облака.
 // ============================================================
 
 const ADMIN_ROLES = ['hr', 'ceo', 'exec_dir', 'ops_dir'];
@@ -49,11 +51,13 @@ const Auth = {
     delete inv[code.trim().toUpperCase()];
     this.saveInvites(inv);
   },
+  // BUG FIX: используем syncNow чтобы удаленные приглашения записались в облако до перезагрузки
   clearUsedInvites() {
     if (!this.isAdmin()) return;
     const inv = this.getInvites();
     Object.keys(inv).forEach(code => { if (inv[code] && inv[code].used) delete inv[code]; });
-    this.saveInvites(inv);
+    localStorage.setItem('ao_invites', JSON.stringify(inv));
+    _dbSyncNow();
   },
 
   current() {
@@ -133,17 +137,19 @@ const Auth = {
     }
     this.saveUsers(users);
   },
-  blockUser(t)      { if(!this.isAdmin()) return; const u=this.getUsers(); if(u[t]) u[t].blocked=true;  this.saveUsers(u); },
-  unblockUser(t)    { if(!this.isAdmin()) return; const u=this.getUsers(); if(u[t]) u[t].blocked=false; this.saveUsers(u); },
-  deleteUser(t)     { if(!this.isAdmin()) return; const u=this.getUsers(); delete u[t]; this.saveUsers(u); },
-  promoteToAdmin(t) { if(!this.isAdmin()) return; const u=this.getUsers(); if(u[t]) u[t].admin=true; this.saveUsers(u); },
+  // BUG FIX: blockUser/unblockUser/deleteUser/promoteToAdmin
+  // Используют _dbSyncNow() — немедленная запись в облако.
+  // Без этого debounced sync мог не успеть отправиться до перезагрузки страницы,
+  // и при следующем открытии cloudFetch восстанавливал старые данные.
+  blockUser(t)      { if(!this.isAdmin()) return; const u=this.getUsers(); if(u[t]) u[t].blocked=true;  localStorage.setItem('ao_users',JSON.stringify(u)); _dbSyncNow(); },
+  unblockUser(t)    { if(!this.isAdmin()) return; const u=this.getUsers(); if(u[t]) u[t].blocked=false; localStorage.setItem('ao_users',JSON.stringify(u)); _dbSyncNow(); },
+  deleteUser(t)     { if(!this.isAdmin()) return; const u=this.getUsers(); delete u[t]; localStorage.setItem('ao_users',JSON.stringify(u)); _dbSyncNow(); },
+  promoteToAdmin(t) { if(!this.isAdmin()) return; const u=this.getUsers(); if(u[t]) u[t].admin=true; localStorage.setItem('ao_users',JSON.stringify(u)); _dbSyncNow(); },
 
   deleteSelf() {
     const login = this.currentLogin(); if (!login) return;
-    // Удаляем прогресс из localStorage
     const prefix = 'ao_p_' + login + '_';
     Object.keys(localStorage).filter(k => k.startsWith(prefix)).forEach(k => localStorage.removeItem(k));
-    // Удаляем пользователя (включая badges внутри объекта)
     const users = this.getUsers();
     delete users[login];
     this.saveUsers(users);
@@ -152,28 +158,17 @@ const Auth = {
     window.location.href = 'login.html';
   },
 
-  // Сброс прогресса текущего пользователя
-  // Сбрасывает: чекбоксы (ao_p_*), бейджи, welcomed-флаг
   resetProgress() {
     const login = this.currentLogin(); if (!login) return;
-
-    // 1. Удаляем все чекбоксы из localStorage
     const prefix = 'ao_p_' + login + '_';
     Object.keys(localStorage).filter(k => k.startsWith(prefix)).forEach(k => localStorage.removeItem(k));
-
-    // 2. Сбрасываем бейджи внутри объекта пользователя
     const users = this.getUsers();
     if (users[login]) {
       users[login].badges = {};
-      // Метка сброса — облако при следующем merge НЕ восстановит старый прогресс
       users[login].progressResetAt = Date.now();
-      this.saveUsers(users); // сохраняем сразу
+      this.saveUsers(users);
     }
-
-    // 3. Сбрасываем welcomed-флаг (чтобы welcome-экран показался снова)
     localStorage.removeItem('ao_welcomed_' + login);
-
-    // 4. Принудительная синхронизация с облаком — отправляем пустой прогресс
     if (typeof DB !== 'undefined' && DB.syncNow) {
       DB.syncNow();
     } else {
@@ -181,23 +176,16 @@ const Auth = {
     }
   },
 
-  // Сброс прогресса конкретного пользователя (HR сбрасывает сотруднику)
   resetProgressForUser(targetLogin) {
     if (!this.isAdmin()) return;
-
-    // 1. Удаляем чекбоксы
     const prefix = 'ao_p_' + targetLogin + '_';
     Object.keys(localStorage).filter(k => k.startsWith(prefix)).forEach(k => localStorage.removeItem(k));
-
-    // 2. Сбрасываем бейджи и ставим метку сброса
     const users = this.getUsers();
     if (users[targetLogin]) {
       users[targetLogin].badges = {};
       users[targetLogin].progressResetAt = Date.now();
       this.saveUsers(users);
     }
-
-    // 3. Синхронизация
     if (typeof DB !== 'undefined' && DB.syncNow) {
       DB.syncNow();
     } else {
@@ -231,6 +219,11 @@ const Auth = {
 
 function _dbSync() {
   if (typeof DB !== 'undefined' && DB.sync) DB.sync();
+}
+
+// Функция немедленной синхронизации — для критических операций (delete/block/invite)
+function _dbSyncNow() {
+  if (typeof DB !== 'undefined' && DB.syncNow) DB.syncNow();
 }
 
 Auth.migrate();
