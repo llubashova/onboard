@@ -1,9 +1,12 @@
 // ============================================================
-// auth.js — модуль авторизации Auditorium Onboard v9
-// v9: deleteUser/blockUser/unblockUser/promoteToAdmin/clearUsedInvites
-//     используют _dbSyncNow() для немедленной записи в облако.
-// Это исправляет баг, когда пользователи/приглашения возвращались после перезагрузки
-// страницы из-за debounce sync не успевшего записать данные до загрузки облака.
+// auth.js — модуль авторизации Auditorium Onboard v10
+// v10: setCheck / setCheckForUser переведены на _dbSyncNow()
+//      вместо _dbSync() (debounced).
+//      Исправляет баг: прогресс не сохранялся при быстром
+//      переходе между страницами — debounced sync не успевал
+//      улететь до перезагрузки, и cloudFetch восстанавливал
+//      старый снимок из облака.
+//      Также исправлен String(val) → '0' в setCheckForUser.
 // ============================================================
 
 const ADMIN_ROLES = ['hr', 'ceo', 'exec_dir', 'ops_dir'];
@@ -51,7 +54,6 @@ const Auth = {
     delete inv[code.trim().toUpperCase()];
     this.saveInvites(inv);
   },
-  // BUG FIX: используем syncNow чтобы удаленные приглашения записались в облако до перезагрузки
   clearUsedInvites() {
     if (!this.isAdmin()) return;
     const inv = this.getInvites();
@@ -137,10 +139,6 @@ const Auth = {
     }
     this.saveUsers(users);
   },
-  // BUG FIX: blockUser/unblockUser/deleteUser/promoteToAdmin
-  // Используют _dbSyncNow() — немедленная запись в облако.
-  // Без этого debounced sync мог не успеть отправиться до перезагрузки страницы,
-  // и при следующем открытии cloudFetch восстанавливал старые данные.
   blockUser(t)      { if(!this.isAdmin()) return; const u=this.getUsers(); if(u[t]) u[t].blocked=true;  localStorage.setItem('ao_users',JSON.stringify(u)); _dbSyncNow(); },
   unblockUser(t)    { if(!this.isAdmin()) return; const u=this.getUsers(); if(u[t]) u[t].blocked=false; localStorage.setItem('ao_users',JSON.stringify(u)); _dbSyncNow(); },
   deleteUser(t)     { if(!this.isAdmin()) return; const u=this.getUsers(); delete u[t]; localStorage.setItem('ao_users',JSON.stringify(u)); _dbSyncNow(); },
@@ -197,18 +195,24 @@ const Auth = {
     const login = this.currentLogin(); if (!login) return false;
     return localStorage.getItem('ao_p_' + login + '_' + key) === '1';
   },
+  // FIX v10: заменён _dbSync() на _dbSyncNow() — прогресс теперь немедленно
+  // отправляется в облако при каждой отметке задания.
+  // Старый debounced sync (2 сек) терял данные при быстрой навигации между страницами.
   setCheck(key, val) {
     const login = this.currentLogin(); if (!login) return;
     localStorage.setItem('ao_p_' + login + '_' + key, val ? '1' : '0');
-    _dbSync();
+    _dbSyncNow();
   },
   getCheckForUser(userLogin, key) {
     return localStorage.getItem('ao_p_' + userLogin + '_' + key) === '1';
   },
+  // FIX v10: аналогично setCheck — syncNow вместо sync.
+  // Также исправлен String(val) → '0': String(false) давал "false",
+  // что не распознавалось как сброс в restoreProgress (ожидает строго '1' или не-'1').
   setCheckForUser(userLogin, key, val) {
     if (!userLogin) return;
-    localStorage.setItem('ao_p_' + userLogin + '_' + key, val ? '1' : String(val));
-    _dbSync();
+    localStorage.setItem('ao_p_' + userLogin + '_' + key, val ? '1' : '0');
+    _dbSyncNow();
   },
 
   requireAuth() {
@@ -221,7 +225,7 @@ function _dbSync() {
   if (typeof DB !== 'undefined' && DB.sync) DB.sync();
 }
 
-// Функция немедленной синхронизации — для критических операций (delete/block/invite)
+// Функция немедленной синхронизации — для критических операций
 function _dbSyncNow() {
   if (typeof DB !== 'undefined' && DB.syncNow) DB.syncNow();
 }
