@@ -1,1 +1,265 @@
-__MARKETING__
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Маршрут: Специалист по маркетингу — Auditorium Onboard</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <script>if(!localStorage.getItem('ao_session'))location.replace('login.html');</script>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="game.css">
+  <style>
+    .route-hero{background:linear-gradient(135deg,#7b1fa2,#e040fb);color:#fff;border-radius:18px;padding:28px 32px;margin-bottom:28px}
+    .route-hero h1{font-size:1.6rem;margin:0 0 6px}
+    .route-hero p{margin:0;opacity:.85;font-size:.95rem}
+    .xp-panel{background:#fff;border-radius:14px;padding:16px 20px;margin-bottom:24px;box-shadow:0 2px 12px rgba(123,31,162,.1);display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+    .xp-level-badge{font-size:1.3rem;font-weight:800;color:#7b1fa2;min-width:160px}
+    .xp-bar-wrap{flex:1;min-width:180px}
+    .xp-bar-label{font-size:.8rem;color:#888;margin-bottom:4px;display:flex;justify-content:space-between}
+    .xp-bar{height:12px;background:#f3e5f5;border-radius:6px;overflow:hidden}
+    .xp-bar-fill{height:100%;background:linear-gradient(90deg,#ab47bc,#e040fb);border-radius:6px;transition:.4s}
+    .level-block{background:#fff;border-radius:16px;margin-bottom:20px;box-shadow:0 2px 12px rgba(123,31,162,.08);overflow:hidden}
+    .level-header{padding:16px 20px;display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none}
+    .level-header h2{margin:0;font-size:1.1rem;color:#7b1fa2;flex:1}
+    .level-header .level-pct{font-size:.85rem;font-weight:700;color:#ab47bc}
+    .level-header .level-chevron{font-size:1rem;transition:.2s;color:#aaa}
+    .level-header.open .level-chevron{transform:rotate(180deg)}
+    .level-progress{height:6px;background:#f3e5f5;margin:0 20px 0}
+    .level-pfill{height:100%;background:linear-gradient(90deg,#ab47bc,#e040fb);border-radius:3px;transition:.4s}
+    .level-body{padding:4px 20px 20px;display:none}
+    .level-body.open{display:block}
+    .task-group-title{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:#aaa;font-weight:700;margin:14px 0 6px}
+    .task-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid #f0f4fa;cursor:pointer}
+    .task-item:last-child{border-bottom:none}
+    .task-item input[type=checkbox]{width:18px;height:18px;accent-color:#ab47bc;cursor:pointer;flex-shrink:0;margin-top:2px}
+    .task-item label{font-size:.9rem;color:#333;cursor:pointer;line-height:1.4}
+    .task-item.done label{color:#aaa;text-decoration:line-through}
+    .task-xp{font-size:.75rem;font-weight:700;color:#ab47bc;flex-shrink:0;margin-left:auto;padding-top:2px}
+    .view-banner{background:#fff8e1;border:2px solid #f9a825;border-radius:12px;padding:12px 18px;margin-bottom:20px;font-size:.9rem;color:#7a5800;display:none}
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="logo"><a href="index.html" style="color:inherit;text-decoration:none"><span class="logo-icon">🎓</span> Auditorium Onboard</a></div>
+    <div class="user-badge" id="headerUserBadge"><span id="headerUser">—</span></div>
+  </div>
+</header>
+
+<div class="main-wrap">
+  <div class="view-banner" id="viewBanner">👁️ Режим просмотра — вы видите маршрут сотрудника (только чтение)</div>
+
+  <div class="route-hero">
+    <h1>📣 Маршрут: Специалист по маркетингу</h1>
+    <p>Яндекс.Директ, контент-план, email, Telegram-канал — 1–2 публикации в день</p>
+  </div>
+
+  <div class="xp-panel">
+    <div class="xp-level-badge" id="xpLevelBadge">🌱 Новичок</div>
+    <div class="xp-bar-wrap">
+      <div class="xp-bar-label"><span id="xpCounter">0 / 316 XP</span><span id="xpPct">0%</span></div>
+      <div class="xp-bar"><div class="xp-bar-fill" id="xpBarFill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- УРОВЕНЬ 1 -->
+  <div class="level-block" id="block-l1">
+    <div class="level-header" onclick="toggleLevel('l1')">
+      <h2>🌱 Уровень 1 — Новичок <span style="font-weight:400;font-size:.9rem;color:#888">(дни 1–7)</span></h2>
+      <span class="level-pct" id="pct-l1">0%</span>
+      <span class="level-chevron">▼</span>
+    </div>
+    <div class="level-progress"><div class="level-pfill" id="fill-l1" style="width:0%"></div></div>
+    <div class="level-body open" id="body-l1">
+      <div class="task-group-title">📋 Основные задачи (70%)</div>
+      <div class="task-item" id="ti-marketing_l1_p1"><input type="checkbox" id="marketing_l1_p1"><label for="marketing_l1_p1">Изучить контент-план компании и правила публикаций</label><span class="task-xp">+10 XP</span></div>
+      <div class="task-item" id="ti-marketing_l1_p2"><input type="checkbox" id="marketing_l1_p2"><label for="marketing_l1_p2">Ознакомиться с Telegram-каналом и другими площадками (анализ стиля, тональности)</label><span class="task-xp">+10 XP</span></div>
+      <div class="task-item" id="ti-marketing_l1_p3"><input type="checkbox" id="marketing_l1_p3"><label for="marketing_l1_p3">Подготовить и опубликовать первый пост под контролем наставника</label><span class="task-xp">+10 XP</span></div>
+      <div class="task-item" id="ti-marketing_l1_p4"><input type="checkbox" id="marketing_l1_p4"><label for="marketing_l1_p4">Разобраться с кабинетом Яндекс.Директ: структура текущих кампаний</label><span class="task-xp">+10 XP</span></div>
+      <div class="task-group-title">🤝 Работа с наставником (20%)</div>
+      <div class="task-item" id="ti-marketing_l1_m1"><input type="checkbox" id="marketing_l1_m1"><label for="marketing_l1_m1">Встреча с наставником в первый день: брендбук, тон ов, инструменты</label><span class="task-xp">+8 XP</span></div>
+      <div class="task-item" id="ti-marketing_l1_m2"><input type="checkbox" id="marketing_l1_m2"><label for="marketing_l1_m2">Встреча с руководителем на 7-й день: обратная связь по первым публикациям</label><span class="task-xp">+8 XP</span></div>
+      <div class="task-group-title">📚 Материалы Strive (10%)</div>
+      <div class="task-item" id="ti-marketing_l1_s1"><input type="checkbox" id="marketing_l1_s1"><label for="marketing_l1_s1">Прочитать брендбук и требования к визуальному стилю</label><span class="task-xp">+5 XP</span></div>
+      <div class="task-item" id="ti-marketing_l1_s2"><input type="checkbox" id="marketing_l1_s2"><label for="marketing_l1_s2">Изучить примеры успешных email-рассылок из базы знаний</label><span class="task-xp">+5 XP</span></div>
+      <div class="task-item" id="ti-marketing_l1_s3"><input type="checkbox" id="marketing_l1_s3"><label for="marketing_l1_s3">Пройти вводный квиз по компании</label><span class="task-xp">+5 XP</span></div>
+    </div>
+  </div>
+
+  <!-- УРОВЕНЬ 2 -->
+  <div class="level-block" id="block-l2">
+    <div class="level-header" onclick="toggleLevel('l2')">
+      <h2>🚀 Уровень 2 — Продвинутый <span style="font-weight:400;font-size:.9rem;color:#888">(дни 8–30)</span></h2>
+      <span class="level-pct" id="pct-l2">0%</span>
+      <span class="level-chevron">▼</span>
+    </div>
+    <div class="level-progress"><div class="level-pfill" id="fill-l2" style="width:0%"></div></div>
+    <div class="level-body" id="body-l2">
+      <div class="task-group-title">📋 Основные задачи (70%)</div>
+      <div class="task-item" id="ti-marketing_l2_p1"><input type="checkbox" id="marketing_l2_p1"><label for="marketing_l2_p1">Самостоятельно публиковать 1–2 поста в день по контент-плану</label><span class="task-xp">+15 XP</span></div>
+      <div class="task-item" id="ti-marketing_l2_p2"><input type="checkbox" id="marketing_l2_p2"><label for="marketing_l2_p2">Запустить первую рекламную кампанию в Яндекс.Директ под контролем наставника</label><span class="task-xp">+15 XP</span></div>
+      <div class="task-item" id="ti-marketing_l2_p3"><input type="checkbox" id="marketing_l2_p3"><label for="marketing_l2_p3">Подготовить и отправить email-рассылку для одного мероприятия</label><span class="task-xp">+15 XP</span></div>
+      <div class="task-item" id="ti-marketing_l2_p4"><input type="checkbox" id="marketing_l2_p4"><label for="marketing_l2_p4">Оформить Telegram-канал (шапка, закреп, визуал) для актуального форума</label><span class="task-xp">+15 XP</span></div>
+      <div class="task-item" id="ti-marketing_l2_p5"><input type="checkbox" id="marketing_l2_p5"><label for="marketing_l2_p5">Собрать базовый аналитический отчёт по охватам и вовлечённости</label><span class="task-xp">+15 XP</span></div>
+      <div class="task-group-title">🤝 Работа с наставником (20%)</div>
+      <div class="task-item" id="ti-marketing_l2_m1"><input type="checkbox" id="marketing_l2_m1"><label for="marketing_l2_m1">Еженедельный разбор публикаций с наставником</label><span class="task-xp">+8 XP</span></div>
+      <div class="task-item" id="ti-marketing_l2_m2"><input type="checkbox" id="marketing_l2_m2"><label for="marketing_l2_m2">Контрольная точка на 30-й день: понимание, сработаемся ли дальше</label><span class="task-xp">+8 XP</span></div>
+      <div class="task-group-title">📚 Материалы Strive (10%)</div>
+      <div class="task-item" id="ti-marketing_l2_s1"><input type="checkbox" id="marketing_l2_s1"><label for="marketing_l2_s1">Изучить руководство по настройке Яндекс.Директ (Strive)</label><span class="task-xp">+5 XP</span></div>
+      <div class="task-item" id="ti-marketing_l2_s2"><input type="checkbox" id="marketing_l2_s2"><label for="marketing_l2_s2">Прочитать кейс: как продвигался последний крупный форум</label><span class="task-xp">+5 XP</span></div>
+    </div>
+  </div>
+
+  <!-- УРОВЕНЬ 3 -->
+  <div class="level-block" id="block-l3">
+    <div class="level-header" onclick="toggleLevel('l3')">
+      <h2>🏆 Уровень 3 — Профи <span style="font-weight:400;font-size:.9rem;color:#888">(дни 31–90)</span></h2>
+      <span class="level-pct" id="pct-l3">0%</span>
+      <span class="level-chevron">▼</span>
+    </div>
+    <div class="level-progress"><div class="level-pfill" id="fill-l3" style="width:0%"></div></div>
+    <div class="level-body" id="body-l3">
+      <div class="task-group-title">📋 Основные задачи (70%)</div>
+      <div class="task-item" id="ti-marketing_l3_p1"><input type="checkbox" id="marketing_l3_p1"><label for="marketing_l3_p1">Самостоятельно вести полную маркетинговую кампанию для реального форума (Директ + email + SMM)</label><span class="task-xp">+25 XP</span></div>
+      <div class="task-item" id="ti-marketing_l3_p2"><input type="checkbox" id="marketing_l3_p2"><label for="marketing_l3_p2">Стабильно публиковать 1–2 поста в день (~120–180 постов за два месяца)</label><span class="task-xp">+25 XP</span></div>
+      <div class="task-item" id="ti-marketing_l3_p3"><input type="checkbox" id="marketing_l3_p3"><label for="marketing_l3_p3">Подготовить итоговый аналитический отчёт по эффективности кампаний с выводами</label><span class="task-xp">+25 XP</span></div>
+      <div class="task-item" id="ti-marketing_l3_p4"><input type="checkbox" id="marketing_l3_p4"><label for="marketing_l3_p4">Актуализировать базу знаний Strive по маркетингу (шаблоны, инструкции)</label><span class="task-xp">+25 XP</span></div>
+      <div class="task-group-title">🤝 Работа с наставником (20%)</div>
+      <div class="task-item" id="ti-marketing_l3_m1"><input type="checkbox" id="marketing_l3_m1"><label for="marketing_l3_m1">Итоговая встреча на 90-й день: результаты адаптации и план развития</label><span class="task-xp">+8 XP</span></div>
+      <div class="task-group-title">📚 Материалы Strive (10%)</div>
+      <div class="task-item" id="ti-marketing_l3_s1"><input type="checkbox" id="marketing_l3_s1"><label for="marketing_l3_s1">Написать и разместить в Strive кейс своей первой самостоятельной кампании</label><span class="task-xp">+5 XP</span></div>
+      <div class="task-item" id="ti-marketing_l3_s2"><input type="checkbox" id="marketing_l3_s2"><label for="marketing_l3_s2">Пройти финальный квиз и получить бейдж 🏆 Профи</label><span class="task-xp">+5 XP</span></div>
+    </div>
+  </div>
+</div>
+
+<footer><p>ООО «Аудиториум СиДжи» · Система геймификации адаптации · 2026</p></footer>
+
+<script src="db.js"></script>
+<script src="auth.js"></script>
+<script src="game.js"></script>
+<script>
+const ROLE = 'marketing';
+const MAX_XP_TOTAL = 316;
+
+const LEVEL_KEYS = {
+  l1: { keys: ['marketing_l1_p1','marketing_l1_p2','marketing_l1_p3','marketing_l1_p4','marketing_l1_m1','marketing_l1_m2','marketing_l1_s1','marketing_l1_s2','marketing_l1_s3'], maxXp: 71 },
+  l2: { keys: ['marketing_l2_p1','marketing_l2_p2','marketing_l2_p3','marketing_l2_p4','marketing_l2_p5','marketing_l2_m1','marketing_l2_m2','marketing_l2_s1','marketing_l2_s2'], maxXp: 101 },
+  l3: { keys: ['marketing_l3_p1','marketing_l3_p2','marketing_l3_p3','marketing_l3_p4','marketing_l3_m1','marketing_l3_s1','marketing_l3_s2'], maxXp: 144 }
+};
+
+const TASK_XP = {
+  marketing_l1_p1:10,marketing_l1_p2:10,marketing_l1_p3:10,marketing_l1_p4:10,
+  marketing_l1_m1:8,marketing_l1_m2:8,
+  marketing_l1_s1:5,marketing_l1_s2:5,marketing_l1_s3:5,
+  marketing_l2_p1:15,marketing_l2_p2:15,marketing_l2_p3:15,marketing_l2_p4:15,marketing_l2_p5:15,
+  marketing_l2_m1:8,marketing_l2_m2:8,
+  marketing_l2_s1:5,marketing_l2_s2:5,
+  marketing_l3_p1:25,marketing_l3_p2:25,marketing_l3_p3:25,marketing_l3_p4:25,
+  marketing_l3_m1:8,
+  marketing_l3_s1:5,marketing_l3_s2:5
+};
+
+const urlParams = new URLSearchParams(location.search);
+const viewLogin = urlParams.get('view');
+const isViewMode = !!viewLogin && Auth.isAdmin();
+const activeLogin = isViewMode ? viewLogin : Auth.currentLogin();
+
+function getXpLevel(xp) {
+  if (xp >= 188) return '🏆 Профи';
+  if (xp >= 72)  return '🚀 Продвинутый';
+  return '🌱 Новичок';
+}
+
+function calcTotalXp() {
+  let xp = 0;
+  Object.keys(TASK_XP).forEach(k => { if (Auth.getCheckForUser(activeLogin, k)) xp += TASK_XP[k]; });
+  return xp;
+}
+
+function updateXpPanel() {
+  const xp = calcTotalXp();
+  const pct = Math.round(xp / MAX_XP_TOTAL * 100);
+  document.getElementById('xpLevelBadge').textContent = getXpLevel(xp);
+  document.getElementById('xpCounter').textContent = xp + ' / ' + MAX_XP_TOTAL + ' XP';
+  document.getElementById('xpPct').textContent = pct + '%';
+  document.getElementById('xpBarFill').style.width = pct + '%';
+}
+
+function updateLevelProgress(lvl) {
+  const { keys, maxXp } = LEVEL_KEYS[lvl];
+  let xp = 0;
+  keys.forEach(k => { if (Auth.getCheckForUser(activeLogin, k)) xp += TASK_XP[k]; });
+  const pct = Math.round(xp / maxXp * 100);
+  document.getElementById('pct-' + lvl).textContent = pct + '%';
+  document.getElementById('fill-' + lvl).style.width = pct + '%';
+}
+
+function loadChecks() {
+  Object.keys(TASK_XP).forEach(key => {
+    const cb = document.getElementById(key);
+    if (!cb) return;
+    const checked = Auth.getCheckForUser(activeLogin, key);
+    cb.checked = !!checked;
+    document.getElementById('ti-' + key).classList.toggle('done', !!checked);
+    if (isViewMode) cb.disabled = true;
+  });
+  updateXpPanel();
+  ['l1','l2','l3'].forEach(updateLevelProgress);
+}
+
+function toggleLevel(lvl) {
+  const body = document.getElementById('body-' + lvl);
+  body.classList.toggle('open');
+  const hdr = document.querySelector('#block-' + lvl + ' .level-header');
+  hdr.classList.toggle('open', body.classList.contains('open'));
+}
+
+function setupCheckboxes() {
+  if (isViewMode) return;
+  Object.keys(TASK_XP).forEach(key => {
+    const cb = document.getElementById(key);
+    if (!cb) return;
+    cb.addEventListener('change', function() {
+      Auth.setCheck(key, cb.checked);
+      document.getElementById('ti-' + key).classList.toggle('done', cb.checked);
+      const lvl = key.includes('_l1_') ? 'l1' : key.includes('_l2_') ? 'l2' : 'l3';
+      updateLevelProgress(lvl);
+      updateXpPanel();
+      if (cb.checked && typeof Game !== 'undefined') {
+        Game.onTaskComplete(key, TASK_XP[key], calcTotalXp(), MAX_XP_TOTAL, getXpLevel(calcTotalXp()));
+      }
+    });
+  });
+}
+
+window.onload = function() {
+  if (!Auth.requireAuth()) return;
+  const u = Auth.current();
+  document.getElementById('headerUser').textContent = u ? u.fio.split(' ')[0] : '—';
+  if (isViewMode) {
+    const banner = document.getElementById('viewBanner');
+    const users = Auth.getUsers();
+    const vUser = users[viewLogin];
+    banner.style.display = 'block';
+    banner.textContent = '👁️ Режим просмотра — маршрут сотрудника: ' + (vUser ? vUser.fio : viewLogin) + ' (только чтение)';
+  }
+  if (!isViewMode) {
+    const users = Auth.getUsers();
+    const myLogin = Auth.currentLogin();
+    if (users[myLogin] && users[myLogin].routeRole !== ROLE) {
+      users[myLogin].routeRole = ROLE;
+      Auth.saveUsers(users);
+    }
+  }
+  DB.ready.then(() => {
+    loadChecks();
+    setupCheckboxes();
+    if (!isViewMode && typeof Game !== 'undefined') {
+      Game.onPageLoad(calcTotalXp(), MAX_XP_TOTAL, u ? u.fio.split(' ')[0] : 'Сотрудник', '📣 Специалист по маркетингу', getXpLevel(calcTotalXp()));
+    }
+  });
+};
+</script>
+</body>
+</html>
