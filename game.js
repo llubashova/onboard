@@ -327,30 +327,26 @@ function maybeShowWelcome(userName, roleName) {
 
 
 // ── LEVEL-UP ТРЕКЕР ──────────────────────────────────────────
-// FIX: используем абсолютный XP для определения уровня,
-// а не процент — чтобы пороги совпадали с getXpLevel() на страницах маршрутов.
-// Пороги: Новичок < 71 XP, Продвинутый 71–171 XP, Профи >= 172 XP (для 290 maxXp).
-// Для универсальности считаем через pct: Продвинутый >= 24%, Профи >= 59%.
+// FIX v2: принимаем levelName-строку напрямую с страницы маршрута.
+// Каждая страница сама считает уровень через свой getXpLevel(xp),
+// поэтому пороги всегда совпадают — не нужно дублировать их здесь.
 let _lastLevel = null;
 
-function _levelFromPct(pct) {
-  if (pct >= 59) return { name: 'Профи',       emoji: '🏆' };
-  if (pct >= 24) return { name: 'Продвинутый', emoji: '🚀' };
-  return              { name: 'Новичок',      emoji: '🌱' };
+function _levelEmoji(name) {
+  if (name.includes('Профи'))       return '🏆';
+  if (name.includes('Продвинутый')) return '🚀';
+  return '🌱';
 }
 
-function trackLevelUp(xp, maxXp) {
-  const pct = maxXp ? Math.round(xp / maxXp * 100) : 0;
-  const current = _levelFromPct(pct);
-  if (_lastLevel !== null && _lastLevel !== current.name) {
-    showLevelUp(current.name, current.emoji);
+function trackLevelUp(levelName) {
+  if (_lastLevel !== null && _lastLevel !== levelName) {
+    showLevelUp(levelName, _levelEmoji(levelName));
   }
-  _lastLevel = current.name;
+  _lastLevel = levelName;
 }
 
-function initLevelTracker(xp, maxXp) {
-  const pct = maxXp ? Math.round(xp / maxXp * 100) : 0;
-  _lastLevel = _levelFromPct(pct).name;
+function initLevelTracker(levelName) {
+  _lastLevel = levelName;
 }
 
 
@@ -372,22 +368,23 @@ const Game = {
       showXpPopup(xpEarned);
     }
 
-    // 2. Конфетти — всегда при отметке задачи (было: только первая или >= 20 XP)
+    // 2. Конфетти — всегда при отметке задачи
     Confetti.burst(window.innerWidth / 2, window.innerHeight / 3, 30);
 
     // 3. Проверка бейджей (сохраняет в облако)
     const pct = Math.round(totalXp / maxXp * 100);
     checkBadges(totalXp, pct);
 
-    // 4. Level-up анимация (FIX: теперь корректно ловит переход в Профи)
-    trackLevelUp(totalXp, maxXp);
+    // 4. Level-up анимация — используем levelName напрямую со страницы
+    trackLevelUp(levelName);
   },
 
   /**
-   * Вызывать при загрузке страницы роли (после loadChecks)
+   * Вызывать при загрузке страницы роли (после loadChecks).
+   * currentLevelName — результат getXpLevel(calcTotalXp()) на странице.
    */
-  onPageLoad(totalXp, maxXp, userName, roleName) {
-    initLevelTracker(totalXp, maxXp);
+  onPageLoad(totalXp, maxXp, userName, roleName, currentLevelName) {
+    initLevelTracker(currentLevelName || '🌱 Новичок');
     updateStreak();
     maybeShowWelcome(userName, roleName);
   },
