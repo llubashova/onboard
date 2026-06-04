@@ -64,7 +64,6 @@
     .crb-fill{height:100%;background:#fff;border-radius:4px;transition:.4s}
     .crb-bar-label{font-size:.75rem;opacity:.7;margin-top:3px}
     .crb-arrow{position:absolute;right:22px;top:50%;transform:translateY(-50%);font-size:1.5rem;opacity:.6}
-    /* FIX: строка администратора в таблице — выделяем фоном */
     .hr-table tr.admin-row td{background:#fff8e1;}
     .hr-table tr.admin-row:hover td{background:#fff3cd;}
   </style>
@@ -470,20 +469,28 @@ function confirmDeleteSelf(){
   Auth.deleteSelf();
 }
 
-// FIX: renderHrDashboard теперь показывает строку для самого администратора,
-// если он прошёл любой маршрут (u.adminRouteRole сохраняется страницей маршрута).
+// FIX 1: renderHrDashboard — показываем ВСЕХ пользователей платформы,
+// не только тех, у кого роль входит в EMPLOYEE_ROLES.
+// Исключаем только чистых администраторов (без adminRouteRole) и самого текущего пользователя
+// (он добавляется отдельно, чтобы выделить строку «вы»).
 function renderHrDashboard(){
   const tbody=document.getElementById('hrTableBody');
   const users=Auth.getUsers();
   const myLogin=Auth.currentLogin();
+  const ADMIN_ROLES_SET = new Set(['hr','ceo','exec_dir','ops_dir']);
 
-  // Собираем сотрудников
-  const employees=Object.entries(users).filter(([,u])=>EMPLOYEE_ROLES.includes(u.role));
+  // Все пользователи кроме текущего; чистых администраторов (без маршрута) скрываем
+  const employees=Object.entries(users).filter(([login, u])=>{
+    if(login === myLogin) return false; // текущий пользователь добавляется отдельно
+    const role = (u.role || '').toLowerCase();
+    if(ADMIN_ROLES_SET.has(role) && !u.adminRouteRole) return false;
+    return true;
+  });
 
-  // Строим строки сотрудников
+  // Строим строки
   let rows=employees.sort((a,b)=>a[1].fio.localeCompare(b[1].fio)).map(([login,u])=>buildTableRow(login,u,false));
 
-  // FIX: если текущий admin проходил маршрут — добавляем его строку наверх
+  // Если текущий admin проходил маршрут — добавляем его строку наверх
   const me=users[myLogin];
   if(me && me.adminRouteRole && EMPLOYEE_ROLES.includes(me.adminRouteRole)){
     rows=[buildTableRow(myLogin,me,true),...rows];
@@ -497,9 +504,7 @@ function renderHrDashboard(){
 }
 
 // Вспомогательная функция — строит <tr> для одного пользователя.
-// isAdminSelf=true добавляет пометку «(вы)» и жёлтый фон.
 function buildTableRow(login,u,isAdminSelf){
-  // Для администратора используем adminRouteRole, для сотрудника — u.role
   const role=isAdminSelf ? u.adminRouteRole : u.role;
   const base=calcProgress(login,role);
   const basePct=base.pct;
@@ -519,11 +524,9 @@ function buildTableRow(login,u,isAdminSelf){
   }
   const day=getDayOnPlatform(u);
   const dayCell=day?`<span class="day-chip">📅 День ${day}</span>`:'<span style="color:#ccc;font-size:.8rem">—</span>';
-  // Имя: для себя-админа добавляем метку
   const fioLink=isAdminSelf
     ? `<span style="color:#c0392b;font-weight:700">${esc(u.fio)} <span style="font-size:.75rem;background:#fff3cd;padding:1px 6px;border-radius:8px;color:#7a5800">вы</span></span>`
     : `<a href="${esc(role)}.html?view=${esc(login)}" style="color:#0a4d8c;font-weight:600;text-decoration:none">${esc(u.fio)}</a>`;
-  // Роль: показываем маршрут (не должность)
   const roleLabel=isAdminSelf
     ? `${ROLE_NAMES[role]||role} <span style="font-size:.72rem;color:#aaa">(маршрут)</span>`
     : (ROLE_NAMES[u.role]||u.role);
@@ -581,6 +584,10 @@ function renderDayCounter(){
   }
 }
 
+// FIX 2: buildRouteCards — прогресс всегда отображается на карточках.
+// Для администратора: показываем количество сотрудников и средний % даже если сотрудников 0.
+// Для сотрудника со своим маршрутом: показываем XP и %.
+// Для заблокированных карточек: явно показываем 0%.
 function buildRouteCards(routes){
   const grid=document.getElementById('rolesGrid');
   if(!grid) return;
@@ -594,16 +601,22 @@ function buildRouteCards(routes){
     const p=isMyRole?calcProgress(myLogin,role):{xp:0,maxXp:0,pct:0};
     let metaHtml='',progText='—',progPct=0;
     if(isAdmin){
+      // FIX: всегда показываем счётчик сотрудников и прогресс, даже если 0 человек
       const staff=Object.entries(users).filter(([,su])=>su.role===role);
-      if(staff.length){
-        const avg=Math.round(staff.reduce((s,[l])=>s+calcProgress(l,role).pct,0)/staff.length);
-        metaHtml=`<div class="admin-card-meta"><span class="staff-count">👤 ${staff.length} чел.</span></div>`;
-        progText=avg+'% (ср.)';progPct=avg;
-      }else{
-        metaHtml=`<div class="admin-card-meta"><span class="admin-card-empty">Нет сотрудников</span></div>`;
-      }
+      const avg=staff.length
+        ? Math.round(staff.reduce((s,[l])=>s+calcProgress(l,role).pct,0)/staff.length)
+        : 0;
+      metaHtml=`<div class="admin-card-meta"><span class="staff-count">👤 ${staff.length} чел.</span></div>`;
+      progText=staff.length ? avg+'% (ср.)' : '0%';
+      progPct=avg;
     }else if(isMyRole){
-      progText=p.xp+' XP · '+p.pct+'%';progPct=p.pct;
+      // FIX: прогресс сотрудника по своему маршруту
+      progText=p.xp+' XP · '+p.pct+'%';
+      progPct=p.pct;
+    }else if(isEmployee){
+      // Заблокированный маршрут — показываем 0 явно
+      progText='0 XP · 0%';
+      progPct=0;
     }
     const card=document.createElement('a');
     card.href=locked?'#':esc(route.link||'#');
